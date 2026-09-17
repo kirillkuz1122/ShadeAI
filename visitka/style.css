@@ -992,6 +992,71 @@ a {
   position: relative;
 }
 
+/* --- References / Bibliography --- */
+.ref-list {
+  list-style: none;
+  counter-reset: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ref-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  background: var(--surface-1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-md);
+  transition: all 0.3s var(--ease-out);
+}
+
+.ref-item:hover {
+  border-color: rgba(255, 46, 0, 0.15);
+  background: var(--surface-2);
+}
+
+.ref-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--scarlet);
+  flex-shrink: 0;
+  min-width: 28px;
+  padding-top: 2px;
+}
+
+.ref-content {
+  flex: 1;
+}
+
+.ref-content strong {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.ref-meta {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  display: inline-block;
+  margin: 4px 0;
+}
+
+.ref-link {
+  font-size: 0.8rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--orange);
+  word-break: break-all;
+  transition: color 0.2s ease;
+}
+
+.ref-link:hover {
+  color: var(--scarlet);
+}
+
 /* --- Footer --- */
 .footer {
   padding: 2.5rem clamp(1.5rem, 5vw, 4rem);
