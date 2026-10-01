@@ -1,4 +1,3 @@
-import httpx
 import pytest
 from fastapi.testclient import TestClient
 
@@ -22,6 +21,15 @@ def test_health(client):
 
 def test_ingest_requires_auth(client):
     resp = client.post("/api/v1/notifications", json={})
+    assert resp.status_code == 401
+
+
+def test_ingest_rejects_wrong_key(client):
+    resp = client.post(
+        "/api/v1/notifications",
+        json={},
+        headers={"Authorization": "Bearer wrong-test-key-000000000000000001"},
+    )
     assert resp.status_code == 401
 
 

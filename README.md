@@ -146,7 +146,7 @@ flowchart TD
 ## 🚀 Быстрый старт (Установка)
 
 > [!NOTE]
-> Репозиторий находится в активной стадии разработки MVP. Каркас уже работает: бэкенд запускается и проходит тесты, клиент и дашборд собираются.
+> Репозиторий находится на стадии скелета. Установка и запуск Core проверены на Python 3.11 и в Docker; сборка веба проходит. Сборка Android и работа системы на Raspberry Pi ещё не подтверждены. Текущие задачи — в [docs/mvp.md](docs/mvp.md).
 
 ### 1. Клонирование репозитория
 ```bash
@@ -157,24 +157,26 @@ cd ShadeAI
 ### 2. Бэкенд Shade Core (Raspberry Pi 5 / Linux)
 ```bash
 cd core
-python3 -m venv .venv
+python3.11 -m venv .venv  # Python 3.11 или новее
 source .venv/bin/activate
 
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 
 # Настройка переменных окружения
-cp .env.example .env
-nano .env  # Укажите SHADE_API_KEY и токен Home Assistant
+python -m app.setup  # создаёт .env, случайный SHADE_API_KEY и права 600
+nano .env  # при необходимости укажите HA_BASE_URL и HA_TOKEN
 
 # Запуск
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 - Swagger UI: `http://localhost:8000/docs`
 - Проверка: `curl http://localhost:8000/api/v1/health`
 
+Запускайте Core из `core/`: `.env` читается относительно рабочей директории. Повторная команда настройки сохраняет корректный ключ и остальные параметры. Для защищённых запросов используйте `Authorization: Bearer <SHADE_API_KEY>` из локального `.env`; имя `API_KEY` не поддерживается. Без корректного ключа сервер завершает запуск с подсказкой. Docker, проверки и разбор ошибок описаны в [core/README.md](core/README.md).
+
 ### 3. Веб-дашборд (React + Vite)
 ```bash
-cd web
+cd ../web  # из core/; в новом терминале перейдите в ShadeAI/web
 npm install
 npm run dev   # http://localhost:5173 (проксирует /api на :8000)
 ```
