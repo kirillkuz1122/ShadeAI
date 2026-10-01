@@ -33,6 +33,8 @@
 
 </div>
 
+![Shade AI — сайт-визитка](docs/img/landing.png)
+
 ---
 
 ## 📖 О проекте
@@ -123,6 +125,7 @@ flowchart TD
 | **AI / Edge LLM** | ![LLM](https://img.shields.io/badge/-Local_LLM_(GGUF)-FF2E00?style=flat-square) | Квантованная модель (оптимизирована под 4GB RAM Raspberry Pi 5) для NLU и структурирования |
 | **Mobile Client** | ![Kotlin](https://img.shields.io/badge/-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white) ![Jetpack Compose](https://img.shields.io/badge/-Jetpack_Compose-4285F4?style=flat-square&logo=android&logoColor=white) | Нативное Android-приложение: чтение пушей (`NotificationListener`), распознавание ключевого слова |
 | **Smart Home** | ![Home Assistant](https://img.shields.io/badge/-Home_Assistant_API-41BDF5?style=flat-square&logo=homeassistant&logoColor=white) | Шлюз интеграции с контроллерами, датчиками, климатом и освещением |
+| **Web Dashboard** | ![React](https://img.shields.io/badge/-React_19-61DAFB?style=flat-square&logo=react&logoColor=black) ![Vite](https://img.shields.io/badge/-Vite-646CFF?style=flat-square&logo=vite&logoColor=white) | Локальный веб-дашборд: статус сервера, журнал уведомлений и событий |
 | **Hardware** | ![Raspberry Pi](https://img.shields.io/badge/-Raspberry_Pi_5-C51A4A?style=flat-square&logo=raspberrypi&logoColor=white) ![Hardware](https://img.shields.io/badge/-WirenBoard_%2B_Zigbee-423E3B?style=flat-square) | Автономный микрокомпьютер RPi 5 (4GB), контроллеры автоматизации WirenBoard, сеть Zigbee |
 
 ---
@@ -143,7 +146,7 @@ flowchart TD
 ## 🚀 Быстрый старт (Установка)
 
 > [!NOTE]
-> Репозиторий находится в активной стадии разработки MVP. Ниже приведена инструкция по развертыванию базового каркаса.
+> Репозиторий находится в активной стадии разработки MVP. Каркас уже работает: бэкенд запускается и проходит тесты, клиент и дашборд собираются.
 
 ### 1. Клонирование репозитория
 ```bash
@@ -151,36 +154,69 @@ git clone https://github.com/kirillkuz1122/ShadeAI.git
 cd ShadeAI
 ```
 
-### 2. Настройка бэкенда (Raspberry Pi 5 / Linux)
+### 2. Бэкенд Shade Core (Raspberry Pi 5 / Linux)
 ```bash
-# Создание виртуального окружения
-python3 -m venv venv
-source venv/bin/activate
+cd core
+python3 -m venv .venv
+source .venv/bin/activate
 
-# Установка зависимостей
 pip install -r requirements.txt
 
 # Настройка переменных окружения
 cp .env.example .env
-nano .env  # Укажите адрес и токен Home Assistant
-```
+nano .env  # Укажите SHADE_API_KEY и токен Home Assistant
 
-### 3. Запуск сервера Shade AI
-```bash
+# Запуск
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+- Swagger UI: `http://localhost:8000/docs`
+- Проверка: `curl http://localhost:8000/api/v1/health`
+
+### 3. Веб-дашборд (React + Vite)
+```bash
+cd web
+npm install
+npm run dev   # http://localhost:5173 (проксирует /api на :8000)
 ```
 
 ### 4. Клиентское приложение (Android)
-1. Откройте директорию `android/` в **Android Studio Ladybug / Koala**.
-2. Соберите и установите APK на устройство с Android 10+.
-3. Предоставьте приложению разрешение на доступ к чтению уведомлений (**Notification Access**) и микрофону.
-4. В настройках укажите локальный IP-адрес вашего Raspberry Pi 5.
+1. Откройте директорию `android/` в **Android Studio Ladybug или новее**.
+2. Соберите и установите APK на устройство с Android 8.0+.
+3. Предоставьте приложению разрешение на чтение уведомлений (**Notification Access**).
+4. В приложении укажите локальный IP-адрес вашего Raspberry Pi 5.
+
+### 5. Локальная LLM (MVP v0.3, опционально сейчас)
+```bash
+./scripts/download_model.sh                # TinyLlama 1.1B Q4_K_M (~670 MB)
+MODEL=qwen ./scripts/download_model.sh     # или Qwen 2.5 1.5B — лучше для русского
+pip install -r core/requirements-llm.txt   # llama-cpp-python (ставить на RPi)
+```
+
+---
+
+## 📁 Структура репозитория
+
+```
+ShadeAI/
+├── core/          # Shade Core: FastAPI + SQLite (WAL) + шина событий
+│   ├── app/api/v1/     # REST эндпоинты (health, notifications, ha)
+│   ├── app/services/   # ha_bridge, llm, notification, analytics
+│   ├── app/db/         # SQLAlchemy async модели таблиц
+│   └── models/         # GGUF-модели (не в git; scripts/download_model.sh)
+├── android/       # Kotlin + Compose клиент (NotificationListener, Room, Retrofit)
+├── web/           # React + Vite дашборд
+├── docs/          # Архитектура, API-спека, roadmap MVP, стек, брендбук
+├── scripts/       # Служебные скрипты (скачивание моделей)
+├── index.html     # Сайт-визитка (GitHub Pages)
+└── visitka/       # Стили и скрипты визитки
+```
 
 ---
 
 ## 🗺 Дорожная карта (Roadmap)
 
 - [x] Проектирование архитектуры и прототипа взаимодействия с Home Assistant API
+- [x] Скелет инфраструктуры: FastAPI-бэкенд (`core/`), Android-клиент (Kotlin/Compose), веб-дашборд (React)
 - [x] Разработка каркаса Android-клиента на Jetpack Compose с чтением уведомлений
 - [ ] Оптимизация инференса локальной квантованной LLM под 4GB RAM на RPi 5
 - [ ] Реализация движка анализа привычек и временных паттернов

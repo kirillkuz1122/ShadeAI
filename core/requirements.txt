@@ -1,0 +1,14 @@
+fastapi>=0.115
+uvicorn[standard]>=0.32
+pydantic>=2.9
+pydantic-settings>=2.6
+sqlalchemy[asyncio]>=2.0.36
+aiosqlite>=0.20
+alembic>=1.14
+httpx>=0.28
+loguru>=0.7
+
+[dev]
+pytest>=8.3
+pytest-asyncio>=0.24
+ruff>=0.8

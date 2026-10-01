@@ -1,0 +1,145 @@
+:root {
+  --charcoal: #423e3b;
+  --scarlet: #ff2e00;
+  --orange: #fea82f;
+  --cream: #fffecb;
+
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--charcoal);
+  color: var(--cream);
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.header__logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--scarlet);
+  color: var(--cream);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+.header h1 {
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+.card {
+  background: rgba(255, 254, 203, 0.06);
+  border: 1px solid rgba(254, 168, 47, 0.25);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.card h2 {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  color: var(--orange);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.stat {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px dashed rgba(255, 254, 203, 0.15);
+}
+
+.stat:last-child {
+  border-bottom: none;
+}
+
+.stat--ok {
+  color: var(--orange);
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(255, 46, 0, 0.2);
+  color: var(--scarlet);
+  font-size: 0.8rem;
+}
+
+.settings-row {
+  display: flex;
+  gap: 8px;
+}
+
+.settings-row input {
+  flex: 1;
+  background: rgba(255, 254, 203, 0.08);
+  border: 1px solid rgba(254, 168, 47, 0.35);
+  color: var(--cream);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: inherit;
+}
+
+.settings-row button,
+.card button {
+  background: var(--orange);
+  color: var(--charcoal);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.settings-row button:hover,
+.card button:hover {
+  background: var(--scarlet);
+  color: var(--cream);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 8px 6px;
+  border-bottom: 1px solid rgba(255, 254, 203, 0.12);
+  word-break: break-word;
+}
+
+th {
+  color: var(--orange);
+  font-weight: 600;
+}
+
+.muted {
+  color: rgba(255, 254, 203, 0.55);
+}

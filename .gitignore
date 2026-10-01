@@ -1,0 +1,43 @@
+# ===== Python (core/) =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+dist/
+build/
+core/shade.db*
+*.tsbuildinfo
+
+# ===== Локальные LLM-модели (большие файлы, не в git) =====
+core/models/*.gguf
+core/models/*.bin
+
+# ===== Node / React (web/) =====
+node_modules/
+web/dist/
+*.local
+npm-debug.log*
+
+# ===== Android (android/) =====
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/*.iml
+android/captures/
+android/.kotlin/
+
+# ===== IDE / OS =====
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

@@ -53,6 +53,25 @@ Authorization: Bearer <SHADE_API_KEY>
 
 ---
 
+## Статус реализации (v0.1 — скелет)
+
+| Эндпоинт | Статус | Реализация |
+| :--- | :--- | :--- |
+| `GET /health` | ✅ реализован | `core/app/api/v1/health.py` |
+| `POST /notifications` | ✅ реализован | `core/app/api/v1/notifications.py` |
+| `GET /notifications` | ✅ реализован | `core/app/api/v1/notifications.py` |
+| `POST /ha/action` | ✅ реализован (временный) | `core/app/api/v1/ha.py` |
+| `GET /notifications/{id}`, `GET /devices`, `POST /devices/{entity_id}/command`, `GET /devices/{entity_id}/state`, `GET /habits`, `/automations`, `GET /events`, `GET/PUT /config`, `POST /voice` | ⏳ запланированы (v0.2–v0.5) | `docs/mvp.md` |
+
+Отличия текущего скелета от целевого контракта:
+
+- `id` уведомлений — целое число (SQLite autoincrement); строковые идентификаторы вида `ntf_...` появятся позже.
+- `llm_status` в `/health` — всегда `not_loaded`, пока не подключен LLM Engine (MVP v0.3).
+- `POST /ha/action` — временный прокси из MVP v0.1; после реализации `/devices/{entity_id}/command` будет удалён.
+- Обработка уведомления асинхронной очередью выполняется заглушкой (`category: noise`), реальный LLM-парсинг — в v0.3.
+
+---
+
 ## 4. Эндпоинты API
 
 ```mermaid

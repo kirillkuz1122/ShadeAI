@@ -528,34 +528,40 @@ graph LR
 
 ```
 ShadeAI/
-├── .github/                      # CI/CD пайплайны сборки и линтинга
-├── android/                      # Исходный код мобильного приложения
+├── android/                        # Мобильное приложение (Kotlin + Jetpack Compose)
+│   └── app/src/main/java/com/shadeai/app/
+│       ├── core/                   # Сеть (Retrofit), адрес сервера, allowlist приложений
+│       ├── data/db/                # Room: оффлайн-буфер уведомлений
+│       ├── service/                # NotificationListenerService (перехват пушей)
+│       └── ui/                     # Compose экраны и тема (бренд-палитра)
+├── core/                           # Серверная часть Shade Core (Python + FastAPI)
 │   ├── app/
-│   │   ├── src/main/java/com/shadeai/
-│   │   │   ├── core/            # Базовые сетевые клиенты, DI (Koin/Hilt)
-│   │   │   ├── data/            # Room DB, репозитории, модели данных
-│   │   │   ├── service/         # NotificationListenerService, WakeWordService
-│   │   │   └── ui/              # Jetpack Compose экраны (Dashboard, Settings)
-│   │   └── build.gradle.kts
-├── core/                         # Серверная часть Shade Core (Python)
-│   ├── app/
-│   │   ├── api/                 # FastAPI роутеры (v1 эндпоинты)
-│   │   ├── core/                # Конфигурация, события (Event Bus), безопасность
-│   │   ├── db/                  # Сессии SQLite, миграции Alembic, модели SQLAlchemy
-│   │   ├── services/
-│   │   │   ├── analytics/       # Analytics Engine (паттерны, привычки)
-│   │   │   ├── ha_bridge/       # Home Assistant REST & WebSocket интеграция
-│   │   │   ├── llm/             # LLM Engine (обертка над llama-cpp-python)
-│   │   │   └── notification/    # Notification Processor (нормализация, парсинг)
-│   │   └── main.py              # Точка входа приложения
-│   ├── models/                  # Директория для локальных GGUF моделей
-│   ├── requirements.txt         # Зависимости Python
-│   └── Dockerfile               # Контейнеризация для Raspberry Pi (linux/arm64)
-├── docs/                         # Документация проекта
-│   ├── architecture.md          # Данный документ архитектуры
-│   ├── api_spec.md              # Спецификация REST и Event Bus API
-│   └── setup_guide.md           # Руководство по развертыванию на Raspberry Pi 5
-└── README.md                     # Общее описание проекта
+│   │   ├── api/                    # Роутеры v1: health, notifications, ha
+│   │   ├── core/                   # Конфигурация (pydantic-settings / .env)
+│   │   ├── db/                     # SQLAlchemy async + SQLite (WAL), модели таблиц
+│   │   ├── events/                 # Шина событий (asyncio)
+│   │   ├── schemas.py              # Pydantic-контракты запросов
+│   │   └── services/
+│   │       ├── analytics/          # Analytics Engine (паттерны, привычки) — MVP v0.4
+│   │       ├── ha_bridge/          # Home Assistant REST интеграция (httpx)
+│   │       ├── llm/                # LLM Engine (llama-cpp-python) — MVP v0.3
+│   │       └── notification/       # Notification Processor (нормализация, парсинг)
+│   ├── models/                     # Директория для локальных GGUF-моделей (вне git)
+│   ├── tests/                      # Тесты API (pytest)
+│   ├── requirements.txt            # Зависимости Python (llama-cpp-python — отдельно)
+│   └── Dockerfile                  # Контейнеризация для Raspberry Pi (linux/arm64)
+├── web/                            # Веб-дашборд (React + Vite + TypeScript)
+│   └── src/                        # API-клиент, состояние сервера, журнал уведомлений
+├── docs/                           # Документация проекта
+│   ├── architecture.md             # Данный документ архитектуры
+│   ├── api-spec.md                 # Спецификация REST API
+│   ├── mvp.md                      # Этапы MVP, DoD, риски, метрики
+│   ├── tech-stack.md               # Технологический стек
+│   └── brand.md                    # Фирменный стиль
+├── scripts/
+│   └── download_model.sh           # Скачивание GGUF-моделей (TinyLlama / Qwen)
+├── index.html + visitka/           # Сайт-визитка (GitHub Pages)
+└── README.md                       # Общее описание проекта
 ```
 
 ---

@@ -1,0 +1,106 @@
+# AGENTS.md — правила работы с проектом Shade AI
+
+Этот файл — «точка входа» для AI-агентов (и людей) в новой сессии. Прочитай его целиком перед тем, как что-то менять.
+
+---
+
+## 1. Что это за проект
+
+**Shade AI** — персональный автономный AI-ассистент и «мозг умного дома», полностью локальный (Zero-Cloud):
+
+- **Железо:** Raspberry Pi 5 (4GB RAM), Home Assistant, WirenBoard, Zigbee.
+- **Идея:** Android-клиент перехватывает уведомления и голос → локальная LLM на RPi извлекает интенты → аналитический движок изучает привычки → команды уходят в Home Assistant. Ни один байт не уходит в облако.
+- **Автор:** Кузмичев Кирилл, соло-разработчик. Проект готовится к конкурсу «Большие вызовы».
+
+**Ключевое ограничение при написании любого кода:** целевая машина — 4GB RAM, всё должно работать локально. Никаких внешних облачных API-вызовов в рантайме.
+
+---
+
+## 2. Где что лежит (карта проекта)
+
+```
+ShadeAI/                          ← корень репозитория
+├── AGENTS.md                     ← ты здесь
+├── README.md                     ← витрина проекта (badges, архитектура, быстрый старт)
+├── docs/                         ← ВСЯ документация (главное чтение)
+│   ├── architecture.md           ← архитектура: компоненты, БД, потоки данных, RAM-бюджет
+│   ├── api-spec.md               ← контракт REST API (ЭНДПОИНТЫ МЕНЯТЬ ТОЛЬКО ЧЕРЕЗ ЭТОТ ФАЙЛ)
+│   ├── mvp.md                    ← roadmap v0.1–v0.5, задачи, DoD, риски, метрики
+│   ├── tech-stack.md             ← стек технологий и обоснования
+│   └── brand.md                  ← брендбук: палитра, тон текста
+├── core/                         ← бэкенд «Shade Core» (Python 3.11+ / FastAPI)
+│   ├── app/api/v1/               ← роутеры: health, notifications, ha
+│   ├── app/core/config.py        ← настройки из .env (pydantic-settings)
+│   ├── app/db/                   ← SQLAlchemy async + SQLite (WAL)
+│   ├── app/events/bus.py         ← шина событий (asyncio)
+│   ├── app/services/             ← ha_bridge, llm, notification, analytics
+│   ├── tests/                    ← pytest
+│   ├── .venv/                    ← виртуальное окружение (в git НЕ входит)
+│   └── models/                   ← GGUF-модели (в git НЕ входят; scripts/download_model.sh)
+├── android/                      ← клиент (Kotlin + Jetpack Compose)
+│   └── app/src/main/java/com/shadeai/app/
+│       ├── core/network/         ← Retrofit + kotlinx-serialization
+│       ├── core/config/          ← адрес сервера, allowlist приложений
+│       ├── data/db/              ← Room-буфер уведомлений
+│       ├── service/              ← NotificationListenerService
+│       └── ui/                   ← Compose-экраны, тема из brand.md
+├── web/                          ← дашборд (React 19 + Vite + TypeScript)
+│   └── src/api/client.ts         ← типизированный API-клиент
+├── scripts/download_model.sh     ← скачивание LLM-моделей
+├── index.html + visitka/         ← сайт-визитка (GitHub Pages, не трогать без нужды)
+└── LICENSE                       ← MIT
+```
+
+## 3. Как войти в проект в новой сессии (порядок чтения)
+
+1. **Этот файл** (AGENTS.md).
+2. `README.md` — общая картина и быстрый старт.
+3. `docs/mvp.md` — **где мы сейчас**: этапы v0.1–v0.5, что сделано (`[x]`), что нет.
+4. `docs/architecture.md` — если нужно писать код: компоненты, схема БД, потоки.
+5. `docs/api-spec.md` — если трогаешь API (бэкенд / веб / Android-клиент).
+6. `git log --oneline -20` — свежая история коммитов.
+7. Проверить, что всё живо:
+   ```bash
+   cd core && .venv/bin/python -m pytest -q   # тесты бэкенда
+   cd ../web && npm run build                 # сборка дашборда
+   ```
+
+**Статус на момент последнего обновления файла:** каркас инфраструктуры готов (бэкенд с тестами, скелеты Android и React, скрипт моделей). Реализован MVP v0.1 частично (health, notifications, ha/action — есть; Alembic-миграции, systemd — нет). Дальше по roadmap: `docs/mvp.md`.
+
+---
+
+## 4. Правила для агентов
+
+### Язык и стиль
+- Вся документация и коммиты — **на русском** (как в остальном проекте).
+- Коммиты: короткое описание по-русски; допустимы эмодзи-префиксы как в истории (`🚀`, `📚`, `Исправление бага:`).
+- В коде комментарии — только когда без них не понять замысел.
+
+### Технические соглашения
+- **Python:** 3.11+, async/await, типизация; линтер `ruff` (`cd core && .venv/bin/ruff check app`); зависимости добавлять в `core/requirements.txt` (LLM — только в `requirements-llm.txt`).
+- **API:** любое изменение эндпоинтов синхронизировать с `docs/api-spec.md` в том же коммите. Аутентификация — `Authorization: Bearer <SHADE_API_KEY>`.
+- **Android:** Kotlin, Jetpack Compose, Room, Retrofit; палитра только из `docs/brand.md` (#423E3B, #FF2E00, #FEA82F, #FFFECB).
+- **Web:** React + TypeScript, стили через CSS-переменные бренд-палитры, `npm run build` должен проходить без ошибок TS.
+- **Данные:** в БД/логи не писать банковские коды и личные переписки без необходимости — см. политику приватности в `docs/architecture.md` §5.1.
+
+### Запрещено
+- Коммитить: `.venv/`, `node_modules/`, `*.gguf`, `shade.db`, `.env`, сборочные папки Android (всё уже в `.gitignore` — не удалять оттуда строки).
+- Хардкодить секреты (токены HA, API-ключи) в коде — только через `.env` / `core/.env.example` (примеры, не реальные ключи).
+- Ломать совместимость API без обновления `docs/api-spec.md` и Android/web клиентов.
+- Устанавливать тяжёлые зависимости «на всякий случай» — RAM на RPi 5 ограничена.
+
+### Проверки перед завершением задачи
+1. `cd core && .venv/bin/python -m pytest -q` — тесты зелёные.
+2. Изменён API? → обновлён `docs/api-spec.md`.
+3. Изменён README/docs? → нет битых ссылок на файлы.
+4. `git status` — в коммит не попали артефакты сборки.
+
+---
+
+## 5. Известные ловушки
+
+- Рабочая директория проекта: `~/programing/ShadeAI` (проверяй `pwd`, не guessing путей).
+- `uvicorn` запускать из папки `core/` (модуль `app.main:app`).
+- React-дашборд в dev-режиме проксирует `/api` на `localhost:8000` (см. `web/vite.config.ts`); без запущенного Shade Core будет «Нет связи».
+- Android-проект собирается только в Android Studio (нужен Android SDK); локально без SDK `./gradlew` не соберётся.
+- В `docs/mvp.md` чекбоксы DoD — план, не факт выполнения; не ставить `[x]`, пока критерий реально не проверен.

@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Shade AI</string>
+    <string name="notification_listener_label">Shade AI — перехват уведомлений</string>
+</resources>
