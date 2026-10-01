@@ -69,13 +69,13 @@ docker run --rm --env-file .env \
 python -m pip install -r requirements-dev.txt
 python -m pip check
 ruff check app tests
-mkdir -p .pytest_cache
-DB_URL=sqlite+aiosqlite:///./.pytest_cache/local-check.db \
-HA_BASE_URL=http://127.0.0.1:1 HA_TOKEN= \
-SHADE_API_KEY=shade-local-test-key-000000000001 \
-timeout --signal=INT --kill-after=3s 30s python -m pytest -q
+python -m pytest -q
 ```
 
-До TASK-02 тесты требуют явной подмены БД и адреса HA, как в примере. Тестовый ключ в команде не является рабочим секретом. Обычный pytest может использовать рабочие настройки.
+Тесты самостоятельно изолируют настройки до импорта приложения: рабочий `.env` не читается, значения Core из окружения заменяются тестовыми. Каждый тест выполняется в отдельном каталоге; API-тест получает отдельную SQLite-БД, создаёт таблицы обычным lifespan приложения и освобождает движок на том же event loop.
 
-Результаты TASK-01: [отчёт](../docs/reports/task-01.md). Инференс, Android, реальные устройства HA и Raspberry Pi этой задачей не проверяются.
+Home Assistant заменён на `httpx.MockTransport`: тестируются успешные ответы, отсутствие соединения и HTTP-ошибки. DNS и реальные TCP-соединения запрещены; попытка такого запроса провалит тест даже при перехваченном исключении. HA и LLM для pytest запускать не нужно, ключ вручную задавать не требуется.
+
+Временные каталоги создаются в игнорируемом `core/.pytest_cache/` и удаляются после завершения pytest. Для новых API-тестов используйте fixtures `client`, `auth_headers` и `ha_mock` из [tests/conftest.py](tests/conftest.py); добавляйте необходимые маршруты и сценарии в mock. В этих fixtures используются общие настройки приложения, поэтому несколько TestClient одновременно в одном процессе не предусмотрены.
+
+Результаты: [TASK-01](../docs/reports/task-01.md), [TASK-02](../docs/reports/task-02.md). Инференс, Android, реальные устройства HA и Raspberry Pi этими тестами не проверяются.
