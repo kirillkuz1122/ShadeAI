@@ -13,6 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
 import java.time.Instant
 
 class ShadeNotificationListener : NotificationListenerService() {
@@ -55,8 +56,10 @@ class ShadeNotificationListener : NotificationListenerService() {
     }
 
     private suspend fun sendOne(id: Long, pkg: String, title: String, text: String, postTime: Long) {
-        val api = ShadeApi.create(ServerPrefs.baseUrl(this))
         try {
+            val settings = ServerPrefs.load(this)
+            if (settings.apiKey.isEmpty()) return
+            val api = ShadeApi.create(settings.baseUrl, settings.apiKey)
             api.ingest(
                 NotificationIngest(
                     appName = pkg,
@@ -66,6 +69,8 @@ class ShadeNotificationListener : NotificationListenerService() {
                 )
             )
             ShadeApp.instance.database.pendingNotifications().markSent(id)
+        } catch (error: CancellationException) {
+            throw error
         } catch (_: Exception) {
         }
     }

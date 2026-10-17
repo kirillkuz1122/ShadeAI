@@ -15,6 +15,11 @@ private val DarkColors = darkColorScheme(
     onSecondary = CreamLight,
     onBackground = CreamLight,
     onSurface = CreamLight,
+    surfaceVariant = CharcoalBrown,
+    onSurfaceVariant = CreamLight,
+    outline = CreamLight.copy(alpha = 0.4f),
+    error = ScarletFire,
+    onError = CreamLight,
 )
 
 private val LightColors = lightColorScheme(
@@ -26,6 +31,11 @@ private val LightColors = lightColorScheme(
     onSecondary = CharcoalBrown,
     onBackground = CharcoalBrown,
     onSurface = CharcoalBrown,
+    surfaceVariant = CreamLight,
+    onSurfaceVariant = CharcoalBrown,
+    outline = CharcoalBrown.copy(alpha = 0.4f),
+    error = ScarletFire,
+    onError = CreamLight,
 )
 
 @Composable

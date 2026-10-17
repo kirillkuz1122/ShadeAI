@@ -1,26 +1,66 @@
 package com.shadeai.app.core.network
 
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import com.shadeai.app.core.config.ServerAddress
 import kotlinx.serialization.json.Json
+import okhttp3.ConnectionPool
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import java.io.IOException
+import java.net.Proxy
+import java.util.concurrent.TimeUnit
+
+class MissingCredentialsException : IOException("Не задан ключ Core")
 
 interface ShadeApi {
 
     @GET("health")
     suspend fun health(): HealthResponse
 
+    @GET("notifications?limit=1")
+    suspend fun verifyAccess(): AccessResponse
+
     @POST("notifications")
     suspend fun ingest(@Body body: NotificationIngest): IngestResponse
 
     companion object {
-        fun create(baseUrl: String): ShadeApi {
+        private val transport = OkHttpClient.Builder()
+            .connectTimeout(3, TimeUnit.SECONDS)
+            .readTimeout(5, TimeUnit.SECONDS)
+            .writeTimeout(5, TimeUnit.SECONDS)
+            .callTimeout(10, TimeUnit.SECONDS)
+            .followRedirects(false)
+            .followSslRedirects(false)
+            .retryOnConnectionFailure(false)
+            .proxy(Proxy.NO_PROXY)
+            // Без retry не переиспользуем простаивающий сокет, уже закрытый Core.
+            .connectionPool(ConnectionPool(0, 1, TimeUnit.MINUTES))
+            .build()
+
+        fun create(baseUrl: String, apiKey: String): ShadeApi {
+            require(apiKey.isEmpty() || ServerAddress.validKey(apiKey)) { "Некорректный ключ Core" }
+            val url = ServerAddress.normalize(baseUrl).toHttpUrl()
+            val client = transport.newBuilder().addInterceptor { chain ->
+                val request = chain.request()
+                if (request.url.scheme != url.scheme || request.url.host != url.host || request.url.port != url.port) {
+                    throw IOException("Адрес запроса отличается от настроенного Core")
+                }
+                val builder = request.newBuilder().removeHeader("Authorization")
+                if (request.url.encodedPath != url.encodedPath + "health") {
+                    if (apiKey.isBlank()) throw MissingCredentialsException()
+                    builder.header("Authorization", "Bearer $apiKey")
+                }
+                chain.proceed(builder.build())
+            }.build()
             val json = Json { ignoreUnknownKeys = true }
             return Retrofit.Builder()
-                .baseUrl(baseUrl)
+                .baseUrl(url)
+                .client(client)
                 .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
                 .build()
                 .create(ShadeApi::class.java)

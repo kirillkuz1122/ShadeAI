@@ -4,6 +4,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class AccessResponse(val total: Long)
+
+@Serializable
 data class HealthResponse(
     val status: String,
     val uptime: Long,
