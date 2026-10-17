@@ -35,6 +35,15 @@ interface PendingNotificationDao {
 
     @Query("UPDATE pending_notifications SET sent = 1 WHERE id = :id")
     suspend fun markSent(id: Long)
+
+    @Query("DELETE FROM pending_notifications WHERE packageName NOT IN (:selected)")
+    suspend fun deleteOtherSources(selected: Set<String>)
+
+    @Query("DELETE FROM pending_notifications")
+    suspend fun clear()
+
+    @Query("DELETE FROM pending_notifications WHERE id = :id")
+    suspend fun delete(id: Long)
 }
 
 @Database(entities = [PendingNotificationEntity::class], version = 1, exportSchema = false)

@@ -76,11 +76,3 @@ object ServerPrefs {
         throw SettingsStorageException()
     }
 }
-
-object Allowlist {
-    val packages = setOf(
-        "ru.ozon.app.android",
-        "com.wildberries.ru",
-        "ru.yandex.taxi",
-    )
-}

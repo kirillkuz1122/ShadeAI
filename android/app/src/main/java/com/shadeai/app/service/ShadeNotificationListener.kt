@@ -1,77 +1,65 @@
 package com.shadeai.app.service
 
 import android.app.Notification
+import android.annotation.SuppressLint
+import android.content.res.Resources
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.shadeai.app.ShadeApp
-import com.shadeai.app.core.config.Allowlist
-import com.shadeai.app.core.config.ServerPrefs
-import com.shadeai.app.core.network.NotificationIngest
-import com.shadeai.app.core.network.ShadeApi
-import com.shadeai.app.data.db.PendingNotificationEntity
+import com.shadeai.app.core.config.NotificationSources
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.CancellationException
-import java.time.Instant
 
 class ShadeNotificationListener : NotificationListenerService() {
-
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var connected = false
+    private val redactedText by lazy { systemRedactedText() }
+
+    @SuppressLint("DiscouragedApi")
+    private fun systemRedactedText(): String? {
+        // Android не публикует признак редактирования; сравниваем с локализованной строкой ОС.
+        val resources = Resources.getSystem()
+        val id = resources.getIdentifier("redacted_notification_message", "string", "android")
+        return if (id == 0) null else resources.getString(id)
+    }
 
     override fun onListenerConnected() {
         super.onListenerConnected()
-        scope.launch { syncPending() }
+        connected = true
+        scope.launch { ShadeApp.instance.capture.sync() }
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
-        val pkg = sbn.packageName
-        if (pkg !in Allowlist.packages) return
-
-        val extras = sbn.notification.extras
+        if (!connected || sbn.packageName !in NotificationSources.catalog) return
+        val notification = sbn.notification
+        if (notification.flags and (Notification.FLAG_ONGOING_EVENT or
+                Notification.FLAG_FOREGROUND_SERVICE or Notification.FLAG_GROUP_SUMMARY or
+                Notification.FLAG_LOCAL_ONLY) != 0) return
+        val extras = notification.extras
         val title = extras?.getCharSequence(Notification.EXTRA_TITLE)?.toString() ?: return
-        val text = extras?.getCharSequence(Notification.EXTRA_TEXT)?.toString() ?: return
-        if (title.isBlank() && text.isBlank()) return
-
+        val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString() ?: return
+        if (text == redactedText) return
         scope.launch {
-            val dao = ShadeApp.instance.database.pendingNotifications()
-            val id = dao.insert(
-                PendingNotificationEntity(
-                    packageName = pkg,
-                    title = title,
-                    text = text,
-                    postTime = sbn.postTime,
-                )
-            )
-            sendOne(id, pkg, title, text, sbn.postTime)
+            ShadeApp.instance.capture.receive(sbn.packageName, title, text, sbn.postTime)
         }
     }
 
-    private suspend fun syncPending() {
-        val dao = ShadeApp.instance.database.pendingNotifications()
-        for (item in dao.unsent()) {
-            sendOne(item.id, item.packageName, item.title, item.text, item.postTime)
+    override fun onListenerDisconnected() {
+        connected = false
+        scope.coroutineContext.cancelChildren()
+        scope.launch {
+            try { ShadeApp.instance.capture.refresh() } catch (_: Exception) { }
         }
+        super.onListenerDisconnected()
     }
 
-    private suspend fun sendOne(id: Long, pkg: String, title: String, text: String, postTime: Long) {
-        try {
-            val settings = ServerPrefs.load(this)
-            if (settings.apiKey.isEmpty()) return
-            val api = ShadeApi.create(settings.baseUrl, settings.apiKey)
-            api.ingest(
-                NotificationIngest(
-                    appName = pkg,
-                    title = title,
-                    text = text,
-                    timestamp = Instant.ofEpochMilli(postTime).toString(),
-                )
-            )
-            ShadeApp.instance.database.pendingNotifications().markSent(id)
-        } catch (error: CancellationException) {
-            throw error
-        } catch (_: Exception) {
-        }
+    override fun onDestroy() {
+        connected = false
+        scope.cancel()
+        super.onDestroy()
     }
 }
