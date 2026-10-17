@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, Integer, Text
+from sqlalchemy import DateTime, Index, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -12,6 +12,12 @@ def _utcnow() -> datetime:
 
 class NotificationRaw(Base):
     __tablename__ = "notifications_raw"
+    __table_args__ = (
+        Index("uq_notifications_dedupe_key", "dedupe_key", unique=True),
+        Index("ix_notifications_created_at", "created_at"),
+        Index("ix_notifications_timestamp", "timestamp"),
+        {"sqlite_autoincrement": True},
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     app_name: Mapped[str] = mapped_column(Text, nullable=False)
@@ -23,6 +29,8 @@ class NotificationRaw(Base):
     extracted_data_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_processed: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
+    dedupe_key: Mapped[str | None] = mapped_column(Text, nullable=True)
+    payload_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class EventLog(Base):

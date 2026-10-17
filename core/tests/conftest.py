@@ -18,6 +18,8 @@ TEST_ENV = {
     "HA_TOKEN": TEST_HA_TOKEN,
     "LLM_MODEL_PATH": "./missing-test-model.gguf",
     "CORS_ORIGINS": '["http://testserver"]',
+    "NOTIFICATION_RETENTION_DAYS": "30",
+    "NOTIFICATION_ALLOWED_APPS": '["ru.ozon.app.android","com.wildberries.ru","ru.yandex.taxi"]',
 }
 
 

@@ -1,4 +1,5 @@
 import json
+from datetime import UTC, datetime
 
 import pytest
 
@@ -45,12 +46,12 @@ def test_ingest_and_list(client, auth_headers):
         "app_name": "ru.ozon.app.android",
         "title": "Ozon Доставка",
         "text": "Курьер прибудет сегодня с 18:00 до 20:00",
-        "timestamp": "2026-09-17T11:00:00Z",
+        "timestamp": datetime.now(UTC).isoformat(),
         "priority": "high",
     }
     resp = client.post("/api/v1/notifications", json=payload, headers=auth_headers)
     assert resp.status_code == 201
-    assert resp.json()["status"] == "queued"
+    assert resp.json()["status"] == "stored"
     assert resp.json()["id"] == 1
 
     resp = client.get("/api/v1/notifications", headers=auth_headers)

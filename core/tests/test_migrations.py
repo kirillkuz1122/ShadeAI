@@ -97,14 +97,24 @@ def snapshot(path):
             for name in ("notifications_raw", "events_log")
             if any(item[0] == name for item in schema)
         }
+        if "notifications_raw" in rows:
+            columns = [c[1] for c in db.execute("PRAGMA table_info(notifications_raw)")]
+            keep = [
+                i for i, name in enumerate(columns) if name not in {"dedupe_key", "payload_hash"}
+            ]
+            rows["notifications_raw"] = [
+                tuple(row[i] for i in keep) for row in rows["notifications_raw"]
+            ]
         return schema, rows
 
 
-async def migrate(path):
+async def migrate(path, revision="head"):
     engine = create_db_engine(f"sqlite+aiosqlite:///{path}")
     try:
         async with engine.begin() as connection:
-            await connection.run_sync(upgrade_database)
+            await connection.run_sync(
+                lambda conn: command.upgrade(migration_config(conn), revision)
+            )
     finally:
         await engine.dispose()
 
@@ -163,10 +173,13 @@ def test_legacy_data_survives_migrations_and_restarts(tmp_path):
     path = tmp_path / "legacy.db"
     legacy_database(path, seed=True)
     original_schema, original_rows = snapshot(path)
+    asyncio.run(migrate(path, "0002_device_states"))
+    baseline_schema, rows = snapshot(path)
+    assert rows == original_rows
+    assert all(item in baseline_schema for item in original_schema)
     asyncio.run(migrate(path))
     upgraded_schema, rows = snapshot(path)
     assert rows == original_rows
-    assert all(item in upgraded_schema for item in original_schema)
     for _ in range(2):
         asyncio.run(migrate(path))
         assert snapshot(path) == (upgraded_schema, original_rows)
@@ -283,13 +296,13 @@ def test_versioned_baseline_upgrade_and_device_downgrade(tmp_path):
                 await connection.run_sync(
                     lambda conn: command.upgrade(migration_config(conn), "0001_legacy_schema")
                 )
-            async with AsyncSession(engine) as session:
-                session.add(
-                    NotificationRaw(
-                        app_name="test", title="Тест", text="Тест", timestamp="2026-10-17T10:00:00Z"
-                    )
+            async with engine.begin() as connection:
+                await connection.exec_driver_sql(
+                    "INSERT INTO notifications_raw "
+                    "(app_name,title,text,timestamp,priority,is_processed,created_at) "
+                    "VALUES ('test','Тест','Тест','2026-10-17T10:00:00Z','default',0,"
+                    "'2026-10-17 10:00:00')"
                 )
-                await session.commit()
             async with engine.begin() as connection:
                 await connection.run_sync(upgrade_database)
                 await connection.run_sync(
@@ -315,6 +328,7 @@ def test_alembic_cli_uses_configured_database_outside_core(tmp_path):
         )
         assert result.returncode == 0, result.stdout + result.stderr
         if action == ["current"]:
-            assert "0002_device_states (head)" in result.stdout
+            head = ScriptDirectory.from_config(migration_config()).get_current_head()
+            assert f"{head} (head)" in result.stdout
     assert path.is_file()
     assert not (tmp_path / "shade.db").exists()

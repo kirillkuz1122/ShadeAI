@@ -1,3 +1,5 @@
+import re
+
 from pydantic import Field, ValidationError, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict, SettingsError
 
@@ -24,6 +26,26 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
+    notification_retention_days: int = Field(default=30, ge=1, le=365)
+    notification_allowed_apps: list[str] = Field(
+        default=[
+            "ru.ozon.app.android",
+            "com.wildberries.ru",
+            "ru.yandex.taxi",
+        ],
+        max_length=100,
+    )
+
+    @field_validator("notification_allowed_apps")
+    @classmethod
+    def check_notification_apps(cls, value: list[str]) -> list[str]:
+        if any(
+            len(name) > 255 or not re.fullmatch(r"[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)+", name)
+            for name in value
+        ):
+            raise ValueError("Нужны имена пакетов приложений, не длиннее 255 символов")
+        return value
+
     @field_validator("api_key")
     @classmethod
     def check_api_key(cls, value: str) -> str:
@@ -37,13 +59,14 @@ def load_settings() -> Settings:
         messages = []
         for error in exc.errors(include_input=False):
             field = ".".join(str(part) for part in error["loc"])
-            message = (
-                "обязательный ключ не задан" if error["type"] == "missing" else error["msg"]
-            )
+            message = "обязательный ключ не задан" if error["type"] == "missing" else error["msg"]
             messages.append(f"{field}: {message}")
         detail = "; ".join(messages)
     except SettingsError:
-        detail = "неверный формат переменных окружения; CORS_ORIGINS задаётся JSON-массивом"
+        detail = (
+            "неверный формат переменных окружения; CORS_ORIGINS и "
+            "NOTIFICATION_ALLOWED_APPS задаются JSON-массивами"
+        )
     raise RuntimeError(
         f"Ошибка настройки Shade Core: {detail}. "
         "Выполните python -m app.setup из core/ и проверьте .env."

@@ -19,10 +19,12 @@ data class NotificationIngest(
     val text: String,
     val timestamp: String,
     val priority: String = "default",
+    @SerialName("event_id") val eventId: String? = null,
 )
 
 @Serializable
 data class IngestResponse(
-    val id: Long,
+    val id: Long?,
     val status: String,
+    val reason: String? = null,
 )

@@ -13,17 +13,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
+import java.time.Instant
 
 class ShadeNotificationListener : NotificationListenerService() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
-        timeZone = TimeZone.getTimeZone("UTC")
-    }
 
     override fun onListenerConnected() {
         super.onListenerConnected()
@@ -68,7 +62,7 @@ class ShadeNotificationListener : NotificationListenerService() {
                     appName = pkg,
                     title = title,
                     text = text,
-                    timestamp = dateFormat.format(Date(postTime)),
+                    timestamp = Instant.ofEpochMilli(postTime).toString(),
                 )
             )
             ShadeApp.instance.database.pendingNotifications().markSent(id)

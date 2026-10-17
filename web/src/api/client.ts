@@ -16,6 +16,10 @@ export interface NotificationItem {
   timestamp: string;
   priority: string;
   category: string | null;
+  event_id: string | null;
+  status: "stored" | "processed";
+  processed_data: Record<string, unknown> | null;
+  created_at: string;
 }
 
 export interface NotificationsResponse {
@@ -48,6 +52,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   health: () => request<Health>("/api/v1/health"),
-  notifications: (limit = 50) =>
-    request<NotificationsResponse>(`/api/v1/notifications?limit=${limit}`),
+  notifications: (limit = 50, offset = 0, category?: string) => {
+    const query = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+    if (category) query.set("category", category);
+    return request<NotificationsResponse>(`/api/v1/notifications?${query}`);
+  },
+  notification: (id: number) => request<NotificationItem>(`/api/v1/notifications/${id}`),
 };

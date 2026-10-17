@@ -23,12 +23,8 @@ object ServerPrefs {
 
 object Allowlist {
     val packages = setOf(
-        "org.telegram.messenger",
-        "com.whatsapp",
         "ru.ozon.app.android",
         "com.wildberries.ru",
         "ru.yandex.taxi",
-        "com.sberbank.mobile",
-        "ru.sberbankmobile",
     )
 }

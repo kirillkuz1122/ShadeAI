@@ -20,7 +20,7 @@ def _begin_sqlite(connection: Connection) -> None:
 
 
 def create_db_engine(db_url: str) -> AsyncEngine:
-    engine = create_async_engine(db_url)
+    engine = create_async_engine(db_url, hide_parameters=True)
     if engine.dialect.name == "sqlite":
         event.listen(engine.sync_engine, "connect", _set_sqlite_pragma)
         event.listen(engine.sync_engine, "begin", _begin_sqlite)
