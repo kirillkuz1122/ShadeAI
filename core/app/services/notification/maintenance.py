@@ -2,14 +2,16 @@ import asyncio
 import logging
 
 from app.db import base
+from app.services.ha_bridge.audit import maintain_events
 from app.services.notification.store import maintain_notifications
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("shade.maintenance")
 
 
 async def cleanup() -> None:
     async with base.async_session() as session:
         await maintain_notifications(session)
+        await maintain_events(session)
 
 
 async def cleanup_loop() -> None:

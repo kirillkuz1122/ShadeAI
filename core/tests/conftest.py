@@ -16,6 +16,11 @@ TEST_ENV = {
     "DB_URL": "sqlite+aiosqlite:///./bootstrap.db",
     "HA_BASE_URL": "http://ha.test:8123",
     "HA_TOKEN": TEST_HA_TOKEN,
+    "HA_TIMEOUT_SECONDS": "5",
+    "EVENT_RETENTION_DAYS": "90",
+    "LOG_DIR": "./logs",
+    "LOG_MAX_BYTES": "1048576",
+    "LOG_BACKUP_COUNT": "3",
     "LLM_MODEL_PATH": "./missing-test-model.gguf",
     "CORS_ORIGINS": '["http://testserver"]',
     "NOTIFICATION_RETENTION_DAYS": "30",
@@ -94,14 +99,35 @@ class HAMock:
         self.requests: list[httpx.Request] = []
         self.available = True
         self.status_code = 200
-        self.result = [{"entity_id": "light.test", "state": "on"}]
+        self.state = {
+            "entity_id": "light.test",
+            "state": "on",
+            "attributes": {
+                "friendly_name": "Тестовый свет",
+                "brightness": 128,
+            },
+            "last_changed": "2026-10-17T10:00:00Z",
+            "last_updated": "2026-10-17T10:00:01Z",
+        }
+        self.states = [self.state]
+        self.result = [self.state]
+        self.clients = []
+        self.error = None
+        self.overrides = {}
+        self.hook = None
         self.unexpected_requests: list[httpx.Request] = []
 
     def handle(self, request: httpx.Request) -> httpx.Response:
         self.requests.append(request)
-        known_route = (request.method == "GET" and request.url.path == "/api/") or (
-            request.method == "POST" and request.url.path == "/api/services/light/turn_on"
-        )
+        known_route = (
+            request.method == "GET"
+            and request.url.path
+            in {
+                "/api/",
+                "/api/states",
+                "/api/states/light.test",
+            }
+        ) or (request.method == "POST" and request.url.path == "/api/services/light/turn_on")
         if (
             request.url.host != "ha.test"
             or request.headers.get("Authorization") != f"Bearer {TEST_HA_TOKEN}"
@@ -111,7 +137,20 @@ class HAMock:
             raise AssertionError("Неожиданный запрос к mock Home Assistant")
         if not self.available:
             raise httpx.ConnectError("Тестовый HA недоступен", request=request)
-        body = {"message": "API running."} if request.method == "GET" else self.result
+        if self.error:
+            raise self.error
+        if self.hook:
+            self.hook(request)
+        if request.url.path in self.overrides:
+            return self.overrides[request.url.path]()
+        if request.url.path == "/api/":
+            body = {"message": "API running."}
+        elif request.url.path == "/api/states":
+            body = self.states
+        elif request.url.path == "/api/states/light.test":
+            body = self.state
+        else:
+            body = self.result
         return httpx.Response(self.status_code, json=body)
 
 
@@ -124,7 +163,9 @@ def ha_mock(monkeypatch):
     def async_client(*args, **kwargs):
         kwargs["transport"] = transport
         kwargs["trust_env"] = False
-        return original_client(*args, **kwargs)
+        client = original_client(*args, **kwargs)
+        mock.clients.append(client)
+        return client
 
     monkeypatch.setattr(httpx, "AsyncClient", async_client)
     yield mock
@@ -148,6 +189,7 @@ def client(tmp_path, monkeypatch, ha_mock):
             yield test_client
         finally:
             test_client.portal.call(engine.dispose)
+    assert test_client.app.state.ha_client._client.is_closed
 
 
 @pytest.fixture

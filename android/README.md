@@ -37,6 +37,8 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n com.shadeai.app/.MainActivity
 ```
 
+DTO health синхронизирован с TASK-06: дополнительные db_connected/db_size_bytes/ha_status/services принимаются с безопасными значениями по умолчанию. Управление устройствами и Bearer в Android ещё не реализованы; сборка DTO не подтверждает доставку уведомлений.
+
 ## Первый запуск
 
 1. Запустите [Shade Core](../core/README.md) на компьютере или Pi.

@@ -71,7 +71,7 @@ def test_ha_action_unreachable(client, auth_headers, ha_mock, failure):
         json={"domain": "light", "service": "turn_on", "entity_id": "light.test"},
         headers=auth_headers,
     )
-    assert resp.status_code == 503
+    assert resp.status_code == (502 if failure == "server_error" else 503)
     assert len(ha_mock.requests) == 1
 
 
@@ -84,12 +84,12 @@ def test_ha_action_success(client, auth_headers, ha_mock):
     }
     resp = client.post("/api/v1/ha/action", json=payload, headers=auth_headers)
     assert resp.status_code == 200
-    assert resp.json() == {
-        "status": "success",
-        "entity_id": "light.test",
-        "result": ha_mock.result,
-    }
-    assert len(ha_mock.requests) == 1
+    assert resp.json()["status"] == "success"
+    assert resp.json()["entity_id"] == "light.test"
+    assert resp.json()["result"] == ha_mock.result
+    assert resp.json()["new_state"] == "on"
+    assert resp.json()["event_id"] > 0
+    assert len(ha_mock.requests) == 2
     assert json.loads(ha_mock.requests[0].content) == {"entity_id": "light.test", "brightness": 128}
 
 

@@ -12,7 +12,11 @@ class NotificationBodyLimit:
         if (
             scope["type"] != "http"
             or scope["method"] != "POST"
-            or scope["path"].rstrip("/") != "/api/v1/notifications"
+            or not (
+                scope["path"].rstrip("/") in {"/api/v1/notifications", "/api/v1/ha/action"}
+                or scope["path"].startswith("/api/v1/devices/")
+                and scope["path"].rstrip("/").endswith("/command")
+            )
         ):
             await self.app(scope, receive, send)
             return
@@ -24,7 +28,7 @@ class NotificationBodyLimit:
             chunk = message.get("body", b"")
             if len(body) + len(chunk) > MAX_NOTIFICATION_BYTES:
                 await JSONResponse(
-                    status_code=413, content={"detail": "Тело уведомления превышает 65536 байт"}
+                    status_code=413, content={"detail": "Тело запроса превышает 65536 байт"}
                 )(scope, receive, send)
                 return
             body.extend(chunk)

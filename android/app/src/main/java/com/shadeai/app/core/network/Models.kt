@@ -10,6 +10,10 @@ data class HealthResponse(
     @SerialName("ha_connected") val haConnected: Boolean,
     @SerialName("llm_status") val llmStatus: String,
     @SerialName("db_size") val dbSize: String,
+    @SerialName("db_connected") val dbConnected: Boolean = false,
+    @SerialName("db_size_bytes") val dbSizeBytes: Long? = null,
+    @SerialName("ha_status") val haStatus: String = "unknown",
+    val services: Map<String, String> = emptyMap(),
 )
 
 @Serializable

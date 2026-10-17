@@ -62,14 +62,17 @@ Authorization: Bearer <SHADE_API_KEY>
 | `GET /health` | ✅ реализован | `core/app/api/v1/health.py` |
 | `POST /notifications` | ✅ реализован | `core/app/api/v1/notifications.py` |
 | `GET /notifications`, `GET /notifications/{id}` | ✅ реализованы (TASK-05) | `core/app/api/v1/notifications.py` |
-| `POST /ha/action` | ✅ реализован (временный) | `core/app/api/v1/ha.py` |
-| `GET /devices`, `POST /devices/{entity_id}/command`, `GET /devices/{entity_id}/state`, `GET /habits`, `/automations`, `GET /events`, `GET/PUT /config`, `POST /voice` | ⏳ запланированы (v0.2–v0.5) | `docs/mvp.md` |
+| `POST /ha/action` | ✅ совместимый устаревший маршрут (TASK-06) | `core/app/api/v1/ha.py` |
+| `GET /devices`, `GET /devices/{entity_id}/state`, `POST /devices/{entity_id}/command` | ✅ реализованы (TASK-06) | `core/app/api/v1/devices.py` |
+| `GET /events` | ✅ журнал команд HA (TASK-06) | `core/app/api/v1/events.py` |
+| `GET /habits`, `/automations`, `GET/PUT /config`, `POST /voice` | ⏳ запланированы (v0.2–v0.5) | `docs/mvp.md` |
 
 Отличия текущего скелета от целевого контракта:
 
 - `id` уведомлений — целое число SQLite AUTOINCREMENT; UUID event_id отправителя используется отдельно для повторной доставки.
 - `llm_status` в `/health` — всегда `not_loaded`, пока не подключен LLM Engine (MVP v0.3).
-- `POST /ha/action` — временный прокси из MVP v0.1; после реализации `/devices/{entity_id}/command` будет удалён.
+- `POST /ha/action` сохранён для совместимости и помечен deprecated в OpenAPI. Удаление требует отдельного проверенного перехода клиентов.
+- Устройства читаются из HA по REST; локальный кэш, подписка WebSocket и история датчиков остаются TASK-14. Журнал пока содержит только команды HA, а не все события будущей системы.
 - Приём уведомления возвращает stored/duplicate/skipped без вызова заглушки LLM. Очередь и реальный разбор — следующие задачи.
 
 ---
@@ -208,178 +211,101 @@ curl -X POST "http://<raspberry-pi-ip>:8000/api/v1/notifications" \
 
 ---
 
-### 4.2. Устройства умного дома (Devices & Home Assistant)
+### 4.2. Устройства умного дома — реализовано в TASK-06
 
-Предоставляет интерфейс проксирования и абстракции над устройствами, подключенными к локальному инстансу Home Assistant (Zigbee, Z-Wave, WirenBoard RS-485, Wi-Fi).
+Все маршруты раздела требуют `Authorization: Bearer <SHADE_API_KEY>`. Core использует отдельный HA_TOKEN для локального HA; ключ Core в HA не передаётся. Проверено на mock и локальном HTTP-стенде; управление физическим устройством — TASK-08.
 
-#### 4.2.1. `GET /devices` — Список устройств из Home Assistant
+`entity_id` — до 255 символов, шаблон `^[a-z][a-z0-9_]*\.[a-z0-9_]+$`. Домен и имя сервиса — 1..64 символа, `^[a-z][a-z0-9_]*$`. Некорректные значения возвращают 422 до обращения в HA.
 
-Опрашивает локальный Home Assistant и возвращает нормализованный список устройств и их состояний.
+#### 4.2.1. `GET /devices` — сущности из HA
 
-##### Заголовки (Headers)
-| Заголовок | Тип | Обязательный | Описание |
-| :--- | :--- | :--- | :--- |
-| `Authorization` | `string` | Да | `Bearer <SHADE_API_KEY>` |
+Получает живой `GET /api/states` из HA. Не записывает DeviceState и не выдаёт устаревший кэш при отказе HA. Здесь «устройство» означает сущность HA, а не запись его device registry.
 
-##### Query-параметры
-| Параметр | Тип | По умолчанию | Описание |
-| :--- | :--- | :--- | :--- |
-| `domain` | `string` | `null` | Фильтр по домену (например, `light`, `switch`, `climate`, `sensor`) |
-
-##### Поля успешного ответа (200 OK)
-| Поле | Тип | Описание |
+| Query | Ограничение | Поведение |
 | :--- | :--- | :--- |
-| `devices` | `array` | Список подключенных устройств |
-| `devices[].entity_id` | `string` | Идентификатор сущности в HA (например, `light.living_room`) |
-| `devices[].name` | `string` | Человекочитаемое имя устройства |
-| `devices[].state` | `string` | Текущее состояние (`on`, `off`, `open`, `closed`, числовое значение) |
-| `devices[].type` | `string` | Категория устройства (`light`, `switch`, `climate`, `cover`, `sensor`) |
-| `devices[].attributes` | `object` | Дополнительные атрибуты (яркость, температура, единицы измерения) |
+| `domain` | Необязательно, валидное имя домена | Фильтр по префиксу entity_id; без фильтра все сущности |
 
-##### Пример cURL-запроса
-```bash
-curl -X GET "http://<raspberry-pi-ip>:8000/api/v1/devices" \
-  -H "Authorization: Bearer <SHADE_API_KEY>"
-```
+Ответ 200 — `{"devices": [...]}`; пустой список допустим. Каждая сущность имеет те же поля, что ответ следующего маршрута.
 
-##### Пример ответа (HTTP 200)
+#### 4.2.2. `GET /devices/{entity_id}/state` — состояние сущности
+
+Читает `GET /api/states/{entity_id}`. Неизвестная сущность — 404 с `detail.code=ENTITY_NOT_FOUND`.
+
 ```json
 {
-  "devices": [
-    {
-      "entity_id": "light.living_room_ceiling",
-      "name": "Основной свет в гостиной",
-      "state": "on",
-      "type": "light",
-      "attributes": {
-        "brightness": 204,
-        "color_temp": 3000
-      }
-    },
-    {
-      "entity_id": "switch.wb_relay_corridor",
-      "name": "Реле теплого пола (WirenBoard)",
-      "state": "off",
-      "type": "switch",
-      "attributes": {}
-    },
-    {
-      "entity_id": "sensor.bedroom_temperature",
-      "name": "Датчик температуры в спальне",
-      "state": "22.4",
-      "type": "sensor",
-      "attributes": {
-        "unit_of_measurement": "°C"
-      }
-    }
-  ]
+  "entity_id": "light.living_room",
+  "name": "Свет в гостиной",
+  "state": "on",
+  "type": "light",
+  "attributes": {"friendly_name": "Свет в гостиной", "brightness": 200},
+  "last_changed": "2026-10-17T10:00:00Z",
+  "last_updated": "2026-10-17T10:00:00Z"
 }
 ```
 
----
+Время нормализуется в UTC. `name` берётся из строкового friendly_name до 255 символов, иначе равен entity_id. `state` остаётся строкой HA (включая unknown/unavailable), `type` равен домену. Атрибуты возвращаются авторизованному клиенту, но в журнал и служебные логи не записываются.
 
-#### 4.2.2. `POST /devices/{entity_id}/command` — Отправить команду устройству
+#### 4.2.3. `POST /devices/{entity_id}/command` — вызов сервиса
 
-Выполняет управляющее действие над физическим устройством через Home Assistant.
-
-##### Заголовки (Headers)
-| Заголовок | Тип | Обязательный | Описание |
-| :--- | :--- | :--- | :--- |
-| `Authorization` | `string` | Да | `Bearer <SHADE_API_KEY>` |
-| `Content-Type` | `string` | Да | `application/json` |
-
-##### Path-параметры
-| Параметр | Тип | Описание |
-| :--- | :--- | :--- |
-| `entity_id` | `string` | Идентификатор устройства в Home Assistant (например, `light.living_room_ceiling`) |
-
-##### Тело запроса (Request Body)
-| Поле | Тип | Обязательное | Описание |
-| :--- | :--- | :--- | :--- |
-| `action` | `string` | Да | Действие: `"turn_on"`, `"turn_off"`, `"toggle"`, `"set_temperature"` и др. |
-| `params` | `object` | Нет | Словарь дополнительных параметров команды (например, `{"brightness": 128}`) |
-
-##### Поля успешного ответа (200 OK)
-| Поле | Тип | Описание |
-| :--- | :--- | :--- |
-| `status` | `string` | Результат выполнения (`success`, `error`) |
-| `entity_id` | `string` | Идентификатор устройства |
-| `new_state` | `string` | Новое состояние устройства после выполнения команды |
-| `executed_at` | `string` | Время выполнения (ISO 8601) |
-
-##### Пример cURL-запроса
-```bash
-curl -X POST "http://<raspberry-pi-ip>:8000/api/v1/devices/light.living_room_ceiling/command" \
-  -H "Authorization: Bearer <SHADE_API_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "action": "turn_on",
-    "params": {
-      "brightness": 180,
-      "transition": 1
-    }
-  }'
+```json
+{"action": "turn_on", "params": {"brightness": 200}}
 ```
 
-##### Пример ответа (HTTP 200)
+`action` обязателен; `params` — объект, по умолчанию `{}`. Неизвестные верхние поля запрещены. В корне params запрещены `entity_id`, `device_id`, `area_id`, `target`: целью остаётся только сущность из URL. Параметры сервиса проверяет HA; Core ограничивает JSON: тело до 65 536 байт (413), глубина до 8, до 512 узлов, до 64 элементов в объекте/массиве, ключ до 64 и строка до 8192 символов, только конечные числа (422).
+
+Core сначала фиксирует запись `command_requested` в SQLite, затем вызывает `POST /api/services/{domain}/{action}` с params и заданным entity_id. Транзакция БД не удерживается во время сетевого запроса. Результат фиксируется в той же строке журнала до возврата ответа.
+
+Ответ 200:
+
 ```json
 {
   "status": "success",
-  "entity_id": "light.living_room_ceiling",
+  "entity_id": "light.living_room",
   "new_state": "on",
-  "executed_at": "2026-09-17T11:05:22Z"
+  "state_observed": true,
+  "executed_at": "2026-10-17T10:00:00Z",
+  "event_id": 42
 }
 ```
 
----
+`success` означает принятый HA вызов сервиса и сохранённый результат аудита. Он не подтверждает физическое выполнение. После ответа HA Core отдельно запрашивает состояние целевой сущности: список изменившихся состояний в ответе сервиса не считается состоянием цели. Если чтение не удалось, ответ всё равно 200, `new_state=null`, `state_observed=false`. Даже успешное чтение — наблюдение, а не ожидание достижения желаемого состояния. `executed_at` — время завершения вызова, `event_id` — целочисленный ID строки журнала.
 
-#### 4.2.3. `GET /devices/{entity_id}/state` — Получить состояние устройства
+**Повторы:** автоматических повторных отправок нет. Каждый POST — новая попытка и новая запись; ключа идемпотентности команд пока нет. При таймауте, потере ответа или сбое фиксации HA мог уже выполнить действие. Перед ручным повтором проверить журнал и состояние HA, особенно для toggle, замков и других необратимых действий.
 
-Возвращает актуальное текущее состояние и все расширенные атрибуты конкретного устройства.
+#### 4.2.4. Совместимость: `POST /ha/action`
 
-##### Заголовки (Headers)
-| Заголовок | Тип | Обязательный | Описание |
-| :--- | :--- | :--- | :--- |
-| `Authorization` | `string` | Да | `Bearer <SHADE_API_KEY>` |
+Сохранён прежний формат:
 
-##### Path-параметры
-| Параметр | Тип | Описание |
-| :--- | :--- | :--- |
-| `entity_id` | `string` | Идентификатор сущности в Home Assistant |
-
-##### Поля успешного ответа (200 OK)
-| Поле | Тип | Описание |
-| :--- | :--- | :--- |
-| `entity_id` | `string` | Идентификатор устройства |
-| `name` | `string` | Дружелюбное имя устройства |
-| `state` | `string` | Текущее значение состояния (`on`, `off`, `unavailable`, число) |
-| `type` | `string` | Домен устройства |
-| `last_changed` | `string` | Время последнего изменения состояния |
-| `last_updated` | `string` | Время последнего подтверждения телеметрии |
-| `attributes` | `object` | Полная карта атрибутов Home Assistant |
-
-##### Пример cURL-запроса
-```bash
-curl -X GET "http://<raspberry-pi-ip>:8000/api/v1/devices/light.living_room_ceiling/state" \
-  -H "Authorization: Bearer <SHADE_API_KEY>"
-```
-
-##### Пример ответа (HTTP 200)
 ```json
-{
-  "entity_id": "light.living_room_ceiling",
-  "name": "Основной свет в гостиной",
-  "state": "on",
-  "type": "light",
-  "last_changed": "2026-09-17T11:05:22Z",
-  "last_updated": "2026-09-17T11:05:22Z",
-  "attributes": {
-    "brightness": 180,
-    "friendly_name": "Основной свет в гостиной",
-    "supported_color_modes": ["brightness", "color_temp"]
-  }
-}
+{"domain": "light", "service": "turn_on", "entity_id": "light.living_room", "data": {"brightness": 200}}
 ```
+
+`data` можно опустить или передать null; действуют те же ограничения, что для params. Домен должен совпадать с префиксом entity_id. Ответ сохраняет `status`, `entity_id`, `result` (ограниченный исходный список состояний HA) и добавляет `new_state`, `state_observed`, `executed_at`, `event_id`. Общие аудит и обработка ошибок те же. В новых клиентах использовать `/devices/{entity_id}/command`.
+
+#### 4.2.5. Ошибки и границы обмена с HA
+
+GET при отказе возвращает `{"detail":{"code":"HA_UNAVAILABLE"}}`. Для POST добавляются `event_id` и `outcome`, если запись попытки создана:
+
+```json
+{"detail": {"code": "HA_TIMEOUT", "event_id": 43, "outcome": "unknown"}}
+```
+
+| HTTP Core | code | Причина / outcome команды |
+| :--- | :--- | :--- |
+| 503 | HA_NOT_CONFIGURED | Пустой HA_TOKEN; not_sent, HTTP не выполняется |
+| 503 | HA_AUTH_FAILED | HA ответил 401/403; rejected |
+| 503 | HA_UNAVAILABLE | Ошибка соединения; not_sent для ConnectError, иначе unknown |
+| 504 | HA_TIMEOUT | Connect/Pool timeout — not_sent; чтение/запись/общий таймаут — unknown |
+| 502 | HA_SERVER_ERROR | HA ответил 5xx; unknown |
+| 502 | HA_BAD_RESPONSE | Неверные JSON/схема/размер, redirect или неожиданный статус; unknown |
+| 404 | ENTITY_NOT_FOUND | HA 404 при чтении состояния |
+| 400 | HA_COMMAND_REJECTED | HA ответил 400/404/422 на вызов сервиса; rejected |
+| 503 | AUDIT_UNAVAILABLE | Не удалось сохранить начальную запись; not_sent, команды в HA нет, event_id отсутствует |
+| 503 | AUDIT_FINALIZATION_FAILED | Начальная запись есть, итог не сохранён; event_id и известный outcome, в том числе accepted |
+
+`outcome=accepted` — HA принял сервис; `rejected` — отклонил; `not_sent` — запрос не отправлен; `unknown` — результат отправки неизвестен. Ошибка аудита после HA оставляет pending-запись для диагностики. На следующем старте она становится interrupted/unknown без повторной отправки.
+
+Один AsyncClient на lifespan, закрытие при shutdown, пул до 8 соединений (2 keep-alive). HA_TIMEOUT_SECONDS=5 по умолчанию (0.1..30): общий бюджет одного HTTP-обмена, включая чтение; health ping ограничен также 2 секундами. Команда с последующим чтением может занять два таких бюджета плюс работу БД. Ответ HA ограничен 2 MiB декодированного тела и 5000 состояний. Redirect запрещён, HTTPS проверяет сертификат, proxy/CA-переменные окружения HTTPX не используются (`trust_env=False`). В URL не допускаются credentials, путь, query и fragment. HA_BASE_URL должен указывать на HA в доверенной локальной сети/VPN; принадлежность адреса частной сети автоматически не проверяется. Тексты ответов HA, исключений, токены и params не возвращаются в ошибках и не сохраняются в аудите.
 
 ---
 
@@ -717,107 +643,74 @@ curl -X DELETE "http://<raspberry-pi-ip>:8000/api/v1/automations/aut_78c2e99a" \
 
 Эндпоинты контроля состояния сервера Shade Core, метрик ресурсов Raspberry Pi 5, журнала событий и конфигурации.
 
-#### 4.5.1. `GET /health` — Статус системы
+#### 4.5.1. `GET /health` — реализовано в TASK-06
 
-Проверяет работоспособность ядра, подключение к Home Assistant, состояние локальной LLM и размер базы данных SQLite.
+Доступен без Bearer. Выполняет `SELECT 1` и ping HA, освобождает read-транзакцию БД до ожидания HA. Это проверка доступности БД, а не полного integrity/schema check. Путь БД и секреты не выдаются.
 
-##### Заголовки (Headers)
-| Заголовок | Тип | Обязательный | Описание |
-| :--- | :--- | :--- | :--- |
-| `Authorization` | `string` | Нет / Да | Проверка доступности может быть открытой или требовать токен в зависимости от настроек |
+- HTTP 200/status=ok: БД доступна и HA ping успешен.
+- HTTP 200/status=degraded: БД доступна, HA недоступен или не настроен. Приём уведомлений продолжает работать.
+- HTTP 503/status=error: ошибка доступа к БД, независимо от HA.
 
-##### Поля успешного ответа (200 OK)
-| Поле | Тип | Описание |
-| :--- | :--- | :--- |
-| `status` | `string` | Общий статус сервиса: `ok`, `degraded`, `error` |
-| `uptime` | `integer` | Время непрерывной работы процесса в секундах |
-| `ha_connected` | `boolean` | Статус соединения с локальным сервером Home Assistant |
-| `llm_status` | `string` | Статус локального инференса LLM: `ready`, `busy`, `unreachable` |
-| `db_size` | `string` | Размер файла базы данных SQLite (например, `"42.8 MB"`) |
-
-##### Пример cURL-запроса
-```bash
-curl -X GET "http://<raspberry-pi-ip>:8000/api/v1/health" \
-  -H "Authorization: Bearer <SHADE_API_KEY>"
-```
-
-##### Пример ответа (HTTP 200)
 ```json
 {
   "status": "ok",
-  "uptime": 172800,
+  "uptime": 3600,
   "ha_connected": true,
-  "llm_status": "ready",
-  "db_size": "42.8 MB"
+  "ha_status": "connected",
+  "db_connected": true,
+  "llm_status": "not_loaded",
+  "db_size": "0.1 MB",
+  "db_size_bytes": 102400,
+  "services": {
+    "database": "ready",
+    "home_assistant": "connected",
+    "llm": "not_loaded",
+    "notification_worker": "not_implemented",
+    "analytics": "not_implemented"
+  }
 }
 ```
 
----
+`uptime` — целые секунды с импорта модуля в текущем процессе. `ha_status` и services.home_assistant равны connected либо безопасному коду HA_* из §4.2.5. Старые поля сохранены; клиентам нужно принимать degraded/error. db_size_bytes — размер основного SQLite-файла вместе с WAL (без SHM), 0 для memory, null при ошибке чтения размера; строковый db_size тогда unknown. Размер — текущая оценка, запись может менять файл во время подсчёта. Сервисы LLM/worker/analytics пока честно показывают отсутствие реализации.
 
-#### 4.5.2. `GET /events` — Журнал событий
+#### 4.5.2. `GET /events` — журнал команд HA (TASK-06)
 
-Возвращает системный аудит-лог событий (срабатывание триггеров, выполнение команд, приход уведомлений, ошибки).
+Требует Bearer. Другие источники/типы будущего общего журнала пока не выдаются. Записи source=home_assistant; сортировка по ID убыванию, ID целочисленный SQLite AUTOINCREMENT, после удаления не переиспользуется.
 
-##### Заголовки (Headers)
-| Заголовок | Тип | Обязательный | Описание |
-| :--- | :--- | :--- | :--- |
-| `Authorization` | `string` | Да | `Bearer <SHADE_API_KEY>` |
-
-##### Query-параметры
-| Параметр | Тип | По умолчанию | Описание |
-| :--- | :--- | :--- | :--- |
-| `limit` | `integer` | `100` | Максимальное количество записей (1..500) |
-| `from` | `string` | `null` | Начальная дата диапазона выборки (формат `YYYY-MM-DD` или ISO 8601) |
-| `to` | `string` | `null` | Конечная дата диапазона выборки (формат `YYYY-MM-DD` или ISO 8601) |
-
-##### Поля успешного ответа (200 OK)
-| Поле | Тип | Описание |
+| Query | Значение по умолчанию | Ограничение / смысл |
 | :--- | :--- | :--- |
-| `events` | `array` | Список событий |
-| `events[].id` | `string` | Уникальный ID события |
-| `events[].timestamp` | `string` | Время фиксации события |
-| `events[].source` | `string` | Источник события (`android`, `home_assistant`, `automation_engine`, `system`) |
-| `events[].type` | `string` | Тип события (`command_executed`, `notification_received`, `rule_triggered`, `error`) |
-| `events[].payload` | `object` | Дополнительные параметры и контекст события |
-| `total` | `integer` | Количество событий в выборке |
+| limit | 100 | 1..500 |
+| offset | 0 | 0..1 000 000 |
+| from | нет | Включительная нижняя граница |
+| to | нет | Исключительная верхняя граница для ISO timestamp; дата включает весь указанный день UTC |
+| type | нет | command_requested / command_executed / command_failed / command_interrupted |
 
-##### Пример cURL-запроса
-```bash
-curl -X GET "http://<raspberry-pi-ip>:8000/api/v1/events?limit=100&from=2024-01-01&to=2024-12-31" \
-  -H "Authorization: Bearer <SHADE_API_KEY>"
-```
+Время: дата YYYY-MM-DD либо ISO 8601 с `T` и часовым поясом (до 40 символов); timestamp нормализуется в UTC. Например, from=2026-10-17&to=2026-10-17 охватывает один день, до 2026-10-18T00:00:00Z. Некорректный/обратный/пустой диапазон и неизвестный type — 422. total — число всех доступных записей после фильтров, до limit/offset; count и страница читаются в одной транзакции. При новых вставках offset между разными запросами может сдвигаться.
 
-##### Пример ответа (HTTP 200)
 ```json
 {
-  "events": [
-    {
-      "id": "evt_91e0a2",
-      "timestamp": "2024-11-20T18:30:15Z",
-      "source": "automation_engine",
-      "type": "command_executed",
-      "payload": {
-        "automation_id": "aut_4f92a11b",
-        "entity_id": "light.hallway_entry",
-        "action": "turn_on"
-      }
-    },
-    {
-      "id": "evt_91e0a3",
-      "timestamp": "2024-11-20T18:30:14Z",
-      "source": "android",
-      "type": "notification_received",
-      "payload": {
-        "notification_id": "ntf_7a1b8c9d0e",
-        "category": "delivery"
-      }
+  "events": [{
+    "id": 42,
+    "timestamp": "2026-10-17T10:00:00Z",
+    "source": "home_assistant",
+    "type": "command_executed",
+    "payload": {
+      "request_id": "602360a8-2326-412f-b0eb-b6966fba464d",
+      "entity_id": "light.living_room",
+      "domain": "light",
+      "service": "turn_on",
+      "status": "success",
+      "error_code": null,
+      "outcome": "accepted"
     }
-  ],
-  "total": 2
+  }],
+  "total": 1
 }
 ```
 
----
+Одна строка на попытку: command_requested/pending → command_executed/success либо command_failed/failed. Поле outcome уточняет факт отправки; failed/unknown не означает, что HA гарантированно не выполнил действие. Timestamp обновляется на время результата; на старте pending становится command_interrupted/unknown с CORE_RESTARTED и прежним временем. После сбоя отправка не повторяется.
+
+В payload только перечисленные метаданные; params, токены, произвольные тексты и ответы/атрибуты HA не сохраняются. При чтении старых записей произвольные поля отбрасываются. Политика хранения — EVENT_RETENTION_DAYS=90 (1..365); просроченные сразу скрываются из GET, удаляются при старте и раз в час. Логическое удаление не уничтожает резервные копии и остатки SQLite/WAL.
 
 #### 4.5.3. `GET /config` — Текущая конфигурация
 
@@ -1032,6 +925,9 @@ curl -X POST "http://<raspberry-pi-ip>:8000/api/v1/voice" \
 | `401 Unauthorized` | Не авторизован | Отсутствует, просрочен или некорректен заголовок `Authorization: Bearer ...` |
 | `403 Forbidden` | Запрещено | Недостаточно прав для выполнения операции |
 | `404 Not Found` | Не найдено | Запрашиваемое уведомление, устройство или автоматизация не найдены |
+| `413 Content Too Large` | Превышен размер | Тело уведомления или команды больше 65 536 байт |
 | `422 Unprocessable Entity` | Семантическая ошибка | Ошибка валидации схемы Pydantic (неверный тип поля в теле запроса) |
 | `500 Internal Server Error`| Ошибка сервера | Необработанное исключение в коде Shade Core |
-| `503 Service Unavailable` | Сервис недоступен | Home Assistant или движок инференса локальной LLM временно недоступны |
+| `502 Bad Gateway` | Ошибка HA | HA 5xx или неверный/слишком большой ответ |
+| `503 Service Unavailable` | Сервис недоступен | БД/аудит/подключение/авторизация HA; LLM — будущий контракт |
+| `504 Gateway Timeout` | Таймаут HA | Превышен бюджет HTTP-обмена с HA |

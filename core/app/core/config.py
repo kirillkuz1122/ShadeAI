@@ -1,4 +1,5 @@
 import re
+from urllib.parse import urlsplit
 
 from pydantic import Field, ValidationError, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict, SettingsError
@@ -21,6 +22,41 @@ class Settings(BaseSettings):
 
     ha_base_url: str = "http://127.0.0.1:8123"
     ha_token: str = Field(default="", repr=False)
+    ha_timeout_seconds: float = Field(default=5, ge=0.1, le=30)
+    event_retention_days: int = Field(default=90, ge=1, le=365)
+    log_dir: str = "./logs"
+    log_max_bytes: int = Field(default=1_048_576, ge=1024, le=10_485_760)
+    log_backup_count: int = Field(default=3, ge=1, le=10)
+
+    @field_validator("ha_token")
+    @classmethod
+    def check_ha_token(cls, value: str) -> str:
+        if value and (
+            not value.isascii() or any(ord(char) < 33 or ord(char) > 126 for char in value)
+        ):
+            raise ValueError("HA_TOKEN: нужен токен без пробелов и управляющих символов")
+        return value
+
+    @field_validator("ha_base_url")
+    @classmethod
+    def check_ha_url(cls, value: str) -> str:
+        try:
+            url = urlsplit(value)
+            valid = (
+                url.scheme in {"http", "https"}
+                and url.hostname
+                and not url.username
+                and not url.password
+                and not url.query
+                and not url.fragment
+                and url.path in {"", "/"}
+                and url.port != 0
+            )
+        except ValueError:
+            valid = False
+        if not valid:
+            raise ValueError("HA_BASE_URL: нужен http(s) адрес локального HA без пути и секретов")
+        return value.rstrip("/")
 
     llm_model_path: str = "./models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
 

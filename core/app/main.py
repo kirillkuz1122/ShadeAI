@@ -7,23 +7,35 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.notification_body import NotificationBodyLimit
-from app.api.v1 import ha, health, notifications
+from app.api.v1 import devices, events, ha, health, notifications
 from app.core.config import settings
+from app.core.logging import local_logging
+from app.db import base
 from app.db.base import init_db
+from app.services.ha_bridge.audit import maintain_events
+from app.services.ha_bridge.client import HAClient
 from app.services.notification.maintenance import cleanup, cleanup_loop
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await init_db()
-    await cleanup()
-    maintenance = asyncio.create_task(cleanup_loop())
-    try:
-        yield
-    finally:
-        maintenance.cancel()
-        with suppress(asyncio.CancelledError):
-            await maintenance
+    with local_logging() as logger:
+        await init_db()
+        await cleanup()
+        async with base.async_session() as session:
+            await maintain_events(session, recover=True)
+        client = HAClient()
+        app.state.ha_client = client
+        maintenance = asyncio.create_task(cleanup_loop())
+        logger.info("Core started")
+        try:
+            yield
+        finally:
+            maintenance.cancel()
+            with suppress(asyncio.CancelledError):
+                await maintenance
+            await client.close()
+            logger.info("Core stopped")
 
 
 def create_app() -> FastAPI:
@@ -67,6 +79,15 @@ def create_app() -> FastAPI:
                                 "offset",
                                 "category",
                                 "notification_id",
+                                "domain",
+                                "entity_id",
+                                "service",
+                                "action",
+                                "params",
+                                "data",
+                                "from",
+                                "to",
+                                "type",
                             }
                             else "_"
                             for part in error["loc"]
@@ -81,6 +102,8 @@ def create_app() -> FastAPI:
     app.include_router(health.router, prefix="/api/v1")
     app.include_router(notifications.router, prefix="/api/v1")
     app.include_router(ha.router, prefix="/api/v1")
+    app.include_router(devices.router, prefix="/api/v1")
+    app.include_router(events.router, prefix="/api/v1")
 
     return app
 

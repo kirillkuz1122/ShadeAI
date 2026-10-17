@@ -1,28 +1,24 @@
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from typing import Annotated
+
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import verify_api_key
+from app.api.ha_deps import get_ha_client
+from app.db.base import get_session
+from app.services.ha_bridge.audit import execute_command
 from app.services.ha_bridge.client import HAClient
+from app.services.ha_bridge.models import HAAction
 
 router = APIRouter(prefix="/ha", tags=["home-assistant"], dependencies=[Depends(verify_api_key)])
 
 
-class HAAction(BaseModel):
-    domain: str
-    service: str
-    entity_id: str
-    data: dict | None = None
-
-
-@router.post("/action")
-async def ha_action(action: HAAction) -> dict:
-    client = HAClient()
-    try:
-        result = await client.call_service(
-            action.domain, action.service, action.entity_id, action.data or {}
-        )
-    except Exception as e:
-        raise HTTPException(status_code=503, detail=f"Home Assistant unavailable: {e}") from e
-    finally:
-        await client.close()
-    return {"status": "success", "entity_id": action.entity_id, "result": result}
+@router.post("/action", deprecated=True)
+async def ha_action(
+    action: HAAction,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    client: Annotated[HAClient, Depends(get_ha_client)],
+) -> dict:
+    return await execute_command(
+        session, client, action.domain, action.service, action.entity_id, action.data or {}
+    )

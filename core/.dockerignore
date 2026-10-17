@@ -11,5 +11,6 @@ __pycache__/
 *.py[cod]
 shade.db*
 backups/
+logs/
 models/
 tests/

@@ -35,6 +35,11 @@ class NotificationRaw(Base):
 
 class EventLog(Base):
     __tablename__ = "events_log"
+    __table_args__ = (
+        Index("ix_events_timestamp", "timestamp"),
+        Index("ix_events_source_type", "source", "event_type"),
+        {"sqlite_autoincrement": True},
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
