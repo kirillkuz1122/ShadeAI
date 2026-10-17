@@ -13,6 +13,7 @@ htmlcov/
 dist/
 build/
 core/shade.db*
+core/backups/
 *.tsbuildinfo
 
 # ===== Локальные LLM-модели (большие файлы, не в git) =====

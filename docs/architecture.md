@@ -268,6 +268,10 @@ flowchart LR
 ### 3.7. Database (База данных SQLite)
 Локальное реляционное хранилище данных Shade AI.
 
+**Реализовано в TASK-04:** таблицы `notifications_raw`, `events_log` и `device_states`, история версий Alembic. Последняя хранит entity_id (TEXT, PK), state (TEXT), attributes_json (TEXT JSON, по умолчанию `{}`), last_changed/last_updated (DATETIME UTC); кроме entity_id все поля также NOT NULL. Даты состояний должны передаваться в UTC; SQLite хранит DATETIME без смещения. Запись состояний из HA пока не реализована. Начальная ревизия принимает пустую БД либо проверенную схему скелета без пересоздания таблиц. Core применяет миграции до приёма запросов, при ошибке запуск прекращается. [Инструкция перехода и резервной копии](../core/README.md#миграции-бд), [результаты проверок](reports/task-04.md).
+
+Схема ниже — целевая архитектура следующих этапов: `notifications`/`events`, habits, automations и config ещё не заменяют фактические notifications_raw/events_log. Их появление требует новых миграций.
+
 * **Выбор SQLite:**
   - Минимальное потребление памяти (10–30 MB RAM).
   - Отсутствие отдельного серверного процесса (Serverless, in-process).

@@ -34,3 +34,13 @@ class EventLog(Base):
     event_type: Mapped[str] = mapped_column(Text, nullable=False)
     payload_json: Mapped[str] = mapped_column(Text, nullable=False)
     processed: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class DeviceState(Base):
+    __tablename__ = "device_states"
+
+    entity_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    state: Mapped[str] = mapped_column(Text, nullable=False)
+    attributes_json: Mapped[str] = mapped_column(Text, default="{}", server_default="{}")
+    last_changed: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    last_updated: Mapped[datetime] = mapped_column(DateTime, nullable=False)

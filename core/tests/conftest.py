@@ -6,8 +6,7 @@ from pathlib import Path
 import httpx
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import event
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 TEST_KEY = "shade-test-key-for-local-checks-0001"
 TEST_HA_TOKEN = "shade-test-ha-token"
@@ -138,8 +137,7 @@ def client(tmp_path, monkeypatch, ha_mock):
 
     db_url = f"sqlite+aiosqlite:///{tmp_path / 'shade.db'}"
     monkeypatch.setattr(settings, "db_url", db_url)
-    engine = create_async_engine(db_url, connect_args={"check_same_thread": False})
-    event.listen(engine.sync_engine, "connect", base._set_sqlite_pragma)
+    engine = base.create_db_engine(db_url)
     session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     monkeypatch.setattr(base, "engine", engine)
     monkeypatch.setattr(base, "async_session", session_factory)
