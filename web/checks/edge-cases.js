@@ -1,0 +1,73 @@
+async (page) => {
+  const check = (value, message) => { if (!value) throw new Error(message); };
+  const visible = text => page.getByText(text, { exact: true }).waitFor();
+  const key = "task07-browser-test-key-000000000";
+  await page.goto("http://127.0.0.1:5173");
+  await page.evaluate(value => localStorage.setItem("shade_api_key", value), key);
+  await page.reload();
+  await visible("1–20 из 45");
+  await page.getByRole("button", { name: "Журнал команд", exact: true }).click();
+  await visible("1–20 из 24");
+  let release, entered;
+  const held = new Promise(resolve => { release = resolve; });
+  const intercepted = new Promise(resolve => { entered = resolve; });
+  let completed;
+  const finished = new Promise(resolve => { completed = resolve; });
+  await page.route("**/api/v1/events?*", async route => {
+    if (new URL(route.request().url()).searchParams.get("type") !== "command_failed") return route.continue();
+    const response = await route.fetch();
+    entered();
+    await held;
+    try { await route.fulfill({ response }); } catch { /* Старый запрос отменён компонентом. */ }
+    completed();
+  });
+  await page.getByLabel("Результат").selectOption("command_failed");
+  await intercepted;
+  await visible("Загрузка журнала…");
+  await page.getByLabel("Результат").selectOption("command_executed");
+  await visible("1–8 из 8");
+  release();
+  await finished;
+  check(await page.getByLabel("Результат").inputValue() === "command_executed", "Новый фильтр сохранён");
+  check(await page.locator(".event-list li").count() === 8, "Старый ответ не подменил страницу");
+  await page.unroute("**/api/v1/events?*");
+  // Наблюдаем реальный периодический запрос, без искусственного вызова refresh.
+  await page.waitForResponse(response => response.url().includes("/api/v1/events?") && response.ok(), { timeout: 15000 });
+  const health = await (await page.request.get("http://127.0.0.1:8000/api/v1/health")).json();
+  await page.route("**/api/v1/health", route => route.fulfill({ status: 503, json: { ...health, status: "error", db_connected: false, services: { ...health.services, database: "unavailable" } } }));
+  await page.getByRole("button", { name: "Проверить связь" }).click();
+  await visible("Недоступна");
+  await page.unroute("**/api/v1/health");
+  await page.getByRole("button", { name: "Проверить связь" }).click();
+  await visible("Доступна");
+  await page.setViewportSize({ width: 320, height: 740 });
+  check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "Журнал помещается на 320px");
+  await page.getByRole("button", { name: "Уведомления", exact: true }).click();
+  await visible("1–20 из 45");
+  check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "Уведомления помещаются на 320px");
+  await page.getByText("Подключение к Core", { exact: false }).first().click();
+  await page.getByLabel("API-ключ Shade").fill("incorrect");
+  await page.getByRole("button", { name: "Сохранить ключ" }).click();
+  await visible("Ключ не принят. Проверьте его в настройках подключения.");
+  check(await page.locator(".notification-row").count() === 0, "Смена ключа скрывает прежние записи");
+  await page.getByLabel("API-ключ Shade").fill(key);
+  await page.getByRole("button", { name: "Сохранить ключ" }).click();
+  await visible("1–20 из 45");
+  const realPage = await (await page.request.get("http://127.0.0.1:8000/api/v1/notifications?limit=20&offset=0", { headers: { Authorization: `Bearer ${key}` } })).json();
+  await page.route("**/api/v1/notifications?*", route => route.fulfill({ json: { items: realPage.items.slice(0, 5), total: 5 } }));
+  await page.getByRole("button", { name: "Далее", exact: true }).click();
+  await visible("1–5 из 5");
+  check(await page.getByRole("button", { name: "Назад", exact: true }).isDisabled(), "После очистки БД offset скорректирован");
+  await page.unroute("**/api/v1/notifications?*");
+  await page.reload();
+  await visible("1–20 из 45");
+  // Storage может быть запрещён политикой браузера; ключ остаётся только в памяти.
+  await page.evaluate(() => { Storage.prototype.setItem = () => { throw new DOMException("Denied", "SecurityError"); }; });
+  await page.getByText("Подключение к Core", { exact: false }).first().click();
+  await page.getByLabel("API-ключ Shade").fill(key);
+  await page.getByRole("button", { name: "Сохранить ключ" }).click();
+  await visible("Браузер запретил сохранение. Ключ действует до закрытия страницы.");
+  await visible("1–20 из 45");
+  await page.reload();
+  return ("PASS: loading, stale response cancellation, real polling, health 503, 320px, credential replacement, retention pagination correction, denied localStorage");
+}

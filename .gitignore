@@ -24,6 +24,8 @@ core/models/*.bin
 # ===== Node / React (web/) =====
 node_modules/
 web/dist/
+web/output/
+web/.playwright-cli/
 *.local
 npm-debug.log*
 
