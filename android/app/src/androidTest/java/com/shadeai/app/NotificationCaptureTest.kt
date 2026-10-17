@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.shadeai.app.core.config.NotificationSources
+import com.shadeai.app.data.db.DeliveryStatus
 import com.shadeai.app.data.db.AppDatabase
 import com.shadeai.app.data.db.PendingNotificationEntity
 import com.shadeai.app.service.NotificationCapture
@@ -34,12 +35,16 @@ class NotificationCaptureTest {
     @Before fun setup() {
         context.getSharedPreferences("notification_sources", Context.MODE_PRIVATE).edit().clear().commit()
         db = Room.inMemoryDatabaseBuilder(target, AppDatabase::class.java).build()
-        capture = controller { sent++; true }
+        capture = controller { sent++; DeliveryStatus.SENT }
     }
 
-    private fun controller(send: suspend (PendingNotificationEntity) -> Boolean) = NotificationCapture(
+    private fun controller(send: suspend (PendingNotificationEntity) -> DeliveryStatus) = NotificationCapture(
         db.pendingNotifications(), { NotificationSources.load(context) },
         { NotificationSources.save(context, it) }, { access }, send)
+
+    private suspend fun receive(pkg: String, title: String, text: String, time: Long) {
+        capture.record(pkg, title, text, time)?.let { capture.deliver(it) }
+    }
 
     @After fun cleanup() {
         db.close()
@@ -58,38 +63,38 @@ class NotificationCaptureTest {
     }
 
     @Test fun disabledPrivateAndSensitiveNeverReachRoomOrTransport() = runBlocking {
-        capture.receive(pkg, "Заказ", "Готов", 1)
+        receive(pkg, "Заказ", "Готов", 1)
         capture.choose(setOf(pkg))
-        capture.receive(pkg, "Код 1234", "Доставка", 2)
-        capture.receive("org.telegram.messenger", "Пример", "Синтетика", 3)
-        capture.receive("com.wildberries.ru", "Заказ", "Готов", 4)
+        receive(pkg, "Код 1234", "Доставка", 2)
+        receive("org.telegram.messenger", "Пример", "Синтетика", 3)
+        receive("com.wildberries.ru", "Заказ", "Готов", 4)
         assertEquals(0, sent)
         assertTrue(db.pendingNotifications().recent().first().isEmpty())
-        capture.receive(pkg, "Заказ", "Готов", 5)
+        receive(pkg, "Заказ", "Готов", 5)
         assertEquals(1, sent)
         assertEquals(1, db.pendingNotifications().recent().first().size)
     }
 
     @Test fun disablingPurgesOfflineBufferAndPreventsReconnectSend() = runBlocking {
-        capture = controller { false }
+        capture = controller { DeliveryStatus.PENDING }
         capture.choose(setOf(pkg))
-        capture.receive(pkg, "Заказ", "Готов", 1)
+        receive(pkg, "Заказ", "Готов", 1)
         assertEquals(1, db.pendingNotifications().unsent().size)
         capture.choose(emptySet())
-        capture = controller { sent++; true }
+        capture = controller { sent++; DeliveryStatus.SENT }
         capture.sync()
-        capture.receive(pkg, "Заказ", "Готов", 2)
+        receive(pkg, "Заказ", "Готов", 2)
         assertTrue(db.pendingNotifications().recent().first().isEmpty())
         assertEquals(0, sent)
     }
 
     @Test fun revokedAccessPurgesAndBlocksNewCapture() = runBlocking {
-        capture = controller { false }
+        capture = controller { DeliveryStatus.PENDING }
         capture.choose(setOf(pkg))
-        capture.receive(pkg, "Заказ", "Готов", 1)
+        receive(pkg, "Заказ", "Готов", 1)
         access = false
         capture.sync()
-        capture.receive(pkg, "Заказ", "Готов", 2)
+        receive(pkg, "Заказ", "Готов", 2)
         assertTrue(db.pendingNotifications().recent().first().isEmpty())
     }
 
@@ -105,14 +110,14 @@ class NotificationCaptureTest {
     @Test fun confirmedDisableWaitsForInFlightRequestAndSerializesFutureCapture() = runBlocking {
         val started = CompletableDeferred<Unit>()
         val finish = CompletableDeferred<Unit>()
-        capture = controller { started.complete(Unit); finish.await(); sent++; true }
+        capture = controller { started.complete(Unit); finish.await(); sent++; DeliveryStatus.SENT }
         capture.choose(setOf(pkg))
-        val receiving = async { capture.receive(pkg, "Заказ", "Готов", 1) }
+        val receiving = async { receive(pkg, "Заказ", "Готов", 1) }
         started.await()
         val disabling = async { capture.choose(emptySet()) }
         finish.complete(Unit)
         receiving.await(); disabling.await()
-        capture.receive(pkg, "Заказ", "Готов", 2)
+        receive(pkg, "Заказ", "Готов", 2)
         capture.sync()
         assertEquals(1, sent)
         assertTrue(db.pendingNotifications().recent().first().isEmpty())

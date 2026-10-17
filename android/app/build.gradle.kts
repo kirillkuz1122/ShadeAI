@@ -35,6 +35,11 @@ android {
     buildFeatures {
         compose = true
     }
+    sourceSets["androidTest"].assets.srcDir("$projectDir/schemas")
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {

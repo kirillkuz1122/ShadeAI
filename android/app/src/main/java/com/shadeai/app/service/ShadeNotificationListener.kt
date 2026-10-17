@@ -1,22 +1,24 @@
 package com.shadeai.app.service
 
-import android.app.Notification
 import android.annotation.SuppressLint
 import android.content.res.Resources
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.shadeai.app.ShadeApp
 import com.shadeai.app.core.config.NotificationSources
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.cancelChildren
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 
 class ShadeNotificationListener : NotificationListenerService() {
+    private sealed interface Callback {
+        class Posted(val pkg: String, val content: NotificationContent, val postTime: Long, val key: String) : Callback
+        class Removed(val key: String) : Callback
+    }
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var connected = false
+    private var session: Job? = null
+    private var callbacks: Channel<Callback>? = null
+    private var deliveries: Channel<Long>? = null
     private val redactedText by lazy { systemRedactedText() }
 
     @SuppressLint("DiscouragedApi")
@@ -29,36 +31,67 @@ class ShadeNotificationListener : NotificationListenerService() {
 
     override fun onListenerConnected() {
         super.onListenerConnected()
-        connected = true
-        scope.launch { ShadeApp.instance.capture.sync() }
-    }
-
-    override fun onNotificationPosted(sbn: StatusBarNotification) {
-        if (!connected || sbn.packageName !in NotificationSources.catalog) return
-        val notification = sbn.notification
-        if (notification.flags and (Notification.FLAG_ONGOING_EVENT or
-                Notification.FLAG_FOREGROUND_SERVICE or Notification.FLAG_GROUP_SUMMARY or
-                Notification.FLAG_LOCAL_ONLY) != 0) return
-        val extras = notification.extras
-        val title = extras?.getCharSequence(Notification.EXTRA_TITLE)?.toString() ?: return
-        val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString() ?: return
-        if (text == redactedText) return
-        scope.launch {
-            ShadeApp.instance.capture.receive(sbn.packageName, title, text, sbn.postTime)
+        stopSession()
+        val incoming = Channel<Callback>(128)
+        val outgoing = Channel<Long>(128)
+        callbacks = incoming
+        deliveries = outgoing
+        val activeKeys = try {
+            activeNotifications?.filter { it.packageName in NotificationSources.catalog }
+                ?.map { NotificationIdentity.hash(it.key) }?.toSet()
+        } catch (_: RuntimeException) { null }
+        session = scope.launch {
+            val capture = ShadeApp.instance.capture
+            capture.connected(activeKeys)
+            coroutineScope {
+                launch {
+                    capture.sync()
+                    for (id in outgoing) capture.deliver(id)
+                }
+                for (event in incoming) {
+                    when (event) {
+                        is Callback.Posted -> {
+                            val id = capture.record(event.pkg, event.content.title, event.content.text, event.postTime, event.key)
+                            if (id != null) outgoing.trySend(id)
+                        }
+                        is Callback.Removed -> capture.removed(event.key)
+                    }
+                }
+            }
         }
     }
 
+    override fun onNotificationPosted(sbn: StatusBarNotification) {
+        val queue = callbacks ?: return
+        if (sbn.packageName !in NotificationSources.catalog) return
+        val content = NotificationReader.read(sbn.notification, redactedText) ?: return
+        queue.trySend(Callback.Posted(sbn.packageName, content, sbn.postTime, NotificationIdentity.hash(sbn.key)))
+    }
+
+    override fun onNotificationRemoved(sbn: StatusBarNotification) {
+        if (sbn.packageName in NotificationSources.catalog) {
+            callbacks?.trySend(Callback.Removed(NotificationIdentity.hash(sbn.key)))
+        }
+    }
+
+    private fun stopSession() {
+        callbacks?.close(); callbacks = null
+        deliveries?.close(); deliveries = null
+        session?.cancel(); session = null
+    }
+
     override fun onListenerDisconnected() {
-        connected = false
-        scope.coroutineContext.cancelChildren()
+        stopSession()
         scope.launch {
-            try { ShadeApp.instance.capture.refresh() } catch (_: Exception) { }
+            try { ShadeApp.instance.capture.refresh() }
+            catch (error: CancellationException) { throw error }
+            catch (_: Exception) { }
         }
         super.onListenerDisconnected()
     }
 
     override fun onDestroy() {
-        connected = false
+        stopSession()
         scope.cancel()
         super.onDestroy()
     }

@@ -11,9 +11,12 @@ object NotificationPolicy {
         word in exact || word.startsWith("код") || word.startsWith("парол") || word.startsWith("пин")
     }
 
+    fun safeText(text: String): Boolean =
+        text.length <= 8192 && text.trim() != "Sensitive notification content hidden" && !sensitive(text)
+
+    fun contentAllowed(title: String, text: String): Boolean =
+        (title.isNotBlank() || text.isNotBlank()) && title.length <= 512 && safeText(title) && safeText(text)
+
     fun allows(pkg: String, title: String, text: String, selected: Set<String>): Boolean =
-        pkg in NotificationSources.catalog && pkg in selected &&
-            (title.isNotBlank() || text.isNotBlank()) &&
-            text.trim() != "Sensitive notification content hidden" &&
-            !sensitive("$title\n$text")
+        pkg in NotificationSources.catalog && pkg in selected && contentAllowed(title, text)
 }
