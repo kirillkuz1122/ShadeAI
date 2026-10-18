@@ -221,6 +221,7 @@ def test_storage_failure_does_not_advance_cache(telemetry_client, telemetry_sock
     monkeypatch.setattr(collector.store, "write", AsyncMock(side_effect=SQLAlchemyError(SECRET)))
     enqueue(client, sockets, event(state("99", second=1)))
     wait(client, lambda: collector.error == "STORAGE_ERROR")
+    wait_gap(client)
     assert collector.current[ENTITY].state == "21.5"
     assert rows(client, DeviceState)[0].state == "21.5"
     assert len(rows(client, SensorHistory)) == 2

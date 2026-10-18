@@ -1,3 +1,16 @@
-async def process_notification(notification: dict) -> dict:
-    """Заглушка конвейера обработки. Реальная версия появится в MVP v0.3 (LLM Engine)."""
-    return {"category": "noise", "confidence": 0.0, "llm": False}
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict
+
+from app.schemas import NotificationIn
+
+
+class ProcessingResult(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True, hide_input_in_errors=True)
+    processor: Literal["diagnostic"]
+    llm: Literal[False] = False
+
+
+async def process_notification(notification: NotificationIn) -> ProcessingResult:
+    """Проверка конвейера без классификации, извлечения текста и команд HA."""
+    return ProcessingResult(processor="diagnostic")

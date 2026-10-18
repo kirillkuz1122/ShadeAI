@@ -100,7 +100,9 @@ def snapshot(path):
         if "notifications_raw" in rows:
             columns = [c[1] for c in db.execute("PRAGMA table_info(notifications_raw)")]
             keep = [
-                i for i, name in enumerate(columns) if name not in {"dedupe_key", "payload_hash"}
+                i
+                for i, name in enumerate(columns)
+                if name not in {"dedupe_key", "payload_hash"} and not name.startswith("processing_")
             ]
             rows["notifications_raw"] = [
                 tuple(row[i] for i in keep) for row in rows["notifications_raw"]
@@ -365,3 +367,81 @@ def test_sensor_history_upgrade_downgrade_preserves_existing_data(tmp_path):
     assert snapshot(path)[1] == original
     with closing(sqlite3.connect(path)) as db:
         assert db.execute("SELECT count(*) FROM sensor_history").fetchone() == (0,)
+
+
+def test_notification_processing_defaults_downgrade_and_rollback(tmp_path, monkeypatch):
+    path = tmp_path / "processing.db"
+    legacy_database(path, seed=True)
+    asyncio.run(migrate(path, "0005_sensor_history"))
+    original = snapshot(path)
+    original_add = Operations.add_column
+    count = 0
+
+    def fail_after_column(self, *args, **kwargs):
+        nonlocal count
+        original_add(self, *args, **kwargs)
+        count += 1
+        if count == 2:
+            raise RuntimeError("Синтетический сбой добавления статусов")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Operations, "add_column", fail_after_column)
+        with pytest.raises(RuntimeError):
+            asyncio.run(migrate(path))
+    assert snapshot(path) == original
+    asyncio.run(migrate(path))
+    assert snapshot(path)[1] == original[1]
+    with closing(sqlite3.connect(path)) as db, db:
+        assert (
+            db.execute(
+                "SELECT processing_status, processing_attempts, processing_error_code, "
+                "processing_started_at, processing_finished_at FROM notifications_raw ORDER BY id"
+            ).fetchall()
+            == [("pending", 0, None, None, None)] * 2
+        )
+        # Прежний is_processed=1 не выдаётся за подтверждённую работу нового worker.
+        assert db.execute("SELECT is_processed FROM notifications_raw WHERE id=73").fetchone() == (
+            1,
+        )
+        db.execute(
+            "UPDATE notifications_raw SET processing_status='processing', processing_attempts=2"
+        )
+
+    with closing(sqlite3.connect(path)) as db, db:
+        db.execute(
+            "INSERT INTO notifications_raw SELECT "
+            "100, app_name,title,text,timestamp,priority,category,extracted_data_json,"
+            "is_processed,created_at,dedupe_key,payload_hash,processing_status,"
+            "processing_attempts,processing_error_code,processing_started_at,"
+            "processing_finished_at "
+            "FROM notifications_raw WHERE id=73"
+        )
+        db.execute("DELETE FROM notifications_raw WHERE id=100")
+
+    async def downgrade():
+        engine = create_db_engine(f"sqlite+aiosqlite:///{path}")
+        try:
+            async with engine.begin() as connection:
+                await connection.run_sync(
+                    lambda conn: command.downgrade(migration_config(conn), "0005_sensor_history")
+                )
+        finally:
+            await engine.dispose()
+
+    asyncio.run(downgrade())
+    assert snapshot(path)[1] == original[1]
+    asyncio.run(migrate(path))
+    with closing(sqlite3.connect(path)) as db:
+        assert db.execute("PRAGMA integrity_check").fetchone() == ("ok",)
+        assert db.execute("SELECT processing_attempts FROM notifications_raw").fetchall() == [
+            (0,),
+            (0,),
+        ]
+        db.execute("DELETE FROM notifications_raw WHERE id=73")
+        db.execute(
+            "INSERT INTO notifications_raw "
+            "(app_name,title,text,timestamp,priority,is_processed,created_at) "
+            "VALUES ('test.app','После отката','Синтетика','2026-10-18T00:00:00Z','default',0,"
+            "'2026-10-18 00:00:00')"
+        )
+        assert db.execute("SELECT max(id) FROM notifications_raw").fetchone()[0] > 100

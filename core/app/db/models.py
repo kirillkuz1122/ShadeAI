@@ -16,6 +16,7 @@ class NotificationRaw(Base):
         Index("uq_notifications_dedupe_key", "dedupe_key", unique=True),
         Index("ix_notifications_created_at", "created_at"),
         Index("ix_notifications_timestamp", "timestamp"),
+        Index("ix_notifications_processing", "processing_status", "id"),
         {"sqlite_autoincrement": True},
     )
 
@@ -31,6 +32,13 @@ class NotificationRaw(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
     dedupe_key: Mapped[str | None] = mapped_column(Text, nullable=True)
     payload_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
+    processing_status: Mapped[str] = mapped_column(
+        Text, default="pending", server_default="pending"
+    )
+    processing_attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    processing_error_code: Mapped[str | None] = mapped_column(Text, nullable=True)
+    processing_started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    processing_finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class EventLog(Base):

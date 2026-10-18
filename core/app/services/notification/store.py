@@ -99,9 +99,26 @@ def serialize(row: NotificationRaw) -> NotificationOut:
         timestamp=row.timestamp,
         priority=row.priority,
         event_id=event_id,
-        status="processed" if row.is_processed else "stored",
+        status="processed" if row.processing_status == "processed" else "stored",
+        processing_status=row.processing_status,
+        processing_attempts=row.processing_attempts,
+        processing_error_code=row.processing_error_code,
+        processing_started_at=(
+            clock.iso_utc(row.processing_started_at.replace(tzinfo=UTC))
+            if row.processing_started_at
+            else None
+        ),
+        processing_finished_at=(
+            clock.iso_utc(row.processing_finished_at.replace(tzinfo=UTC))
+            if row.processing_finished_at
+            else None
+        ),
         category=row.category,
-        processed_data=json.loads(row.extracted_data_json) if row.extracted_data_json else None,
+        processed_data=(
+            json.loads(row.extracted_data_json)
+            if row.processing_status == "processed" and row.extracted_data_json
+            else None
+        ),
         created_at=clock.iso_utc(row.created_at.replace(tzinfo=UTC)),
     )
 
@@ -167,6 +184,11 @@ async def maintain_notifications(session: AsyncSession) -> None:
                         category=None,
                         extracted_data_json=None,
                         is_processed=0,
+                        processing_status="pending",
+                        processing_attempts=0,
+                        processing_error_code=None,
+                        processing_started_at=None,
+                        processing_finished_at=None,
                     )
                 )
         await session.commit()

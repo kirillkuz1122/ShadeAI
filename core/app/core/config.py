@@ -1,4 +1,5 @@
 import re
+from typing import Literal
 from urllib.parse import urlsplit
 
 from pydantic import Field, ValidationError, field_validator
@@ -77,6 +78,10 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
     notification_retention_days: int = Field(default=30, ge=1, le=365)
+    notification_processor: Literal["disabled", "diagnostic"] = "disabled"
+    notification_queue_size: int = Field(default=64, ge=1, le=256)
+    notification_processing_timeout_seconds: float = Field(default=30, ge=0.1, le=300)
+    notification_shutdown_seconds: float = Field(default=5, ge=0.1, le=30)
     notification_allowed_apps: list[str] = Field(
         default=[
             "ru.ozon.app.android",

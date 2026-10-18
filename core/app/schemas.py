@@ -69,6 +69,11 @@ class NotificationOut(BaseModel):
     priority: str
     event_id: str | None
     status: Literal["stored", "processed"]
+    processing_status: Literal["pending", "processing", "processed", "failed"]
+    processing_attempts: int
+    processing_error_code: str | None
+    processing_started_at: str | None
+    processing_finished_at: str | None
     category: str | None
     processed_data: dict | None
     created_at: str

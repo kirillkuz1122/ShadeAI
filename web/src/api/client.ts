@@ -49,6 +49,11 @@ export interface NotificationItem {
   category: string | null;
   event_id: string | null;
   status: "stored" | "processed";
+  processing_status?: "pending" | "processing" | "processed" | "failed";
+  processing_attempts?: number;
+  processing_error_code?: string | null;
+  processing_started_at?: string | null;
+  processing_finished_at?: string | null;
   processed_data: Record<string, unknown> | null;
   created_at: string;
 }

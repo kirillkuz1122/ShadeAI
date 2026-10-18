@@ -2,7 +2,7 @@ import time
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy import text
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import SQLAlchemyError
@@ -35,6 +35,7 @@ async def health(
     response: Response,
     client: Annotated[HAClient, Depends(get_ha_client)],
     session: Annotated[AsyncSession, Depends(get_session)],
+    request: Request,
 ) -> dict:
     try:
         await session.execute(text("SELECT 1"))
@@ -67,7 +68,7 @@ async def health(
             "database": "ready" if db_connected else "unavailable",
             "home_assistant": ha_status,
             "llm": "not_loaded",
-            "notification_worker": "not_implemented",
+            "notification_worker": request.app.state.notification_worker.status,
             "analytics": "not_implemented",
         },
     )

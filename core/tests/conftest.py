@@ -27,6 +27,10 @@ TEST_ENV = {
     "LLM_MODEL_PATH": "./missing-test-model.gguf",
     "CORS_ORIGINS": '["http://testserver"]',
     "NOTIFICATION_RETENTION_DAYS": "30",
+    "NOTIFICATION_PROCESSOR": "disabled",
+    "NOTIFICATION_QUEUE_SIZE": "64",
+    "NOTIFICATION_PROCESSING_TIMEOUT_SECONDS": "30",
+    "NOTIFICATION_SHUTDOWN_SECONDS": "5",
     "NOTIFICATION_ALLOWED_APPS": '["ru.ozon.app.android","com.wildberries.ru","ru.yandex.taxi"]',
 }
 

@@ -65,3 +65,19 @@ npx --yes --package @playwright/cli playwright-cli -s=shade-task07 close
 В деталях уведомления показан UUID отправителя под подписью «Идентификатор события». Его можно сопоставить с UUID в локальном Android-журнале; серверный ID и локальный ID Android могут различаться. Для legacy без event_id отображается «Старая запись без UUID». Контракт Core не менялся.
 
 [Сквозной сценарий](checks/android-journal.js) запускается через [Android helper](../android/checks/check_journal_web.py) после checks/check_journal.py со свежим отдельным Core. Он использует метаданные синтетической записи из android/.gradle/task13-checks/event.json, проверяет текст/UUID/время, две записи без дублей, 320 px/Escape/reload и отсутствие внешних запросов/JS-ошибок. Нужны существующий Playwright CLI wrapper и локальный Vite; новые зависимости проекта не требуются. [Порядок запуска](../android/README.md#воспроизведение-программной-task-13), [отчёт](../docs/reports/task-13.md).
+
+
+## Статусы обработки Core (TASK-15)
+
+История и карточка учитывают processing_status: ожидание, обработка, ошибка, результат. Карточка показывает число попыток и безопасную причину; неизвестный код заменяется общей подписью. Диагностический результат помечен «Проверка очереди завершена», с явным пояснением об отсутствии анализа текста/LLM. Старый Core без processing_* поддерживается прежним status. Карточка опрашивается каждые 5 секунд, списки — каждые 10; скрытая вкладка не опрашивается, закрытие/смена ключа отменяют запросы через общий useResource.
+
+Новый CLI-сценарий [processing.js](checks/processing.js) запускается с тем же изолированным Core/Vite/Playwright, что проверка TASK-07:
+
+```bash
+npx --yes --package @playwright/cli playwright-cli -s=shade-task15 open http://127.0.0.1:5173
+npx --yes --package @playwright/cli playwright-cli -s=shade-task15 snapshot
+npx --yes --package @playwright/cli playwright-cli -s=shade-task15 run-code --filename checks/processing.js
+npx --yes --package @playwright/cli playwright-cli -s=shade-task15 close
+```
+
+Список берётся из реального тестового Core, переходы processing/failed/diagnostic в ответе одной карточки имитируются browser route. Проверяются обновление уже открытой карточки, fallback неизвестной ошибки без raw-кода, 320 px и отсутствие внешних запросов/JS-ошибок. Настоящую очередь и SIGKILL/рестарт проверяет отдельный Core-стенд, эти проверки различать. Снимок — игнорируемый output/playwright/task15-processing.png. Сначала создайте `mkdir -p output/playwright`; профиль/локальный config не коммитить.

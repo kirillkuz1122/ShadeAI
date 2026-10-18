@@ -31,12 +31,12 @@ ShadeAI/                          ← корень репозитория
 │   ├── tech-stack.md             ← стек технологий и обоснования
 │   └── brand.md                  ← брендбук: палитра, тон текста
 ├── core/                         ← бэкенд «Shade Core» (Python 3.11+ / FastAPI)
-│   ├── app/api/v1/               ← роутеры: health, notifications, ha, devices, events
+│   ├── app/api/v1/               ← роутеры: health, notifications, ha, devices, events, telemetry
 │   ├── app/core/config.py        ← настройки из .env (pydantic-settings)
 │   ├── app/db/                   ← SQLAlchemy async + SQLite (WAL)
 │   ├── migrations/               ← Alembic: начальная схема и последующие ревизии
 │   ├── app/events/bus.py         ← шина событий (asyncio)
-│   ├── app/services/             ← ha_bridge, llm, notification, analytics
+│   ├── app/services/             ← ha_bridge, llm, notification, telemetry, analytics
 │   ├── tests/                    ← pytest
 │   ├── .venv/                    ← виртуальное окружение (в git НЕ входит)
 │   └── models/                   ← GGUF-модели (в git НЕ входят; scripts/download_model.sh)
@@ -71,7 +71,7 @@ ShadeAI/                          ← корень репозитория
 
 Обычный pytest теперь изолирован fixtures: рабочий `.env` не читается, каждый API-тест получает отдельную SQLite-БД, HA подменяется mock-транспортом, DNS и реальные TCP-соединения запрещены. Временные данные лежат в игнорируемом `core/.pytest_cache/` и удаляются после запуска. Подробности — [инструкция Core](core/README.md) и [отчёт TASK-02](docs/reports/task-02.md).
 
-**Статус на 2026-10-18:** скелет с отдельными реализациями Core, Android и веба; документация остаётся ТЗ. LLM и алгоритм привычек отсутствуют, ни один функциональный этап MVP целиком не подтверждён. TASK-01/02/04/05/06/07/10/12 закрыты. Программные TASK-03/09/11/13 проверены на эмуляторе, аппаратные критерии ждут телефона; TASK-08 ждёт Pi. Программная TASK-14 добавляет выбранную телеметрию HA, кэш/историю, reconnect и gaps; 156 тестов Core и настоящий loopback WebSocket/Python 3.11 проверены ([отчёт](docs/reports/task-14.md)). Реальный сбор HA ещё не начат, общий TASK-14 открыт. Android ранее: 18 JVM/42 instrumented, сборки/lint успешны. Всего 19 открытых задач. Продолжаем без железа, не запрашивая его повторно. **Следующая доступная — TASK-15: очередь обработки уведомлений до LLM.** Подробности — [контекст](docs/project-context.md), [единый план](docs/mvp.md) и отчёты в docs/reports/.
+**Статус на 2026-10-18:** скелет с отдельными реализациями Core, Android и веба; документация остаётся ТЗ. LLM и алгоритм привычек отсутствуют, ни один функциональный этап MVP целиком не подтверждён. TASK-01/02/04/05/06/07/10/12/15 закрыты. Программные TASK-03/09/11/13 ждут телефона, TASK-14 — реального сбора HA; TASK-08 ждёт Pi. TASK-15 добавила durable очередь/статусы, восстановление после SIGKILL и безопасный диагностический обработчик, без LLM; 180 Core, Docker/Python 3.11 network none и Chromium проверены ([отчёт](docs/reports/task-15.md)). Android ранее: 18 JVM/42 instrumented, сборки/lint успешны. Всего 18 открытых задач. Продолжаем без железа, не запрашивая его повторно. **Следующая — TASK-16: локальная модель/движок и измерения; без Pi доступна только программная подготовка на компьютере.** Подробности — [контекст](docs/project-context.md), [план](docs/mvp.md) и отчёты.
 
 ---
 
@@ -140,6 +140,8 @@ ShadeAI/                          ← корень репозитория
 - **HA и аудит (TASK-06):** пользоваться общим HAClient lifespan через get_ha_client и execute_command, не создавать HTTP-клиент на запрос. Pending-журнал фиксировать до сети, не удерживать транзакцию во время ожидания HA; при сбое аудита до отправки команду не посылать. Автоповтора нет: timeout/unknown мог наступить после выполнения. Success означает принятие HA, наблюдение состояния отдельно; pending после рестарта — interrupted/unknown без повторной отправки. В журнал/логи не писать params, ответы HA, тексты и токены. Старый ha/action сохранять до проверенного перехода клиентов. Лимиты/retention/логи — [Core README](core/README.md#home-assistant-журнал-и-логи-task-06); схема журнала — ревизия 0004. Телеметрия/выбранный DeviceState добавлены программной TASK-14 отдельным сборщиком; REST команд/устройств сохраняет своё поведение.
 
 - **Телеметрия HA (программная TASK-14):** явный HA_TELEMETRY_ENTITIES, по умолчанию [], до 100 числовых sensor/binary_sensor. Не сохранять произвольные HA-атрибуты; snapshot и live различать, sync/разрыв покрывать gap без восстановления переходов. Checkpoint только baseline/pong; снимок/кэш/закрытие gap атомарны. Один collector на БД, останавливать до engine.dispose. Backoff относится только к соединению сбора, команды не повторять. Лимиты/очистка, контракт и воспроизводимый loopback — [Core README](core/README.md#телеметрия-ha-task-14), [API](docs/api-spec.md#426-телеметрия-ha--task-14), [отчёт](docs/reports/task-14.md). Обычные pytest по-прежнему без TCP; реальный WS-стенд запускать отдельно, только с синтетическими данными.
+
+- **Очередь Core (TASK-15):** один NotificationWorker/процесс на БД, Queue только ID (64, максимум 256), durable processing_* и atomic claim/finish, без DB-транзакции во время handler. POST receipt stored/duplicate/skipped сохранять, точный статус — GET processing_status. Default disabled; diagnostic без анализа/категории/LLM, только явно. Handler чистый async/cancellable, без HA; CPU в TASK-16 — вне event loop. После аварии processing→pending, attempts сохранять; terminal failed не переигрывать. При ошибке finish повторять commit, не вычисление. Stop до engine.dispose, повторный stop безопасен. [Core README](core/README.md#очередь-обработки-уведомлений-task-15), [API](docs/api-spec.md#414-состояния-обработки--task-15), [отчёт](docs/reports/task-15.md).
 
 ### Запрещено
 - Коммитить: `.venv/`, `node_modules/`, `*.gguf`, `shade.db`, `.env`, сборочные папки Android (всё уже в `.gitignore` — не удалять оттуда строки).

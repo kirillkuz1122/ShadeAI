@@ -15,6 +15,7 @@ from app.db.base import init_db
 from app.services.ha_bridge.audit import maintain_events
 from app.services.ha_bridge.client import HAClient
 from app.services.notification.maintenance import cleanup, cleanup_loop
+from app.services.notification.worker import NotificationWorker
 from app.services.telemetry.collector import TelemetryCollector
 
 
@@ -29,16 +30,23 @@ async def lifespan(app: FastAPI):
         app.state.ha_client = client
         collector = TelemetryCollector()
         app.state.telemetry = collector
+        worker = NotificationWorker()
+        app.state.notification_worker = worker
         try:
             await collector.start()
+            await worker.start()
         except BaseException:
+            await worker.stop()
+            await collector.stop()
             await client.close()
+            await base.engine.dispose()
             raise
         maintenance = asyncio.create_task(cleanup_loop())
         logger.info("Core started")
         try:
             yield
         finally:
+            await worker.stop()
             await collector.stop()
             maintenance.cancel()
             with suppress(asyncio.CancelledError):
@@ -88,6 +96,7 @@ def create_app() -> FastAPI:
                                 "limit",
                                 "offset",
                                 "category",
+                                "processing_status",
                                 "notification_id",
                                 "domain",
                                 "entity_id",

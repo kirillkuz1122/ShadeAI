@@ -5,7 +5,7 @@ import {
   useState,
   type KeyboardEvent,
 } from "react";
-import { api } from "../api/client";
+import { api, type NotificationItem } from "../api/client";
 import { useResource } from "../hooks/useResource";
 import {
   ErrorNotice,
@@ -35,6 +35,25 @@ const priorities: Record<string, string> = {
   max: "Максимальный",
 };
 
+function processingLabel(n: NotificationItem, compact = false) {
+  if (n.processing_status === "failed") return "Ошибка обработки";
+  if (n.processing_status === "processing") return "Обрабатывается";
+  if (n.processing_status === "processed" || n.status === "processed") {
+    return n.processed_data?.processor === "diagnostic"
+      ? "Проверка очереди завершена"
+      : "Обработано";
+  }
+  return compact ? "Сохранено" : "Сохранено, ожидает обработки";
+}
+
+const processingErrors: Record<string, string> = {
+  PROCESSOR_ERROR: "Обработчик завершился с ошибкой",
+  PROCESSOR_TIMEOUT: "Превышено время обработки",
+  INVALID_RESULT: "Обработчик вернул неверный результат",
+  INVALID_NOTIFICATION: "Сохранённая запись не прошла проверку",
+  PROCESSING_INTERRUPTED: "Предыдущая попытка прервана; запись ожидает обработки",
+};
+
 function NotificationDetail({
   id,
   apiKey,
@@ -49,7 +68,7 @@ function NotificationDetail({
     (signal: AbortSignal) => api.notification({ apiKey, signal }, id),
     [apiKey, id],
   );
-  const state = useResource(load, 0);
+  const state = useResource(load, 5000);
   useEffect(() => {
     const node = dialog.current!;
     node.showModal();
@@ -128,18 +147,28 @@ function NotificationDetail({
             <div>
               <dt>Состояние</dt>
               <dd>
-                {n.status === "processed"
-                  ? "Обработано"
-                  : "Сохранено, ожидает обработки"}
+                {processingLabel(n)}
               </dd>
             </div>
+            <div>
+              <dt>Попыток обработки</dt>
+              <dd>{n.processing_attempts ?? 0}</dd>
+            </div>
+            {n.processing_error_code && (
+              <div>
+                <dt>Причина</dt>
+                <dd>{processingErrors[n.processing_error_code] ?? "Не удалось обработать запись"}</dd>
+              </div>
+            )}
             <div>
               <dt>Категория</dt>
               <dd>{n.category ?? "Не определена"}</dd>
             </div>
           </dl>
           <p className="help">
-            {n.processed_data
+            {n.processed_data?.processor === "diagnostic"
+              ? "Проверен конвейер очереди. Анализ текста и LLM не выполнялись."
+              : n.processed_data
               ? "Результат обработки"
               : "AI-анализ пока не подключён. Здесь показана сохранённая запись."}
           </p>
@@ -233,9 +262,7 @@ export function Notifications({ apiKey }: { apiKey: string }) {
                         <span className="notification-bottom">
                           <span>{appName(n.app_name)}</span>
                           <span>
-                            {n.status === "processed"
-                              ? "Обработано"
-                              : "Сохранено"}
+                            {processingLabel(n, true)}
                             {n.category ? ` · ${n.category}` : ""}
                           </span>
                         </span>

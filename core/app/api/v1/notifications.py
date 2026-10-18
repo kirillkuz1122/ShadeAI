@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,7 +34,9 @@ Session = Annotated[AsyncSession, Depends(get_session)]
         413: {"description": "Тело запроса превышает 65536 байт"},
     },
 )
-async def ingest(notification: NotificationIn, response: Response, session: Session):
+async def ingest(
+    notification: NotificationIn, response: Response, session: Session, request: Request
+):
     if not can_store(notification.app_name, notification.title, notification.text):
         response.status_code = 200
         return NotificationReceipt(id=None, status="skipped", reason="privacy_policy")
@@ -46,6 +48,7 @@ async def ingest(notification: NotificationIn, response: Response, session: Sess
     except IdentityConflict:
         raise HTTPException(409, "event_id уже использован для другого уведомления") from None
     response.status_code = 201 if created else 200
+    request.app.state.notification_worker.notify()
     return NotificationReceipt(id=row_id, status="stored" if created else "duplicate")
 
 
@@ -55,10 +58,15 @@ async def list_notifications(
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
     offset: Annotated[int, Query(ge=0, le=1_000_000)] = 0,
     category: Annotated[str | None, Query(max_length=64, pattern=r"^[a-z][a-z0-9_]*$")] = None,
+    processing_status: Annotated[
+        str | None, Query(pattern=r"^(pending|processing|processed|failed)$")
+    ] = None,
 ):
     condition = visible_since(cutoff())
     if category is not None:
         condition = condition & (NotificationRaw.category == category)
+    if processing_status is not None:
+        condition = condition & (NotificationRaw.processing_status == processing_status)
     # Один read transaction обеспечивает согласованность total и страницы.
     total = await session.scalar(select(func.count()).select_from(NotificationRaw).where(condition))
     rows = await session.scalars(
