@@ -71,7 +71,7 @@ Authorization: Bearer <SHADE_API_KEY>
 Отличия текущего скелета от целевого контракта:
 
 - `id` уведомлений — целое число SQLite AUTOINCREMENT; UUID event_id отправителя используется отдельно для повторной доставки.
-- `llm_status` в `/health` — всегда `not_loaded`, пока не подключен LLM Engine (MVP v0.3).
+- `llm_status` в `/health` — not_loaded при выключенном локальном движке; в программной TASK-16 появляются loading/ready и безопасные коды ошибок. Распознавание уведомлений подключается отдельно в TASK-17.
 - `POST /ha/action` сохранён для совместимости и помечен deprecated в OpenAPI. Удаление требует отдельного проверенного перехода клиентов.
 - Маршруты устройств читают HA по REST. TASK-14 отдельно собирает выбранные датчики по WebSocket в локальный кэш/историю; `/devices` не подменяется кэшем. Журнал пока содержит только команды HA, а не все события будущей системы.
 - Приём уведомления возвращает stored/duplicate/skipped без вызова заглушки LLM. Очередь реализована в TASK-15, реальный разбор — следующие задачи.
@@ -763,9 +763,13 @@ curl -X DELETE "http://<raspberry-pi-ip>:8000/api/v1/automations/aut_78c2e99a" \
 }
 ```
 
-`uptime` — целые секунды с импорта модуля в текущем процессе. `ha_status` и services.home_assistant равны connected либо безопасному коду HA_* из §4.2.5. Старые поля сохранены; клиентам нужно принимать degraded/error. db_size_bytes — размер основного SQLite-файла вместе с WAL (без SHM), 0 для memory, null при ошибке чтения размера; строковый db_size тогда unknown. Размер — текущая оценка, запись может менять файл во время подсчёта. Сервисы LLM/worker/analytics пока честно показывают отсутствие реализации.
+`uptime` — целые секунды с импорта модуля в текущем процессе. `ha_status` и services.home_assistant равны connected либо безопасному коду HA_* из §4.2.5. Старые поля сохранены; клиентам нужно принимать degraded/error. db_size_bytes — размер основного SQLite-файла вместе с WAL (без SHM), 0 для memory, null при ошибке чтения размера; строковый db_size тогда unknown. Размер — текущая оценка, запись может менять файл во время подсчёта. Analytics пока not_implemented.
 
-В TASK-15 services.notification_worker показывает starting/disabled/idle/processing/storage_error/stopped. Это состояние конвейера, не наличие модели; llm_status по-прежнему not_loaded.
+В TASK-15 services.notification_worker показывает starting/disabled/idle/processing/storage_error/stopped. Это состояние конвейера, не наличие модели.
+
+В программной TASK-16 `llm_status` и `services.llm` совпадают: `not_loaded` при LLM_ENABLED=false, `loading` при фоновой загрузке, `ready` после её успеха либо фиксированный код `LLM_*`. Возможны MODEL_MISSING/MODEL_INVALID/MODEL_TOO_LARGE/DEPENDENCY_MISSING/MEMORY_LIMIT/LOAD_FAILED/LOAD_TIMEOUT/TIMEOUT/INFERENCE_FAILED/CONTEXT_EXCEEDED/BAD_RESPONSE/PROCESS_EXITED/CANCELLED с префиксом LLM_. Служебные вызовы также используют LLM_DISABLED/NOT_READY/BUSY/CLOSED. Путь, содержимое модели, exception и текст уведомления не возвращаются. Клиент переводит неизвестный код общей ошибкой, не показывает его raw.
+
+`ready` означает загруженный локальный движок, а не проверенное качество извлечения, подключённый worker или готовый алгоритм привычек. Отказ LLM не меняет HTTP-код/общий status health, определяемый БД/HA, и не блокирует приём уведомлений/ручные команды. Инференс идёт в отдельном процессе; одного загруженного экземпляра достаточно, параллельный запрос получает LLM_BUSY. После timeout/отмены процесс завершается; явная повторная загрузка относится к внутреннему потребителю, HTTP-метод управления моделью не добавлен. Базовый образ не содержит optional LLM-пакет и модели.
 
 #### 4.5.2. `GET /events` — журнал команд HA (TASK-06)
 

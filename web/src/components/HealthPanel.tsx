@@ -87,8 +87,20 @@ export function HealthPanel({
         </div>
         <div>
           <span>AI и привычки</span>
-          <strong>Ещё не подключены</strong>
-          <small>Анализ уведомлений не выполняется</small>
+          <strong>
+            {h?.llm_status === "ready"
+              ? "Локальная модель готова"
+              : h?.llm_status === "loading"
+                ? "Загрузка модели"
+                : h && h.llm_status !== "not_loaded"
+                  ? "Модель недоступна"
+                  : "Ещё не подключены"}
+          </strong>
+          <small>
+            {h?.llm_status === "ready"
+              ? "Движок готов; анализ и привычки ещё не настроены"
+              : "Анализ уведомлений не выполняется"}
+          </small>
         </div>
       </div>
       <Freshness

@@ -74,6 +74,13 @@ class Settings(BaseSettings):
         return value.rstrip("/")
 
     llm_model_path: str = "./models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
+    llm_enabled: bool = False
+    llm_context_size: int = Field(default=1024, ge=256, le=2048)
+    llm_threads: int = Field(default=2, ge=1, le=4)
+    llm_max_tokens: int = Field(default=128, ge=1, le=256)
+    llm_memory_limit_mb: int = Field(default=2304, ge=512, le=2560)
+    llm_load_timeout_seconds: float = Field(default=120, ge=1, le=300)
+    llm_inference_timeout_seconds: float = Field(default=30, ge=0.1, le=300)
 
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 

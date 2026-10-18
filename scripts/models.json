@@ -1,0 +1,16 @@
+{
+  "tinyllama": {
+    "repo": "TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF",
+    "revision": "52e7645ba7c309695bec7ac98f4f005b139cf465",
+    "file": "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
+    "bytes": 668788096,
+    "sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0"
+  },
+  "qwen": {
+    "repo": "Qwen/Qwen2.5-1.5B-Instruct-GGUF",
+    "revision": "91cad51170dc346986eccefdc2dd33a9da36ead9",
+    "file": "qwen2.5-1.5b-instruct-q4_k_m.gguf",
+    "bytes": 1117320736,
+    "sha256": "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e"
+  }
+}

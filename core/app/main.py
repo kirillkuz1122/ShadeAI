@@ -14,6 +14,7 @@ from app.db import base
 from app.db.base import init_db
 from app.services.ha_bridge.audit import maintain_events
 from app.services.ha_bridge.client import HAClient
+from app.services.llm.engine import LocalLLMEngine
 from app.services.notification.maintenance import cleanup, cleanup_loop
 from app.services.notification.worker import NotificationWorker
 from app.services.telemetry.collector import TelemetryCollector
@@ -32,11 +33,15 @@ async def lifespan(app: FastAPI):
         app.state.telemetry = collector
         worker = NotificationWorker()
         app.state.notification_worker = worker
+        llm = LocalLLMEngine()
+        app.state.llm = llm
         try:
             await collector.start()
             await worker.start()
+            llm.start()
         except BaseException:
             await worker.stop()
+            await llm.close()
             await collector.stop()
             await client.close()
             await base.engine.dispose()
@@ -47,6 +52,7 @@ async def lifespan(app: FastAPI):
             yield
         finally:
             await worker.stop()
+            await llm.close()
             await collector.stop()
             maintenance.cancel()
             with suppress(asyncio.CancelledError):

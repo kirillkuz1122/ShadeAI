@@ -20,6 +20,8 @@ core/logs/
 # ===== Локальные LLM-модели (большие файлы, не в git) =====
 core/models/*.gguf
 core/models/*.bin
+core/models/*.gguf.part
+core/models/*.gguf.lock
 
 # ===== Node / React (web/) =====
 node_modules/

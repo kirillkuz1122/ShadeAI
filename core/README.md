@@ -85,7 +85,7 @@ AsyncClient общий на lifespan, закрывается при заверш
 
 **Служебные логи:** стандартный logging пишет в LOG_DIR/shade.log и архивы .1–.3. Новый каталог создаётся с правами 700, файлы — 600, включая ротацию; существующий каталог должен иметь подходящие права владельца. По умолчанию до четырёх файлов примерно по 1 MiB; размер считается в UTF-8. Пишутся старт/остановка, ID/статус/код результата и безопасные сообщения обслуживания, без params/текстов/секретов. Uvicorn access/error logs остаются в консоли процесса; их хранение на Pi — TASK-08. logs/ исключён из git и Docker-контекста. Невозможность открыть каталог/файл прерывает запуск, чтобы не терять диагностику незаметно.
 
-Health без Bearer проверяет доступность БД (SELECT 1) и HA: HTTP 200/ok либо 200/degraded при отказе HA; HTTP 503/error при отказе БД. Это не полная проверка целостности БД. Размер включает SQLite и WAL; LLM/analytics показывают not_loaded/not_implemented; notification_worker сообщает отдельный статус TASK-15. [Контракт диагностики](../docs/api-spec.md#451-get-health--реализовано-в-task-06).
+Health без Bearer проверяет доступность БД (SELECT 1) и HA: HTTP 200/ok либо 200/degraded при отказе HA; HTTP 503/error при отказе БД. Это не полная проверка целостности БД. Размер включает SQLite и WAL; analytics показывает not_implemented; LLM — not_loaded/loading/ready/безопасный код ошибки, notification_worker — отдельный статус TASK-15. [Контракт диагностики](../docs/api-spec.md#451-get-health--реализовано-в-task-06).
 
 ## Миграции БД
 
@@ -235,7 +235,55 @@ NOTIFICATION_SHUTDOWN_SECONDS=5
 
 Остановка ждёт активную попытку до 5 с (0.1..30), затем отменяет её; queued ID остаются durable pending. После аварии/отмены незавершённый processing восстанавливается pending с PROCESSING_INTERRUPTED и прежним счётчиком попыток, потом получает новый номер. Готовые/failed не пересчитываются. Гарантия — повторяемое чистое вычисление с durable-статусом, а не exactly-once; поэтому процессору запрещены прямые команды HA/внешние побочные действия. Таймаут 30 с (0.1..300), контракт async/cancellation. Синхронный CPU-инференс нельзя помещать в event loop: отдельный исполнитель и отмена занятой модели относятся к TASK-16.
 
-GET /notifications и /notifications/{id} возвращают новые processing_* поля. Старый status=stored/processed сохранён, точную диагностику даёт processing_status. Есть фильтр ?processing_status=failed. Health services.notification_worker: starting/disabled/idle/processing/storage_error/stopped; llm_status остаётся not_loaded. [Контракт](../docs/api-spec.md#414-состояния-обработки--task-15), [отчёт](../docs/reports/task-15.md).
+GET /notifications и /notifications/{id} возвращают новые processing_* поля. Старый status=stored/processed сохранён, точную диагностику даёт processing_status. Есть фильтр ?processing_status=failed. Health services.notification_worker: starting/disabled/idle/processing/storage_error/stopped; состояние локальной модели сообщается отдельно. [Контракт](../docs/api-spec.md#414-состояния-обработки--task-15), [отчёт](../docs/reports/task-15.md).
+
+## Локальный движок LLM (программная TASK-16)
+
+Движок выключен по умолчанию. `LLM_ENABLED=true` запускает фоновую загрузку заранее подготовленной GGUF; получение уведомления само по себе модель не скачивает и не вызывает. Извлечение и связь с worker относятся к TASK-17, оценка качества — к TASK-18. `ready` в health подтверждает только загрузку движка. Базовый Docker-образ работает без optional-зависимости; для реального инференса нужен отдельный CPU build с requirements-llm.txt и смонтированная локальная модель.
+
+Подготовка на Linux из корня репозитория, **только до автономного запуска**:
+
+```bash
+cd core
+CMAKE_BUILD_PARALLEL_LEVEL=2 CMAKE_ARGS='-DGGML_CUDA=OFF -DGGML_RPC=OFF' \
+  .venv/bin/python -m pip install -r requirements-llm.txt
+cd ..
+python3 scripts/download_model.py --model tinyllama
+python3 scripts/download_model.py --model qwen
+```
+
+Загрузчик закрепляет revision/размер/SHA-256 в scripts/models.json, продолжает `.part` только при согласованном HTTP Range, проверяет весь файл и атомарно публикует `.gguf`. Lock не допускает двух записывающих процессов. Повторный запуск проверяет готовый файл. Старый `MODEL=qwen bash scripts/download_model.sh` поддерживается. Модель и частичные файлы игнорируются git; существующая повреждённая модель заменяется лишь после проверки нового файла.
+
+В локальном `.env` включить LLM и выбрать путь. Настройки (изменение требует перезапуска):
+
+| Переменная | По умолчанию | Граница |
+| :--- | :--- | :--- |
+| LLM_ENABLED | false | Явное включение |
+| LLM_MODEL_PATH | ./models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf | Локальный GGUF, до 2 GiB |
+| LLM_CONTEXT_SIZE | 1024 | 256..2048 токенов, включая ответ |
+| LLM_THREADS | 2 | 1..4 CPU-потока, GPU выключен |
+| LLM_MAX_TOKENS | 128 | 1..256 выходных токенов |
+| LLM_MEMORY_LIMIT_MB | 2304 | 512..2560 MiB RLIMIT_AS дочернего процесса |
+| LLM_LOAD_TIMEOUT_SECONDS | 120 | 1..300 секунд |
+| LLM_INFERENCE_TIMEOUT_SECONDS | 30 | 0.1..300 секунд |
+
+Один дочерний Python/llama.cpp-процесс принимает ограниченный JSON-протокол по stdio, без публичного HTTP-порта. Загрузка/хеширование/CPU-инференс не выполняются в event loop Core. Сообщения до 32 KiB суммарно, кадр до 64 KiB, один запрос одновременно, второй сразу LLM_BUSY без очереди payload. Контекст модели может оказаться меньше допустимого размера сообщения: тогда LLM_CONTEXT_EXCEEDED. При превышении времени/отмене процесс terminate→kill/reap, память модели освобождается ОС; следующий потребитель должен явно загрузить модель снова. Core останавливает worker до модели, затем HA/БД. Параметры — n_batch=n_ubatch=64, temperature=0, seed=42, mmap=true, mlock=false. Виртуальный лимит RLIMIT_AS включает mmap/библиотеки, **не равен измеренному RSS и не доказывает, что весь стек уложится в 4 GB**.
+
+Окружение дочернего процесса не содержит API/HA-ключей и proxy, Python-аудит запрещает connect/DNS; используются только локальный путь и offline-переменные. Нативные stdout/stderr перенаправлены в /dev/null, исключения наружу идут фиксированными кодами. Тексты не попадают в служебные логи. Это не изоляция недоверенного нативного кода ОС: устанавливать доверенный пакет/модель, для проверки без сети дополнительно использовать контейнер `--network none`. Память/KV-cache не является защищённым хранилищем и не обещает криптографическое стирание.
+
+Воспроизводимые стенды используют только синтетику, одноразовые БД и настройки в core/.pytest_cache, не читают рабочий `.env`:
+
+```bash
+cd core
+.venv/bin/python checks/check_llm.py --model models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf
+.venv/bin/python checks/benchmark_llm.py \
+  --model models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf \
+  --model models/qwen2.5-1.5b-instruct-q4_k_m.gguf \
+  --context 1024 --context 2048 --threads 2 --threads 4 \
+  --output ../docs/reports/task-16-benchmark.json
+```
+
+Первый стенд проверяет полный lifespan Core, HTTP во время загрузки/инференса, настоящую отмену/повторную загрузку. HA — MockTransport, HTTP — ASGITransport. Второй сохраняет версии/CPU/хеш модели и набора, загрузку, токены, задержки и ru_maxrss процесса для каждого профиля. 8 классификационных примеров — предварительный smoke, не подтверждение целевой точности TASK-18. Результат на компьютере не заменяет Pi/охлаждение/совместный RAM-бюджет.
 
 Проверки из core/:
 

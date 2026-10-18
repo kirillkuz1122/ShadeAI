@@ -35,6 +35,7 @@ def main():
             NOTIFICATION_ALLOWED_APPS='["ru.ozon.app.android"]',
             CORS_ORIGINS='["http://localhost:5173","http://127.0.0.1:5173"]',
             LLM_MODEL_PATH="./missing-test-model.gguf",
+            LLM_ENABLED="false",
         )
         sys.path.insert(0, str(ROOT / "core"))
         import httpx
