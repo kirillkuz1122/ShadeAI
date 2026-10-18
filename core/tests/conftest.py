@@ -17,6 +17,9 @@ TEST_ENV = {
     "HA_BASE_URL": "http://ha.test:8123",
     "HA_TOKEN": TEST_HA_TOKEN,
     "HA_TIMEOUT_SECONDS": "5",
+    "HA_TELEMETRY_ENTITIES": "[]",
+    "SENSOR_RETENTION_DAYS": "90",
+    "SENSOR_HISTORY_MAX_ROWS": "100000",
     "EVENT_RETENTION_DAYS": "90",
     "LOG_DIR": "./logs",
     "LOG_MAX_BYTES": "1048576",
@@ -185,10 +188,7 @@ def client(tmp_path, monkeypatch, ha_mock):
     monkeypatch.setattr(base, "engine", engine)
     monkeypatch.setattr(base, "async_session", session_factory)
     with TestClient(create_app()) as test_client:
-        try:
-            yield test_client
-        finally:
-            test_client.portal.call(engine.dispose)
+        yield test_client
     assert test_client.app.state.ha_client._client.is_closed
 
 

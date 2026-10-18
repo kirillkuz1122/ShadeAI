@@ -332,3 +332,36 @@ def test_alembic_cli_uses_configured_database_outside_core(tmp_path):
             assert f"{head} (head)" in result.stdout
     assert path.is_file()
     assert not (tmp_path / "shade.db").exists()
+
+
+def test_sensor_history_upgrade_downgrade_preserves_existing_data(tmp_path):
+    path = tmp_path / "telemetry.db"
+    legacy_database(path, seed=True)
+    asyncio.run(migrate(path, "0004_event_journal"))
+    original = snapshot(path)[1]
+    asyncio.run(migrate(path))
+    with closing(sqlite3.connect(path)) as db, db:
+        db.execute(
+            "INSERT INTO sensor_history (entity_id, state, attributes_json, source, observed_at) "
+            "VALUES ('sensor.test', '21', '{}', 'ha_snapshot', '2026-10-18 01:00:00')"
+        )
+        assert db.execute("PRAGMA integrity_check").fetchone() == ("ok",)
+        assert db.execute("SELECT ha_timestamp FROM sensor_history").fetchone() == (None,)
+    assert snapshot(path)[1] == original
+
+    async def downgrade():
+        engine = create_db_engine(f"sqlite+aiosqlite:///{path}")
+        try:
+            async with engine.begin() as connection:
+                await connection.run_sync(
+                    lambda conn: command.downgrade(migration_config(conn), "0004_event_journal")
+                )
+        finally:
+            await engine.dispose()
+
+    asyncio.run(downgrade())
+    assert snapshot(path)[1] == original
+    asyncio.run(migrate(path))
+    assert snapshot(path)[1] == original
+    with closing(sqlite3.connect(path)) as db:
+        assert db.execute("SELECT count(*) FROM sensor_history").fetchone() == (0,)

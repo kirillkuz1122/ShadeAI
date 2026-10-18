@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.notification_body import NotificationBodyLimit
-from app.api.v1 import devices, events, ha, health, notifications
+from app.api.v1 import devices, events, ha, health, notifications, telemetry
 from app.core.config import settings
 from app.core.logging import local_logging
 from app.db import base
@@ -15,6 +15,7 @@ from app.db.base import init_db
 from app.services.ha_bridge.audit import maintain_events
 from app.services.ha_bridge.client import HAClient
 from app.services.notification.maintenance import cleanup, cleanup_loop
+from app.services.telemetry.collector import TelemetryCollector
 
 
 @asynccontextmanager
@@ -26,15 +27,24 @@ async def lifespan(app: FastAPI):
             await maintain_events(session, recover=True)
         client = HAClient()
         app.state.ha_client = client
+        collector = TelemetryCollector()
+        app.state.telemetry = collector
+        try:
+            await collector.start()
+        except BaseException:
+            await client.close()
+            raise
         maintenance = asyncio.create_task(cleanup_loop())
         logger.info("Core started")
         try:
             yield
         finally:
+            await collector.stop()
             maintenance.cancel()
             with suppress(asyncio.CancelledError):
                 await maintenance
             await client.close()
+            await base.engine.dispose()
             logger.info("Core stopped")
 
 
@@ -104,6 +114,7 @@ def create_app() -> FastAPI:
     app.include_router(ha.router, prefix="/api/v1")
     app.include_router(devices.router, prefix="/api/v1")
     app.include_router(events.router, prefix="/api/v1")
+    app.include_router(telemetry.router, prefix="/api/v1")
 
     return app
 
