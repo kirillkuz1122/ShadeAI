@@ -42,7 +42,7 @@ def serve_core():
             await asyncio.sleep(1)
         return ProcessingResult(processor="diagnostic")
 
-    main.NotificationWorker = lambda: NotificationWorker(processor)
+    main.NotificationWorker = lambda **_: NotificationWorker(processor)
     uvicorn.run(
         main.create_app(), fd=int(os.environ["STAND_FD"]), log_level="critical", access_log=False
     )

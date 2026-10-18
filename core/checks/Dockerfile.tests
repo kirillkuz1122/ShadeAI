@@ -1,0 +1,7 @@
+ARG SHADE_CHECK_IMAGE=shade-core:checks
+FROM ${SHADE_CHECK_IMAGE}
+
+COPY requirements.txt requirements-dev.txt ./
+RUN pip install --no-cache-dir -r requirements-dev.txt
+
+CMD ["python", "-m", "pytest", "-q", "--tb=short"]

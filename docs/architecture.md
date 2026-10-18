@@ -158,7 +158,7 @@ flowchart TB
 * **Структурированный вывод (Constrained Decoding / JSON Mode):**
   - Использование грамматик GBNF (Grammar-Based Sampling) или Pydantic/JSON-schema режимов в `llama.cpp`.
   - Модель гарантированно возвращает валидный JSON без свободных рассуждений, что исключает ошибки парсинга при передаче команд в Shade Core.
-* **Пример схемы извлечения интента из уведомления:**
+* **Целевая схема расширенных интентов (не разрешение выполнить действие):**
 ```json
 {
   "category": "delivery | transport | finance | calendar | communication | noise",
@@ -172,6 +172,8 @@ flowchart TB
   "confidence": 0.94
 }
 ```
+
+**Программная TASK-17** использует ограниченную схему v1: delivery/transport/calendar/reminder/noise, priority low/default/high, буквальные цитаты entities, отдельное time с resolution и описательный intent. `action_authorized=false` неизменяемо; HAClient у обработчика отсутствует. Finance/communication, tracking_code, confidence и команды из целевого примера выше не реализованы. Источник истины — [контракт v1](api-spec.md#415-результат-извлечения--программная-task-17). Модель не вычисляет время: код нормализует цитату от времени уведомления в настроенном IANA-zone, неоднозначность оставляет unresolved. Перед claim worker ждёт ready без расходования attempts/потери pending. Качество и реальный GGUF-проход проверяются отдельно от детерминированных тестов схемы.
 
 ---
 

@@ -1,0 +1,118 @@
+{
+  "platform": "development-computer",
+  "python": "3.14.8",
+  "cases": [
+    {
+      "id": "delivery",
+      "correct_category_and_time": false,
+      "status": "processed",
+      "error": null,
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "delivery",
+        "priority": "low",
+        "intent": "delivery_event",
+        "entities": {
+          "subject": "Курьер Ozon",
+          "location": "Лесная 2",
+          "service": "Адрес: Лесная 2"
+        },
+        "time": {
+          "source": "15 минут",
+          "timezone": "Asia/Yekaterinburg",
+          "at": null,
+          "date": null,
+          "resolution": "unresolved"
+        },
+        "action_authorized": false
+      },
+      "elapsed_ms": 5490.49
+    },
+    {
+      "id": "calendar",
+      "correct_category_and_time": false,
+      "status": "processed",
+      "error": null,
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "delivery",
+        "priority": "high",
+        "intent": "delivery_event",
+        "entities": {
+          "subject": "Встреча с командой",
+          "location": "Офис",
+          "service": "Встреча"
+        },
+        "time": {
+          "source": "в 10:30 в Офисе",
+          "timezone": "Asia/Yekaterinburg",
+          "at": null,
+          "date": null,
+          "resolution": "unresolved"
+        },
+        "action_authorized": false
+      },
+      "elapsed_ms": 2193.67
+    },
+    {
+      "id": "reminder",
+      "correct_category_and_time": false,
+      "status": "failed",
+      "error": "LLM_BAD_RESPONSE",
+      "result": null,
+      "elapsed_ms": 2418.5
+    },
+    {
+      "id": "noise",
+      "correct_category_and_time": false,
+      "status": "failed",
+      "error": "LLM_BAD_RESPONSE",
+      "result": null,
+      "elapsed_ms": 2824.64
+    }
+  ],
+  "load": {
+    "sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0",
+    "model_bytes": 668788096,
+    "load_ms": 917.4487480004245,
+    "peak_rss_bytes": 1260019712,
+    "n_ctx": 2048,
+    "n_threads": 2
+  },
+  "completions": [
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 374,
+      "completion_tokens": 60,
+      "inference_ms": 5435.825689999547,
+      "peak_rss_bytes": 1290461184
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 368,
+      "completion_tokens": 59,
+      "inference_ms": 2151.3864439993995,
+      "peak_rss_bytes": 1290854400
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 366,
+      "completion_tokens": 66,
+      "inference_ms": 2394.104502999653,
+      "peak_rss_bytes": 1291378688
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 388,
+      "completion_tokens": 75,
+      "inference_ms": 2801.2920370001666,
+      "peak_rss_bytes": 1291771904
+    }
+  ],
+  "restart_and_receipts": "PASS",
+  "ha_commands": 0
+}

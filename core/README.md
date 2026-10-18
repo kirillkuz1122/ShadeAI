@@ -285,6 +285,52 @@ cd core
 
 Первый стенд проверяет полный lifespan Core, HTTP во время загрузки/инференса, настоящую отмену/повторную загрузку. HA — MockTransport, HTTP — ASGITransport. Второй сохраняет версии/CPU/хеш модели и набора, загрузку, токены, задержки и ru_maxrss процесса для каждого профиля. 8 классификационных примеров — предварительный smoke, не подтверждение целевой точности TASK-18. Результат на компьютере не заменяет Pi/охлаждение/совместный RAM-бюджет.
 
+## Извлечение уведомлений (программная TASK-17)
+
+Включение в локальном `.env` после подготовки проверенного GGUF:
+
+```dotenv
+LLM_ENABLED=true
+LLM_MODEL_PATH=./models/qwen2.5-1.5b-instruct-q4_k_m.gguf
+LLM_CONTEXT_SIZE=2048
+LLM_MAX_TOKENS=256
+LLM_INFERENCE_TIMEOUT_SECONDS=45
+NOTIFICATION_PROCESSOR=llm
+NOTIFICATION_PROCESSING_TIMEOUT_SECONDS=60
+NOTIFICATION_TIMEZONE=Asia/Yekaterinburg
+```
+
+Это явный пример настройки для проб, не принятый профиль Raspberry Pi. Без обоих переключателей реальная обработка не начинается. Worker ждёт готовности модели до claim, показывает waiting_model/model_unavailable, сохраняет pending без расходования attempts. Ошибка загрузки не уничтожает backlog. После timeout/отмены/выхода процесса перед следующим событием делает явную повторную загрузку; persistent load/inference failure требует устранения причины и перезапуска. Готовые и failed не пересчитываются. Прежний diagnostic поддерживается независимо и не становится анализом текста.
+
+Русский промпт с тремя отдельными синтетическими примерами отделяет инструкции от JSON title/text. Вывод ограничен схемой, затем проверяются типы, размеры, enum, дубликаты ключей, отсутствие лишних полей и буквальное наличие извлечённых subject/location/service/time_expression в title/text. Неподтверждённые факты/обрезанный ответ → LLM_BAD_RESPONSE, исходный ответ не сохраняется/не логируется. Валидность цитаты не доказывает смысловую правильность категории или сущности — это измеряет TASK-18. Банки/мессенджеры и календарные источники в allowlist автоматически не добавляются.
+
+Категории версии 1: delivery/transport/calendar/reminder/noise. Распознанный приоритет low/default/high отделён от Android priority. Intent — описательный delivery_event/transport_event/calendar_event/reminder/none; **action_authorized всегда false**, команд/HA-параметров нет. Ни один обработчик не получает HAClient. Success сохраняет category/проверенный processed_data через прежний finish, без новой схемы БД; filter category работает. POST receipt остаётся прежним, результат доступен только через защищённые GET. [Полная схема и правила времени](../docs/api-spec.md#415-результат-извлечения--программная-task-17).
+
+Относительные даты рассчитывает код от timestamp уведомления и NOTIFICATION_TIMEZONE, а не день запуска worker. Поддержаны явные интервалы минут/часов/дней, сегодня/завтра/послезавтра, ISO/дд.мм.гггг с необязательным временем. Без часов — date_only, не выдуманная полночь. Голые часы дополняются днём только при единственной буквальной цитате сегодня/завтра/послезавтра в исходном тексте. Неподдержанный формат/день недели/диапазон/двойной или пропущенный час DST — unresolved с буквальным источником, без назначения действия. Перед использованием в будущем расписании проверять resolution/срок/подтверждение отдельно.
+
+Полный синтетический стенд с настоящей моделью:
+
+```bash
+cd core
+.venv/bin/python checks/check_extraction.py \
+  --model models/qwen2.5-1.5b-instruct-q4_k_m.gguf \
+  --output ../docs/reports/task-17-samples.json
+```
+
+Он временно допускает только синтетические приложения Ozon/Calendar/Keep в одноразовом каталоге; рабочий `.env` и его политику не меняет. Проверяет получение receipt без ожидания inference, четыре результата/нормализацию, сохранение после нового lifespan, duplicate без нового inference и отсутствие команд HA. HTTP — ASGITransport, HA — MockTransport; это не телефон/Pi. Код возврата 1 при неверной категории/времени, отчёт сохраняет ошибки. Примеры служат отладке, не независимому подтверждению целевого качества.
+
+Полный pytest на Python 3.11 можно воспроизвести в отдельном **тестовом**, не рабочем образе. Из core/ (при сборке нужен доступ к пакетам, сам pytest без сети):
+
+```bash
+docker build -t shade-core:checks .
+docker build -f checks/Dockerfile.tests -t shade-core:checks-tests .
+docker run --rm --network none --tmpfs /app/.pytest_cache \
+  -v "$PWD/tests:/app/tests:ro" -v "$PWD/checks:/app/checks:ro" \
+  -v "$(dirname "$PWD")/scripts:/scripts:ro" shade-core:checks-tests
+```
+
+Рабочие `.env`/БД/модели в контейнер не монтируются. Тестовые БД исчезают с tmpfs. Native llama-cpp-python для этих unit/API-проверок не устанавливается, реальные GGUF-стенды запускаются отдельно. Префикс образа можно изменить через --build-arg SHADE_CHECK_IMAGE=... .
+
 Проверки из core/:
 
 ```bash

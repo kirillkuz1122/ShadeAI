@@ -31,14 +31,14 @@ async def lifespan(app: FastAPI):
         app.state.ha_client = client
         collector = TelemetryCollector()
         app.state.telemetry = collector
-        worker = NotificationWorker()
-        app.state.notification_worker = worker
         llm = LocalLLMEngine()
         app.state.llm = llm
+        worker = NotificationWorker(llm=llm)
+        app.state.notification_worker = worker
         try:
             await collector.start()
-            await worker.start()
             llm.start()
+            await worker.start()
         except BaseException:
             await worker.stop()
             await llm.close()

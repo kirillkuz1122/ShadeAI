@@ -26,6 +26,7 @@ TEST_ENV = {
     "LOG_BACKUP_COUNT": "3",
     "LLM_MODEL_PATH": "./missing-test-model.gguf",
     "LLM_ENABLED": "false",
+    "NOTIFICATION_TIMEZONE": "Asia/Yekaterinburg",
     "LLM_CONTEXT_SIZE": "1024",
     "LLM_THREADS": "2",
     "LLM_MAX_TOKENS": "128",

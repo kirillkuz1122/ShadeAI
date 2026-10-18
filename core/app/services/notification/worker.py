@@ -12,11 +12,13 @@ from app.core.config import settings
 from app.db import base
 from app.db.models import NotificationRaw
 from app.schemas import NotificationIn
+from app.services.llm.engine import LLMError, LocalLLMEngine
+from app.services.notification.extraction import LLMNotificationProcessor
 from app.services.notification.privacy import can_store
-from app.services.notification.processor import ProcessingResult, process_notification
+from app.services.notification.processor import Result, process_notification, validate_result
 from app.services.notification.store import cutoff, visible_since
 
-Processor = Callable[[NotificationIn], Awaitable[ProcessingResult]]
+Processor = Callable[[NotificationIn], Awaitable[Result]]
 logger = logging.getLogger("shade")
 POLL_SECONDS = 1.0
 
@@ -30,10 +32,17 @@ class Work:
 
 
 class NotificationWorker:
-    def __init__(self, processor: Processor | None = None):
+    def __init__(self, processor: Processor | None = None, llm: LocalLLMEngine | None = None):
         self.processor = processor or (
             process_notification if settings.notification_processor == "diagnostic" else None
         )
+        if (
+            processor is None
+            and settings.notification_processor == "llm"
+            and settings.llm_enabled
+            and llm is not None
+        ):
+            self.processor = LLMNotificationProcessor(llm, settings.notification_timezone)
         self.queue: asyncio.Queue[int] = asyncio.Queue(maxsize=settings.notification_queue_size)
         self.wake = asyncio.Event()
         self.stopping = False
@@ -138,7 +147,7 @@ class NotificationWorker:
                 return None
             return Work(row.id, row.payload_hash, row.processing_attempts, notification)
 
-    async def finish(self, work: Work, result: ProcessingResult | None, error: str | None) -> None:
+    async def finish(self, work: Work, result: Result | None, error: str | None) -> None:
         async with base.async_session() as session, session.begin():
             # Удалённую/просроченную/снятую с допуска строку результат не возрождает.
             await session.execute(
@@ -155,30 +164,31 @@ class NotificationWorker:
                     processing_error_code=error,
                     processing_finished_at=clock.utcnow(),
                     is_processed=0 if error else 1,
-                    category=None,
+                    category=getattr(result, "category", None) if not error else None,
                     extracted_data_json=result.model_dump_json() if result else None,
                 )
             )
 
     async def process(self, work: Work) -> None:
         result, error = None, None
-        raw, payload = None, None
+        raw = None
         try:
             async with asyncio.timeout(settings.notification_processing_timeout_seconds):
                 raw = await self.processor(work.notification)
             # Проверяем даже BaseModel: model_construct не является доверенной валидацией.
-            payload = raw.model_dump() if isinstance(raw, ProcessingResult) else raw
-            result = ProcessingResult.model_validate(payload)
+            result = validate_result(raw)
         except asyncio.CancelledError:
             raise
         except TimeoutError:
             error = "PROCESSOR_TIMEOUT"
         except ValidationError:
             error = "INVALID_RESULT"
+        except LLMError as exc:
+            error = exc.code
         except Exception:
             error = "PROCESSOR_ERROR"
         finally:
-            raw, payload = None, None
+            raw = None
         while True:
             try:
                 await self.finish(work, result, error)
@@ -196,6 +206,16 @@ class NotificationWorker:
                 try:
                     if self.recover_needed:
                         await self.recover()
+                    if isinstance(self.processor, LLMNotificationProcessor):
+                        self.status = "waiting_model"
+                        try:
+                            ready = await self.processor.prepare()
+                        except LLMError:
+                            ready = False
+                        if not ready:
+                            self.status = "model_unavailable"
+                            await asyncio.sleep(POLL_SECONDS)
+                            continue
                     if self.queue.empty():
                         await self.refill()
                     if self.queue.empty():

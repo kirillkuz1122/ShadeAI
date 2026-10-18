@@ -1,6 +1,7 @@
 import re
 from typing import Literal
 from urllib.parse import urlsplit
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import Field, ValidationError, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict, SettingsError
@@ -36,8 +37,7 @@ class Settings(BaseSettings):
     @classmethod
     def check_telemetry_entities(cls, value: list[str]) -> list[str]:
         if any(
-            len(entity) > 255
-            or not re.fullmatch(r"(?:sensor|binary_sensor)\.[a-z0-9_]+", entity)
+            len(entity) > 255 or not re.fullmatch(r"(?:sensor|binary_sensor)\.[a-z0-9_]+", entity)
             for entity in value
         ):
             raise ValueError("Ожидался список entity_id датчиков sensor/binary_sensor")
@@ -85,7 +85,8 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
     notification_retention_days: int = Field(default=30, ge=1, le=365)
-    notification_processor: Literal["disabled", "diagnostic"] = "disabled"
+    notification_processor: Literal["disabled", "diagnostic", "llm"] = "disabled"
+    notification_timezone: str = "Asia/Yekaterinburg"
     notification_queue_size: int = Field(default=64, ge=1, le=256)
     notification_processing_timeout_seconds: float = Field(default=30, ge=0.1, le=300)
     notification_shutdown_seconds: float = Field(default=5, ge=0.1, le=30)
@@ -97,6 +98,15 @@ class Settings(BaseSettings):
         ],
         max_length=100,
     )
+
+    @field_validator("notification_timezone")
+    @classmethod
+    def check_notification_timezone(cls, value: str) -> str:
+        try:
+            ZoneInfo(value)
+        except (ZoneInfoNotFoundError, ValueError):
+            raise ValueError("Нужен часовой пояс IANA") from None
+        return value
 
     @field_validator("notification_allowed_apps")
     @classmethod

@@ -227,23 +227,68 @@ GET списка и одной записи добавляет поля:
 | :--- | :--- |
 | `processing_status` | pending — в БД, processing — попытка начата, processed — результат сохранён, failed — попытка завершена ошибкой |
 | `processing_attempts` | Число зафиксированных стартов, изначально 0; после аварийного восстановления увеличивается при следующем старте |
-| `processing_error_code` | null либо PROCESSOR_ERROR / PROCESSOR_TIMEOUT / INVALID_RESULT / INVALID_NOTIFICATION / PROCESSING_INTERRUPTED |
+| `processing_error_code` | null либо PROCESSOR_ERROR / PROCESSOR_TIMEOUT / INVALID_RESULT / INVALID_NOTIFICATION / PROCESSING_INTERRUPTED или фиксированный LLM_* (§4.5.1) |
 | `processing_started_at` | Время начала текущей/последней попытки UTC, null до запуска и после восстановления pending |
 | `processing_finished_at` | Время фиксации processed/failed UTC, иначе null |
 
 Прежний `status` сохранён для старых клиентов: processed только для processing_status=processed, в остальных случаях stored. Для точной диагностики использовать processing_status. POST всегда возвращает прежний receipt stored/duplicate/skipped и processed_data=null; повторная доставка не сбрасывает попытки/ошибку/результат. Получение HTTP-ответа не ожидает обработчика. GET поддерживает фильтр processing_status; total и страница используют общий фильтр/транзакцию.
 
-По умолчанию `NOTIFICATION_PROCESSOR=disabled`: очередь остаётся в SQLite pending, health services.notification_worker=disabled, модель не загружается. Явное `diagnostic` запускает технический тест конвейера. Его единственный результат — `{"processor":"diagnostic","llm":false}`, category=null; processed в этом режиме означает завершённую проверку очереди, **не анализ текста**. Не выдаёт noise и не вычисляет сущности/интенты. Web отличает диагностический результат от AI-анализа и показывает безопасные причины ошибок, число попыток; карточка обновляется каждые 5 секунд при видимости вкладки. Android receipt и логика доставки сохраняются.
+По умолчанию `NOTIFICATION_PROCESSOR=disabled`: очередь остаётся в SQLite pending, health services.notification_worker=disabled. Независимый LLM_ENABLED тоже false по умолчанию. Явное `diagnostic` запускает технический тест конвейера. Его единственный результат — `{"processor":"diagnostic","llm":false}`, category=null; processed в этом режиме означает завершённую проверку очереди, **не анализ текста**. Не выдаёт noise и не вычисляет сущности/интенты. Web отличает диагностический результат от AI-анализа и показывает безопасные причины ошибок, число попыток; карточка обновляется каждые 5 секунд при видимости вкладки. Android receipt и логика доставки сохраняются.
 
-Миграция 0006 добавляет статусы/индекс к notifications_raw. Прежние данные/ID сохраняются, существующие строки получают pending/0: старый is_processed/JSON не являются доказательством работы нового worker и до нового processed не выдаются как результат. Новая обработка пишет ограниченный проверенный JSON в существующий extracted_data_json, сохраняет совместимый is_processed, category пока null. Неизвестные поля результата отклоняются, тексты исключений/SQL-параметры/исходные payload в ошибки и служебные логи не попадают.
+Миграция 0006 добавляет статусы/индекс к notifications_raw. Прежние данные/ID сохраняются, существующие строки получают pending/0: старый is_processed/JSON не являются доказательством работы нового worker и до нового processed не выдаются как результат. Обработка пишет ограниченный проверенный JSON в существующий extracted_data_json, сохраняет совместимый is_processed. Diagnostic оставляет category=null; LLM записывает категорию из проверенного результата. Неизвестные поля результата отклоняются, тексты исключений/SQL-параметры/исходные payload в ошибки и служебные логи не попадают.
 
 Один worker, один процесс Core на БД. FIFO по ID; очередь в RAM содержит только ID (NOTIFICATION_QUEUE_SIZE=64, диапазон 1..256), активен максимум один ограниченный входной payload. Остаток ожидает в SQLite; переполнение пачки памяти не отклоняет сохранённый POST. Это не квота размера БД: общая история и pending подчиняются сроку хранения уведомлений. Сигнал после commit ускоряет запуск; опрос раз в секунду восстанавливает работу и без сигнала. Сырая шина create_task не используется.
 
-До вызова обработчика фиксируются processing и номер попытки, транзакция закрывается. Обработчик вызывается асинхронно вне HTTP и обязан не блокировать event loop/уважать отмену; CPU-инференс в дальнейшем требует отдельного исполнения TASK-16. NOTIFICATION_PROCESSING_TIMEOUT_SECONDS=30 (0.1..300). Ошибка/таймаут/неверный результат дают terminal failed и не блокируют следующую запись; failed автоматически не повторяется, HTTP retry-маршрута пока нет. При сбое commit результата worker повторяет только фиксацию одного проверенного результата, без повторного вычисления; storage_error виден в health. Неопределённый исход claim восстанавливается в том же процессе после восстановления БД.
+До вызова обработчика фиксируются processing и номер попытки, транзакция закрывается. Обработчик вызывается асинхронно вне HTTP и обязан не блокировать event loop/уважать отмену; CPU-инференс TASK-16 выполняется в дочернем процессе. NOTIFICATION_PROCESSING_TIMEOUT_SECONDS=30 (0.1..300). Ошибка/таймаут/неверный результат дают terminal failed и не блокируют следующую запись; failed автоматически не повторяется, HTTP retry-маршрута пока нет. При сбое commit результата worker повторяет только фиксацию одного проверенного результата, без повторного вычисления; storage_error виден в health. Неопределённый исход claim восстанавливается в том же процессе после восстановления БД.
 
 При штатной остановке Core ждёт активную попытку до NOTIFICATION_SHUTDOWN_SECONDS=5 (0.1..30), затем отменяет её. Не взятые ID остаются pending; processing без финального commit при следующем старте становится pending с PROCESSING_INTERRUPTED, попытки не обнуляются. Это **как минимум одно вычисление**, а не exactly-once: после аварии оно может повториться. Обработчики должны быть чистыми, без вызовов HA/внешних действий; автоматических команд из результата нет. Успешные и failed записи после рестарта не вычисляются снова. Срок/допуск проверяются до вызова и при фиксации результата, удалённая/просроченная/исключённая строка не возрождается.
 
 [Эксплуатация и воспроизведение](../core/README.md#очередь-обработки-уведомлений-task-15), [отчёт](reports/task-15.md).
+
+#### 4.1.5. Результат извлечения — программная TASK-17
+
+Явные `NOTIFICATION_PROCESSOR=llm` и `LLM_ENABLED=true` подключают очередь к одному LocalLLMEngine. При выключенном движке worker disabled, загрузка не включается неявно. До готовности модели worker сообщает `waiting_model`, при отказе загрузки — `model_unavailable`; уведомления остаются pending/attempts=0. Время загрузки не расходует бюджет отдельной попытки. После runtime timeout/отмены/выхода процесса перед следующим уведомлением выполняется явная повторная загрузка. Терминальный failed прежнего события не повторяется.
+
+Внешний POST/receipt не меняется. Защищённые GET после processed возвращают `category` и `processed_data` следующей версии (пример для уведомления 2026-10-17T20:50:00Z):
+
+```json
+{
+  "processor": "llm",
+  "llm": true,
+  "schema_version": 1,
+  "category": "delivery",
+  "priority": "high",
+  "intent": "delivery_event",
+  "entities": {"subject": "Курьер", "location": "Лесная 2", "service": "Ozon"},
+  "time": {
+    "source": "через 15 минут",
+    "timezone": "Asia/Yekaterinburg",
+    "at": "2026-10-17T21:05:00Z",
+    "date": null,
+    "resolution": "exact"
+  },
+  "action_authorized": false
+}
+```
+
+| Поле | Версия 1 / ограничение |
+| :--- | :--- |
+| category | delivery / transport / calendar / reminder / noise |
+| priority | low / default / high — распознанная важность, отдельно от исходного Android priority |
+| intent | delivery_event / transport_event / calendar_event / reminder / none; однозначно выводится из category |
+| entities.subject/location/service | null либо буквальная непустая цитата title/text, до 160/200/80 символов |
+| time.source | null либо буквальная цитата до 128 символов |
+| time.timezone | Настройка Core NOTIFICATION_TIMEZONE, IANA, default Asia/Yekaterinburg |
+| time.at | Точный момент UTC ISO 8601 либо null |
+| time.date | Локальная дата YYYY-MM-DD без выдуманного времени либо null |
+| time.resolution | absent / exact / date_only / unresolved |
+| action_authorized | Всегда false, без entity_id/HA-параметров/команд |
+
+Реклама/обновление/прочее — noise с low, пустыми entities и absent time. Банки/личная переписка не добавляются в допуск; finance/communication из целевого примера архитектуры не включены в версию 1. Календарь/напоминания не расширяют allowlist автоматически: доверенный источник выбирается отдельно. Поле confidence не заполняется выдуманным числом модели; измерение качества — TASK-18. Категория/priority остаются вероятностным распознаванием, даже когда JSON/цитаты валидны.
+
+Модель получает русский системный промпт, три отдельные синтетические пары примеров, затем JSON title/text как недоверенные данные. JSON Schema ограничивает вывод, Pydantic независимо проверяет типы/enum/размеры/лишние поля; дубликаты JSON-ключей, обрезанный ответ и неподтверждённые цитаты отклоняются с LLM_BAD_RESPONSE. Ответ модели ограничен 4 KiB, не сохраняется сырым при ошибке. Успех сохраняется через прежний атомарный finish worker в той же строке, category-фильтр работает по колонке. Новая миграция не требуется — схема БД не меняется.
+
+Время нормализует код, не модель, от **timestamp уведомления**, никогда от текущего дня обработки. Входной offset уже нормализован при приёме в UTC, поэтому «сегодня/завтра» используют явно выбранный часовой пояс Core, а не догадку о телефоне. Поддержаны `через N минут/часов/дней` (до 365; сутки=24 ч), сегодня/завтра/послезавтра с необязательным `в HH:MM`, YYYY-MM-DD и DD.MM.YYYY с необязательным временем. Отсутствующее время даёт date_only; голые часы, день недели, диапазоны, «скоро», неизвестный формат, несуществующий/двойной час DST дают unresolved и null at/date. Если модель выбрала только часы, полный source сегодня/завтра/послезавтра восстанавливается только при единственной подходящей буквальной цитате в title/text; при разных днях результат остаётся unresolved. Отсутствие time.source — absent. Прошедшую дату не сдвигать в будущее. Дальнейший планировщик обязан отдельно решать, допустимо ли назначение события; из извлечения ничего не отправляется в HA/календарь/уведомления.
 
 ### 4.2. Устройства умного дома — реализовано в TASK-06
 
@@ -765,7 +810,7 @@ curl -X DELETE "http://<raspberry-pi-ip>:8000/api/v1/automations/aut_78c2e99a" \
 
 `uptime` — целые секунды с импорта модуля в текущем процессе. `ha_status` и services.home_assistant равны connected либо безопасному коду HA_* из §4.2.5. Старые поля сохранены; клиентам нужно принимать degraded/error. db_size_bytes — размер основного SQLite-файла вместе с WAL (без SHM), 0 для memory, null при ошибке чтения размера; строковый db_size тогда unknown. Размер — текущая оценка, запись может менять файл во время подсчёта. Analytics пока not_implemented.
 
-В TASK-15 services.notification_worker показывает starting/disabled/idle/processing/storage_error/stopped. Это состояние конвейера, не наличие модели.
+Services.notification_worker показывает starting/disabled/idle/processing/storage_error/stopped; TASK-17 добавляет waiting_model/model_unavailable. Это состояние конвейера, не наличие модели.
 
 В программной TASK-16 `llm_status` и `services.llm` совпадают: `not_loaded` при LLM_ENABLED=false, `loading` при фоновой загрузке, `ready` после её успеха либо фиксированный код `LLM_*`. Возможны MODEL_MISSING/MODEL_INVALID/MODEL_TOO_LARGE/DEPENDENCY_MISSING/MEMORY_LIMIT/LOAD_FAILED/LOAD_TIMEOUT/TIMEOUT/INFERENCE_FAILED/CONTEXT_EXCEEDED/BAD_RESPONSE/PROCESS_EXITED/CANCELLED с префиксом LLM_. Служебные вызовы также используют LLM_DISABLED/NOT_READY/BUSY/CLOSED. Путь, содержимое модели, exception и текст уведомления не возвращаются. Клиент переводит неизвестный код общей ошибкой, не показывает его raw.
 

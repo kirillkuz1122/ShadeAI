@@ -54,7 +54,7 @@ def processor(monkeypatch):
     monkeypatch.setattr(settings, "notification_queue_size", 3)
     monkeypatch.setattr(settings, "notification_shutdown_seconds", 0.1)
     monkeypatch.setattr(module, "POLL_SECONDS", 0.05)
-    monkeypatch.setattr(main, "NotificationWorker", lambda: NotificationWorker(proc))
+    monkeypatch.setattr(main, "NotificationWorker", lambda **_: NotificationWorker(proc))
     return proc
 
 
