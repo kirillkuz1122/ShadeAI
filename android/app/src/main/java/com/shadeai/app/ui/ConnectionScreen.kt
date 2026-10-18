@@ -13,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -35,7 +36,7 @@ import androidx.compose.ui.unit.dp
 fun ConnectionScreen(
     state: ConnectionUiState, onUrl: (String) -> Unit, onKey: (String) -> Unit,
     onCheck: () -> Unit, onClear: () -> Unit, onTest: () -> Unit,
-    onSources: () -> Unit,
+    onSources: () -> Unit, onJournal: () -> Unit,
 ) {
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
@@ -48,6 +49,10 @@ fun ConnectionScreen(
             Text("Zero Cloud · данные остаются в локальной сети", style = MaterialTheme.typography.bodySmall)
             OutlinedButton(onClick = onSources, modifier = Modifier.fillMaxWidth()) {
                 Text("Уведомления и источники")
+            }
+            OutlinedButton(onClick = onJournal, modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)) {
+                Text("Журнал уведомлений")
             }
             HorizontalDivider()
             OutlinedTextField(
@@ -101,7 +106,7 @@ fun ConnectionScreen(
                 Text("Отправить тестовое уведомление")
             }
             Text("Тест отправляет одну служебную запись без личных данных. Доступ к уведомлениям телефона не нужен.", style = MaterialTheme.typography.bodySmall)
-            Text("Ключ защищён Android Keystore. Для другого адреса Core введите ключ заново. AI-анализ и надёжная фоновая доставка ещё разрабатываются.", style = MaterialTheme.typography.bodySmall)
+            Text("Ключ защищён Android Keystore. Для другого адреса Core введите ключ заново. Состояние доставки смотрите в журнале уведомлений.", style = MaterialTheme.typography.bodySmall)
         }
     }
 }

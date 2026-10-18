@@ -68,6 +68,10 @@ interface PendingNotificationDao {
     @Query("SELECT count(*) FROM pending_notifications") suspend fun count(): Int
     @Query("SELECT * FROM pending_notifications WHERE status IN ('PENDING', 'FAILED') ORDER BY id LIMIT :limit")
     suspend fun unsent(limit: Int = 100): List<PendingNotificationEntity>
+    @Query("SELECT * FROM pending_notifications WHERE status IN (:statuses) AND (:beforeId IS NULL OR id < :beforeId) ORDER BY id DESC LIMIT :limit")
+    suspend fun journalPage(statuses: Set<DeliveryStatus>, beforeId: Long?, limit: Int): List<PendingNotificationEntity>
+    @Query("SELECT status, count(*) AS count FROM pending_notifications GROUP BY status")
+    suspend fun journalCounts(): List<JournalCount>
     @Query("SELECT * FROM pending_notifications ORDER BY id DESC LIMIT 50") fun recent(): Flow<List<PendingNotificationEntity>>
     @Query("SELECT * FROM pending_notifications WHERE id > :after ORDER BY id LIMIT 100")
     suspend fun page(after: Long): List<PendingNotificationEntity>

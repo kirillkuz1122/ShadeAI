@@ -118,6 +118,10 @@ function NotificationDetail({
               <dd>{time(n.created_at)}</dd>
             </div>
             <div>
+              <dt>Идентификатор события</dt>
+              <dd className="mono">{n.event_id ?? "Старая запись без UUID"}</dd>
+            </div>
+            <div>
               <dt>Приоритет</dt>
               <dd>{priorities[n.priority] ?? n.priority}</dd>
             </div>

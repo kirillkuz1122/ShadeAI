@@ -39,14 +39,18 @@ def nodes(text: str):
 
 
 def scroll(top: bool = False):
+    sizes = re.findall(r"(\d+)x(\d+)", adb("shell", "wm", "size"))
+    width, height = map(int, sizes[-1])
+    x = str(width // 2)
+    upper, lower = str(int(height * 0.28)), str(int(height * 0.80))
     adb(
         "shell",
         "input",
         "swipe",
-        "500",
-        "550" if top else "1550",
-        "500",
-        "1550" if top else "550",
+        x,
+        upper if top else lower,
+        x,
+        lower if top else upper,
         "200",
     )
 
