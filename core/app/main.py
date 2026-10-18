@@ -7,11 +7,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.notification_body import NotificationBodyLimit
-from app.api.v1 import devices, events, ha, health, notifications, telemetry
+from app.api.v1 import devices, events, ha, habits, health, notifications, telemetry
 from app.core.config import settings
 from app.core.logging import local_logging
 from app.db import base
 from app.db.base import init_db
+from app.services.analytics.service import AnalyticsService
 from app.services.ha_bridge.audit import maintain_events
 from app.services.ha_bridge.client import HAClient
 from app.services.llm.engine import LocalLLMEngine
@@ -29,6 +30,8 @@ async def lifespan(app: FastAPI):
             await maintain_events(session, recover=True)
         client = HAClient()
         app.state.ha_client = client
+        analytics = AnalyticsService()
+        app.state.analytics = analytics
         collector = TelemetryCollector()
         app.state.telemetry = collector
         llm = LocalLLMEngine()
@@ -37,11 +40,13 @@ async def lifespan(app: FastAPI):
         app.state.notification_worker = worker
         try:
             await collector.start()
+            await analytics.start()
             llm.start()
             await worker.start()
         except BaseException:
             await worker.stop()
             await llm.close()
+            await analytics.stop()
             await collector.stop()
             await client.close()
             await base.engine.dispose()
@@ -53,6 +58,7 @@ async def lifespan(app: FastAPI):
         finally:
             await worker.stop()
             await llm.close()
+            await analytics.stop()
             await collector.stop()
             maintenance.cancel()
             with suppress(asyncio.CancelledError):
@@ -130,6 +136,7 @@ def create_app() -> FastAPI:
     app.include_router(devices.router, prefix="/api/v1")
     app.include_router(events.router, prefix="/api/v1")
     app.include_router(telemetry.router, prefix="/api/v1")
+    app.include_router(habits.router, prefix="/api/v1")
 
     return app
 

@@ -289,7 +289,7 @@ def test_health_db_failure_and_ha_degradation(client, ha_mock, monkeypatch):
     assert response.status_code == 200 and response.json()["status"] == "degraded"
     assert response.json()["ha_status"] == "HA_AUTH_FAILED"
     assert response.json()["db_connected"] is True
-    assert response.json()["services"]["analytics"] == "not_implemented"
+    assert response.json()["services"]["analytics"] == "disabled"
     original = AsyncSession.execute
 
     async def fail_probe(self, statement, *args, **kwargs):

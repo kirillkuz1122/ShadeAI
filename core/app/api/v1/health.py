@@ -69,6 +69,6 @@ async def health(
             "home_assistant": ha_status,
             "llm": request.app.state.llm.status,
             "notification_worker": request.app.state.notification_worker.status,
-            "analytics": "not_implemented",
+            "analytics": request.app.state.analytics.status,
         },
     )

@@ -446,72 +446,47 @@ GET при отказе возвращает `{"detail":{"code":"HA_UNAVAILABLE"
 
 ---
 
-### 4.3. Привычки и поведенческие паттерны (Habits)
+### 4.3. Аналитика — программная TASK-20
 
-Эндпоинты аналитического движка Shade AI, агрегирующего регулярные действия пользователя для автоматического формирования рекомендаций и умных сценариев.
+#### 4.3.1. `GET /habits` — описательные профили присутствия
 
-#### 4.3.1. `GET /habits` — Список обнаруженных привычек
+**Реализовано программно**, реальные 7–10 дней/Pi не проверены. Требуется `Authorization: Bearer <SHADE_API_KEY>`; без ключа 401. Параметров запроса нет. Аналитика выключена, пока явно не выбран `ANALYTICS_PRESENCE_ENTITY` из `HA_TELEMETRY_ENTITIES` (только binary_sensor, on=дома/off=вне дома). Датчик движения не считается сигналом присутствия автоматически. `ANALYTICS_TIMEZONE` — IANA, `ANALYTICS_INTERVAL_SECONDS` —60..86400, default 3600; изменение .env требует перезапуска.
 
-Возвращает список поведенческих закономерностей, выявленных алгоритмами Shade AI на основе истории событий.
+Ответ 200: `habits` (до 4 профилей) и `analytics` (состояние/причины). Список отсортирован по устойчивому id, по старому config_key данные не выдаются. Профили не содержат action/target, не управляют HA, не являются готовой автоматизацией TASK-21.
 
-##### Заголовки (Headers)
-| Заголовок | Тип | Обязательный | Описание |
-| :--- | :--- | :--- | :--- |
-| `Authorization` | `string` | Да | `Bearer <SHADE_API_KEY>` |
+| Поле | Формат/смысл |
+| :--- | :--- |
+| habits[].id | hbt_ +32hex; устойчив для entity/timezone/kind/day_group |
+| description | Русское описание вида, группы дней и локального окна |
+| confidence | Эвристический score 0..1; **не вероятность/статистическая гарантия** |
+| last_seen | UTC ISO8601 последнего совпавшего live-перехода |
+| pattern.kind | arrival_home / departure_home |
+| pattern.day_group | weekdays (пн–пт) / weekends (сб–вс) |
+| pattern.trigger / timezone | Явно выбранный binary_sensor / IANA-пояс |
+| pattern.window_start / window_end | HH:MM локального времени, радиус 45 мин |
+| pattern.wraps_midnight | Окно пересекает полночь; start может быть позже end |
+| pattern.radius_minutes | 45 |
+| evidence | support_days, eligible_days, dispersion_minutes (медиана круговых расстояний) |
+| analytics.status | disabled / starting / calculating / insufficient_data / insufficient_coverage / no_pattern / ready / too_many_observations / too_many_gaps / invalid_checkpoint / ANALYTICS_ERROR / ANALYTICS_INVALID_SNAPSHOT |
+| analytics.entity_id / timezone | Выбор пользователя, null entity при выключенной аналитике |
+| analytics.computed_at / stale | Снимок UTC; stale при отсутствии/другой конфигурации/пересчёте/ошибке/возрасте >2 интервалов |
+| analytics.telemetry_stale | Текущий сборщик не connected; исторический профиль не доказывает актуальное присутствие |
+| analytics.version / window_start / window_end | Версия 1, 30 последних полных локальных дней [start,end), без текущего дня; отсутствуют до первого расчёта |
+| analytics.diagnostics | Число наблюдений, полных/допущенных дней, покрытие, группы дней и причины исключения coverage/gap/clock/unknown/snapshot/unstable |
+| analytics.score_kind | heuristic_regularity_not_probability |
+| analytics.action_authorized | Всегда false |
 
-##### Query-параметры
-| Параметр | Тип | По умолчанию | Описание |
-| :--- | :--- | :--- | :--- |
-| `min_confidence` | `float` | `0.5` | Минимальный уровень уверенности алгоритма (0.0 .. 1.0) |
+Один первый уход и последний приход в сутки; повторы того же state не увеличивают поддержку. Снимки не являются переходами. Исключаются неполные/неподтверждённые сутки, любые gaps, unknown/unavailable, скачок snapshot, рассогласование HA/Core >120 с, переход через границу локального дня из-за расхождения часов, более 8 переходов/сутки или смены чаще 60 с. Окна считают круговое расстояние минут суток с учётом полуночи; полные сутки используют IANA-пояс и могут иметь 23/25 часов при DST.
 
-##### Поля успешного ответа (200 OK)
-| Поле | Тип | Описание |
-| :--- | :--- | :--- |
-| `habits` | `array` | Массив обнаруженных привычек |
-| `habits[].id` | `string` | Уникальный идентификатор привычки |
-| `habits[].description` | `string` | Человекочитаемое описание привычки на русском языке |
-| `habits[].confidence` | `float` | Уверенность алгоритма в устойчивости паттерна (от 0.0 до 1.0) |
-| `habits[].pattern` | `object` | Структура условий и триггеров повторяемости паттерна |
-| `habits[].last_seen` | `string` | Время последнего совпадения условий паттерна (ISO 8601) |
+Для профиля нужны общий охват ≥7 дней, ≥5 допущенных будней либо ≥4 выходных, общее покрытие ≥70%, поддержка ≥80% допущенных дней группы и медианный разброс ≤15 мин в окне±45 мин. `confidence = support_days/eligible_days × min(eligible_days/10,1) × (1−dispersion_minutes/45) × общее_покрытие`. Пять идеальных будней дают score0.5, а не уверенную единицу. Эти пороги требуют проверки на реальных данных и не дают разрешения на автоматизацию.
 
-##### Пример cURL-запроса
+Чтение ограничено 10000 наблюдениями (+контрольная строка, включая baseline) и 1000 gaps. Переполнение не подменяется усечённой уверенной выборкой. Если старые gaps уже удалены ограничением хранения, более ранний интервал исключается консервативно. Расчёт вне event loop, снимок/профили записываются одной транзакцией. При сбое старый снимок может оставаться, но помечается stale; raw-исключения/тексты/атрибуты не возвращаются. Отключение аналитики на следующем старте очищает производные профили/снимок, исходную телеметрию не удаляет. Новая ревизия 0007_habit_profiles.
+
 ```bash
-curl -X GET "http://<raspberry-pi-ip>:8000/api/v1/habits" \
-  -H "Authorization: Bearer <SHADE_API_KEY>"
+curl http://<core>:8000/api/v1/habits -H "Authorization: Bearer <SHADE_API_KEY>"
 ```
 
-##### Пример ответа (HTTP 200)
-```json
-{
-  "habits": [
-    {
-      "id": "hbt_89ab12cd",
-      "description": "Включение ночника в коридоре при движении после 23:30",
-      "confidence": 0.89,
-      "pattern": {
-        "days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
-        "time_window": "23:30-05:00",
-        "trigger": "binary_sensor.corridor_motion",
-        "action": "light.turn_on",
-        "target": "light.corridor_nightlight"
-      },
-      "last_seen": "2026-09-17T00:14:10Z"
-    },
-    {
-      "id": "hbt_34ef56gh",
-      "description": "Выключение кондиционера при открытии окна более чем на 5 минут",
-      "confidence": 0.94,
-      "pattern": {
-        "trigger": "binary_sensor.window_bedroom",
-        "delay_minutes": 5,
-        "action": "climate.turn_off",
-        "target": "climate.bedroom_ac"
-      },
-      "last_seen": "2026-09-16T19:42:00Z"
-    }
-  ]
-}
-```
+По умолчанию `habits=[]`, `analytics.status=disabled`, `action_authorized=false`. `ready` означает обнаруженный исторический профиль, а не аппаратную приёмку или актуальный сигнал для команды. [Проверки и ограничения](reports/task-20.md).
 
 ---
 
@@ -808,7 +783,7 @@ curl -X DELETE "http://<raspberry-pi-ip>:8000/api/v1/automations/aut_78c2e99a" \
 }
 ```
 
-`uptime` — целые секунды с импорта модуля в текущем процессе. `ha_status` и services.home_assistant равны connected либо безопасному коду HA_* из §4.2.5. Старые поля сохранены; клиентам нужно принимать degraded/error. db_size_bytes — размер основного SQLite-файла вместе с WAL (без SHM), 0 для memory, null при ошибке чтения размера; строковый db_size тогда unknown. Размер — текущая оценка, запись может менять файл во время подсчёта. Analytics пока not_implemented.
+`uptime` — целые секунды с импорта модуля в текущем процессе. `ha_status` и services.home_assistant равны connected либо безопасному коду HA_* из §4.2.5. Старые поля сохранены; клиентам нужно принимать degraded/error. db_size_bytes — размер основного SQLite-файла вместе с WAL (без SHM), 0 для memory, null при ошибке чтения размера; строковый db_size тогда unknown. Размер — текущая оценка, запись может менять файл во время подсчёта. services.analytics отражает состояние описательного анализатора TASK-20; по умолчанию disabled.
 
 Services.notification_worker показывает starting/disabled/idle/processing/storage_error/stopped; TASK-17 добавляет waiting_model/model_unavailable. Это состояние конвейера, не наличие модели.
 

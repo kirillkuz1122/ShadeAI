@@ -1,0 +1,34 @@
+{
+  "platform": "development-computer",
+  "synthetic": true,
+  "ha_commands": 0,
+  "runs": [
+    {
+      "profiles": 4,
+      "ids": [
+        "hbt_0c03c938e2fadfa51f58abf1c8d0349b",
+        "hbt_5353e7d27b0d18673d659e4b821ee914",
+        "hbt_f24016390d569fbb4c4bc11cf26b8fb1",
+        "hbt_f3626f627b81ee610f4ea991e07fa234"
+      ],
+      "eligible_days": 28,
+      "startup_to_result_ms": 725.06,
+      "telemetry_stale": true
+    },
+    {
+      "profiles": 4,
+      "ids": [
+        "hbt_0c03c938e2fadfa51f58abf1c8d0349b",
+        "hbt_5353e7d27b0d18673d659e4b821ee914",
+        "hbt_f24016390d569fbb4c4bc11cf26b8fb1",
+        "hbt_f3626f627b81ee610f4ea991e07fa234"
+      ],
+      "eligible_days": 28,
+      "startup_to_result_ms": 706.42,
+      "telemetry_stale": true
+    }
+  ],
+  "restart": "PASS",
+  "http_auth_health": "PASS",
+  "gguf_required": false
+}

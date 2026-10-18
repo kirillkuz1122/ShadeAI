@@ -445,3 +445,49 @@ def test_notification_processing_defaults_downgrade_and_rollback(tmp_path, monke
             "'2026-10-18 00:00:00')"
         )
         assert db.execute("SELECT max(id) FROM notifications_raw").fetchone()[0] > 100
+
+
+def test_habit_profiles_revision_round_trip_preserves_source_data(tmp_path):
+    path = tmp_path / "habits.db"
+    legacy_database(path, seed=True)
+    asyncio.run(migrate(path, "0006_notification_processing"))
+    before = snapshot(path)
+    asyncio.run(migrate(path))
+    with closing(sqlite3.connect(path)) as db, db:
+        db.execute(
+            "INSERT INTO habit_profiles VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                "hbt_synthetic",
+                "binary_sensor.test_presence",
+                "UTC",
+                "arrival_home",
+                "weekdays",
+                "synthetic-config",
+                "{}",
+                "2026-10-19 00:00:00",
+            ),
+        )
+        db.execute(
+            "INSERT INTO analytics_state VALUES (?, ?, ?, ?)",
+            (1, "synthetic-config", "{}", "2026-10-19 00:00:00"),
+        )
+    assert snapshot(path)[1] == before[1]
+
+    async def downgrade():
+        engine = create_db_engine(URL.create("sqlite+aiosqlite", database=str(path)))
+        try:
+            async with engine.begin() as connection:
+                await connection.run_sync(
+                    lambda conn: command.downgrade(
+                        migration_config(conn), "0006_notification_processing"
+                    )
+                )
+        finally:
+            await engine.dispose()
+
+    asyncio.run(downgrade())
+    assert snapshot(path) == before
+    asyncio.run(migrate(path))
+    with closing(sqlite3.connect(path)) as db:
+        assert db.execute("SELECT COUNT(*) FROM habit_profiles").fetchone() == (0,)
+        assert db.execute("SELECT COUNT(*) FROM analytics_state").fetchone() == (0,)

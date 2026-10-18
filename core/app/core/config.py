@@ -3,7 +3,7 @@ from typing import Literal
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import Field, ValidationError, field_validator
+from pydantic import Field, ValidationError, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict, SettingsError
 
 from app.core.credentials import validate_api_key
@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     ha_telemetry_entities: list[str] = Field(default_factory=list, max_length=100)
     sensor_retention_days: int = Field(default=90, ge=1, le=365)
     sensor_history_max_rows: int = Field(default=100_000, ge=1000, le=500_000)
+    analytics_presence_entity: str | None = None
+    analytics_timezone: str = "Asia/Yekaterinburg"
+    analytics_interval_seconds: int = Field(default=3600, ge=60, le=86400)
     event_retention_days: int = Field(default=90, ge=1, le=365)
     log_dir: str = "./logs"
     log_max_bytes: int = Field(default=1_048_576, ge=1024, le=10_485_760)
@@ -42,6 +45,20 @@ class Settings(BaseSettings):
         ):
             raise ValueError("Ожидался список entity_id датчиков sensor/binary_sensor")
         return list(dict.fromkeys(value))
+
+    @field_validator("analytics_presence_entity", mode="before")
+    @classmethod
+    def normalize_presence_entity(cls, value):
+        return None if value == "" else value
+
+    @model_validator(mode="after")
+    def check_analytics_source(self):
+        entity = self.analytics_presence_entity
+        if entity is not None and (
+            not entity.startswith("binary_sensor.") or entity not in self.ha_telemetry_entities
+        ):
+            raise ValueError("ANALYTICS_PRESENCE_ENTITY должен быть уже выбранным binary_sensor")
+        return self
 
     @field_validator("ha_token")
     @classmethod
@@ -99,7 +116,7 @@ class Settings(BaseSettings):
         max_length=100,
     )
 
-    @field_validator("notification_timezone")
+    @field_validator("notification_timezone", "analytics_timezone")
     @classmethod
     def check_notification_timezone(cls, value: str) -> str:
         try:

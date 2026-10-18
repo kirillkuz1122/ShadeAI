@@ -99,3 +99,28 @@ class TelemetryCheckpoint(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     last_seen: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
+class HabitProfile(Base):
+    __tablename__ = "habit_profiles"
+    __table_args__ = (
+        Index("uq_habit_profile_scope", "entity_id", "timezone", "kind", "day_group", unique=True),
+    )
+
+    id: Mapped[str] = mapped_column(Text, primary_key=True)
+    entity_id: Mapped[str] = mapped_column(Text, nullable=False)
+    timezone: Mapped[str] = mapped_column(Text, nullable=False)
+    kind: Mapped[str] = mapped_column(Text, nullable=False)
+    day_group: Mapped[str] = mapped_column(Text, nullable=False)
+    config_key: Mapped[str] = mapped_column(Text, nullable=False)
+    profile_json: Mapped[str] = mapped_column(Text, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
+class AnalyticsState(Base):
+    __tablename__ = "analytics_state"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    config_key: Mapped[str] = mapped_column(Text, nullable=False)
+    snapshot_json: Mapped[str] = mapped_column(Text, nullable=False)
+    computed_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
