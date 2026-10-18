@@ -81,3 +81,23 @@ npx --yes --package @playwright/cli playwright-cli -s=shade-task15 close
 ```
 
 Список берётся из реального тестового Core, переходы processing/failed/diagnostic в ответе одной карточки имитируются browser route. Проверяются обновление уже открытой карточки, fallback неизвестной ошибки без raw-кода, 320 px и отсутствие внешних запросов/JS-ошибок. Настоящую очередь и SIGKILL/рестарт проверяет отдельный Core-стенд, эти проверки различать. Снимок — игнорируемый output/playwright/task15-processing.png. Сначала создайте `mkdir -p output/playwright`; профиль/локальный config не коммитить.
+
+## Результаты извлечения (программная часть TASK-19)
+
+Карточка показывает только известную схему1: категорию/приоритет, событие/место/сервис, полную цитату времени и результат нормализации в указанном часовом поясе. date_only не переводится через часовой пояс браузера, unresolved не превращается в точную дату. Diagnostic отделён от LLM, неизвестная версия/невалидные поля дают безопасную подпись. Сырой processed_data больше не выводится. При401/404 карточка очищается; другие сетевые ошибки сохраняют прежнее обозначение недоступности. Извлечённые сущности не добавляются в общую ленту.
+
+Быстрая проверка без новых зависимостей: `node checks/processing.mjs`, затем `npm run build`. Браузерный стенд использует существующий системный Chromium/Playwright CLI и синтетические маршруты, Core запускать не требуется:
+
+```bash
+npm run dev -- --host 127.0.0.1 --port 5187 --strictPort
+# В другом терминале, из web/, с уже закэшированным @playwright/cli:
+PLAYWRIGHT_CLI_SESSION=shade-task19 npm_config_offline=true \
+  ~/.codex/skills/playwright/scripts/playwright_cli.sh open \
+  http://127.0.0.1:5187 --config=checks/playwright.config.json
+PLAYWRIGHT_CLI_SESSION=shade-task19 npm_config_offline=true \
+  ~/.codex/skills/playwright/scripts/playwright_cli.sh run-code --filename=checks/check-results.js
+PLAYWRIGHT_CLI_SESSION=shade-task19 npm_config_offline=true \
+  ~/.codex/skills/playwright/scripts/playwright_cli.sh close
+```
+
+checks/playwright.config.json — воспроизводимый тестовый config для /usr/bin/chromium без личного профиля. При другом установленном браузере используйте свой игнорируемый config, ничего не скачивайте ради стенда. Проверены pending→processed, unknown schema/diagnostic/failed, пояс,320px, очистка401/404; [отчёт](../docs/reports/task-19.md). Эта проверка не заменяет полный Android→Core+GGUF→Web конвейер.

@@ -53,7 +53,7 @@ export function useResource<T>(load: Loader<T>, interval = 10000) {
             error,
             loading: false,
             data:
-              error instanceof ApiError && error.status === 401
+              error instanceof ApiError && (error.status === 401 || error.status === 404)
                 ? null
                 : old.data,
           }));

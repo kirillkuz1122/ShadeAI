@@ -11,6 +11,8 @@ import retrofit2.Retrofit
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Path
+import retrofit2.http.Query
 import java.io.IOException
 import java.net.Proxy
 import java.util.concurrent.TimeUnit
@@ -27,6 +29,12 @@ interface ShadeApi {
 
     @POST("notifications")
     suspend fun ingest(@Body body: NotificationIngest): IngestResponse
+
+    @GET("notifications")
+    suspend fun notifications(@Query("limit") limit: Int, @Query("offset") offset: Int): CoreNotificationsPage
+
+    @GET("notifications/{id}")
+    suspend fun notification(@Path("id") id: Long): CoreNotification
 
     companion object {
         private val transport = OkHttpClient.Builder()

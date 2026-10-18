@@ -18,6 +18,8 @@ import com.shadeai.app.ui.ConnectionScreen
 import com.shadeai.app.ui.ConnectionViewModel
 import com.shadeai.app.ui.theme.ShadeAITheme
 import com.shadeai.app.ui.JournalRoute
+import com.shadeai.app.ui.CoreResultsRoute
+import com.shadeai.app.ui.CoreResultsViewModel
 import com.shadeai.app.ui.JournalViewModel
 
 class MainActivity : ComponentActivity() {
@@ -38,6 +40,7 @@ class MainActivity : ComponentActivity() {
         val model = ViewModelProvider(this)[ConnectionViewModel::class.java]
         sources = ViewModelProvider(this)[NotificationSourcesViewModel::class.java]
         val journal = ViewModelProvider(this)[JournalViewModel::class.java]
+        val results = ViewModelProvider(this)[CoreResultsViewModel::class.java]
         setContent {
             ShadeAITheme {
                 val state by model.state.collectAsStateWithLifecycle()
@@ -45,13 +48,15 @@ class MainActivity : ComponentActivity() {
                 var screen by rememberSaveable { mutableStateOf("connection") }
                 BackHandler(screen != "connection") { screen = "connection" }
                 when (screen) {
+                    "results" -> CoreResultsRoute(results) { screen = "connection" }
                     "sources" -> NotificationSourcesScreen(sourcesState, sources::toggle,
                         sources::refresh, { screen = "connection" })
                     "journal" -> JournalRoute(journal, { screen = "connection" },
                         { sources.refresh(); screen = "sources" })
                     else -> ConnectionScreen(state, model::editUrl, model::editKey,
                         model::saveAndCheck, model::clearKey, model::sendTest,
-                        onSources = { sources.refresh(); screen = "sources" }, onJournal = { screen = "journal" })
+                        onSources = { sources.refresh(); screen = "sources" }, onJournal = { screen = "journal" },
+                        onResults = { screen = "results" })
                 }
             }
         }

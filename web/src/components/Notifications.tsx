@@ -6,6 +6,8 @@ import {
   type KeyboardEvent,
 } from "react";
 import { api, type NotificationItem } from "../api/client";
+import { ProcessingResult } from "./ProcessingResult";
+import { categoryLabels, processingError } from "../api/processing";
 import { useResource } from "../hooks/useResource";
 import {
   ErrorNotice,
@@ -46,13 +48,6 @@ function processingLabel(n: NotificationItem, compact = false) {
   return compact ? "Сохранено" : "Сохранено, ожидает обработки";
 }
 
-const processingErrors: Record<string, string> = {
-  PROCESSOR_ERROR: "Обработчик завершился с ошибкой",
-  PROCESSOR_TIMEOUT: "Превышено время обработки",
-  INVALID_RESULT: "Обработчик вернул неверный результат",
-  INVALID_NOTIFICATION: "Сохранённая запись не прошла проверку",
-  PROCESSING_INTERRUPTED: "Предыдущая попытка прервана; запись ожидает обработки",
-};
 
 function NotificationDetail({
   id,
@@ -157,24 +152,15 @@ function NotificationDetail({
             {n.processing_error_code && (
               <div>
                 <dt>Причина</dt>
-                <dd>{processingErrors[n.processing_error_code] ?? "Не удалось обработать запись"}</dd>
+                <dd>{processingError(n.processing_error_code)}</dd>
               </div>
             )}
             <div>
               <dt>Категория</dt>
-              <dd>{n.category ?? "Не определена"}</dd>
+              <dd>{n.category && Object.hasOwn(categoryLabels, n.category) ? categoryLabels[n.category as keyof typeof categoryLabels] : "Не определена"}</dd>
             </div>
           </dl>
-          <p className="help">
-            {n.processed_data?.processor === "diagnostic"
-              ? "Проверен конвейер очереди. Анализ текста и LLM не выполнялись."
-              : n.processed_data
-              ? "Результат обработки"
-              : "AI-анализ пока не подключён. Здесь показана сохранённая запись."}
-          </p>
-          {n.processed_data && (
-            <pre>{JSON.stringify(n.processed_data, null, 2)}</pre>
-          )}
+          <ProcessingResult data={n.processed_data} />
         </>
       )}
     </dialog>
@@ -263,7 +249,7 @@ export function Notifications({ apiKey }: { apiKey: string }) {
                           <span>{appName(n.app_name)}</span>
                           <span>
                             {processingLabel(n, true)}
-                            {n.category ? ` · ${n.category}` : ""}
+                            {n.category && Object.hasOwn(categoryLabels, n.category) ? ` · ${categoryLabels[n.category as keyof typeof categoryLabels]}` : ""}
                           </span>
                         </span>
                       </span>
