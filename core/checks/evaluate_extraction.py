@@ -130,8 +130,11 @@ def main():
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--threads", type=int, choices=(2, 4), default=2)
     parser.add_argument("--dataset", type=Path, default=CORE / "checks/eval-notifications.json")
+    parser.add_argument("--stage", choices=("development", "holdout"), default="development")
     args = parser.parse_args()
     model, output = args.model.resolve(strict=True), args.output.resolve()
+    if output.exists():
+        parser.error("Файл отчёта уже существует; выберите новый --output")
     dataset_raw = args.dataset.read_bytes()
     dataset = json.loads(dataset_raw)
     previous = Path.cwd()
@@ -142,6 +145,7 @@ def main():
             report = asyncio.run(evaluate(model, dataset, args.threads))
         finally:
             os.chdir(previous)
+    report["stage"] = args.stage
     report["dataset_sha256"] = hashlib.sha256(dataset_raw).hexdigest()
     if Path("/proc/cpuinfo").is_file():
         report["cpu"] = next(
@@ -153,7 +157,8 @@ def main():
             "unknown",
         )
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+    with output.open("x") as destination:
+        destination.write(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
     print(json.dumps(report["summary"], ensure_ascii=False, indent=2))
     if not (
         report["summary"]["courier_reminder"]["sample_target_90_percent"]

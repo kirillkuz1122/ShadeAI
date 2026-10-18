@@ -1,0 +1,178 @@
+{
+  "platform": "development-computer",
+  "python": "3.14.8",
+  "cases": [
+    {
+      "id": "delivery",
+      "correct_category_and_time": true,
+      "entity_checks": {
+        "service": true,
+        "location": true
+      },
+      "correct": true,
+      "status": "processed",
+      "error": null,
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "delivery",
+        "priority": "high",
+        "intent": "delivery_event",
+        "entities": {
+          "subject": "Курьер Ozon",
+          "location": "Лесная 2",
+          "service": "Ozon"
+        },
+        "time": {
+          "source": "через 15 минут",
+          "timezone": "Asia/Yekaterinburg",
+          "at": "2026-10-17T21:05:00Z",
+          "date": null,
+          "resolution": "exact"
+        },
+        "action_authorized": false
+      },
+      "elapsed_ms": 21628.16
+    },
+    {
+      "id": "calendar",
+      "correct_category_and_time": true,
+      "entity_checks": {
+        "location": true
+      },
+      "correct": true,
+      "status": "processed",
+      "error": null,
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "calendar",
+        "priority": "default",
+        "intent": "calendar_event",
+        "entities": {
+          "subject": "Встреча с командой",
+          "location": "Офисе",
+          "service": null
+        },
+        "time": {
+          "source": "завтра в 10:30",
+          "timezone": "Asia/Yekaterinburg",
+          "at": "2026-10-19T05:30:00Z",
+          "date": null,
+          "resolution": "exact"
+        },
+        "action_authorized": false
+      },
+      "elapsed_ms": 4954.0
+    },
+    {
+      "id": "reminder",
+      "correct_category_and_time": true,
+      "entity_checks": {
+        "subject": true
+      },
+      "correct": true,
+      "status": "processed",
+      "error": null,
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "reminder",
+        "priority": "default",
+        "intent": "reminder",
+        "entities": {
+          "subject": "Полить цветы",
+          "location": null,
+          "service": null
+        },
+        "time": {
+          "source": "сегодня в 20:00",
+          "timezone": "Asia/Yekaterinburg",
+          "at": "2026-10-18T15:00:00Z",
+          "date": null,
+          "resolution": "exact"
+        },
+        "action_authorized": false
+      },
+      "elapsed_ms": 8938.01
+    },
+    {
+      "id": "noise",
+      "correct_category_and_time": true,
+      "entity_checks": {
+        "subject": true,
+        "service": true,
+        "location": true
+      },
+      "correct": true,
+      "status": "processed",
+      "error": null,
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "noise",
+        "priority": "low",
+        "intent": "none",
+        "entities": {
+          "subject": null,
+          "location": null,
+          "service": null
+        },
+        "time": {
+          "source": null,
+          "timezone": "Asia/Yekaterinburg",
+          "at": null,
+          "date": null,
+          "resolution": "absent"
+        },
+        "action_authorized": false
+      },
+      "elapsed_ms": 7899.95
+    }
+  ],
+  "dataset_sha256": "fa0ce5583374feeee68a676c9b3983ef28a7197d7a61dde0eba589ff7d624908",
+  "load": {
+    "sha256": "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e",
+    "model_bytes": 1117320736,
+    "load_ms": 2354.2347209986474,
+    "peak_rss_bytes": 1896570880,
+    "n_ctx": 2048,
+    "n_threads": 2
+  },
+  "completions": [
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 671,
+      "completion_tokens": 51,
+      "inference_ms": 21533.465043001343,
+      "peak_rss_bytes": 2002673664
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 669,
+      "completion_tokens": 52,
+      "inference_ms": 4908.32038300141,
+      "peak_rss_bytes": 2002673664
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 664,
+      "completion_tokens": 45,
+      "inference_ms": 8878.984483999375,
+      "peak_rss_bytes": 2002673664
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 689,
+      "completion_tokens": 33,
+      "inference_ms": 7842.49956399799,
+      "peak_rss_bytes": 2002673664
+    }
+  ],
+  "restart_and_receipts": "PASS",
+  "ha_commands": 0
+}

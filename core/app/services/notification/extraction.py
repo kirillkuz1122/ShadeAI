@@ -253,13 +253,13 @@ def unique_object(pairs):
 def complete_time_quote(source: str | None, notification: NotificationIn) -> str | None:
     if source is None or not re.fullmatch(r"(?:в )?[0-2]?\d:[0-5]\d", source):
         return source
-    prefix = r"\b(?:сегодня|завтра|послезавтра) "
+    prefix = r"\b(?:сегодня|завтра|послезавтра|\d{4}-\d{2}-\d{2}|\d{2}\.\d{2}\.\d{4}) "
     if not source.startswith("в "):
         prefix += r"(?:в )?"
     candidates = {
         match[0]
         for text in (notification.title, notification.text)
-        for match in re.finditer(prefix + re.escape(source) + r"(?!\d)", text, re.IGNORECASE)
+        for match in re.finditer(prefix + re.escape(source) + r"(?![\d:])", text, re.IGNORECASE)
     }
     # Восстановить только однозначную буквальную цитату, не угадывать день по голым часам.
     return candidates.pop() if len(candidates) == 1 else source
