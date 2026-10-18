@@ -1,0 +1,546 @@
+{
+  "started_at": "2026-10-18T18:13:57.520073+00:00",
+  "platform": "development-computer",
+  "machine": "x86_64",
+  "python": "3.14.8",
+  "kernel": "7.2.9-2-cachyos",
+  "llama_cpp_python": "0.3.36",
+  "dataset_sha256": "f370626b0c284f67c5da6db6fbde56486edcf5c29cb97c96e802bd17f45810d3",
+  "seed": 42,
+  "temperature": 0.0,
+  "profiles": [
+    {
+      "model": "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
+      "context": 1024,
+      "threads": 2,
+      "max_tokens": 64,
+      "memory_limit_mb": 2304,
+      "cases": [
+        {
+          "id": "delivery-1",
+          "expected": "delivery",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": true,
+          "elapsed_ms": 204.06,
+          "finish_reason": "stop",
+          "prompt_tokens": 162,
+          "completion_tokens": 7,
+          "inference_ms": 203.6984529995607,
+          "peak_rss_bytes": 1180651520
+        },
+        {
+          "id": "delivery-2",
+          "expected": "delivery",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": true,
+          "elapsed_ms": 551.74,
+          "finish_reason": "stop",
+          "prompt_tokens": 160,
+          "completion_tokens": 7,
+          "inference_ms": 551.3751210000919,
+          "peak_rss_bytes": 1181175808
+        },
+        {
+          "id": "transport-1",
+          "expected": "transport",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 552.84,
+          "finish_reason": "stop",
+          "prompt_tokens": 157,
+          "completion_tokens": 9,
+          "inference_ms": 552.4602430004961,
+          "peak_rss_bytes": 1181175808
+        },
+        {
+          "id": "calendar-1",
+          "expected": "calendar",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 615.1,
+          "finish_reason": "stop",
+          "prompt_tokens": 165,
+          "completion_tokens": 7,
+          "inference_ms": 614.7383899997294,
+          "peak_rss_bytes": 1181175808
+        },
+        {
+          "id": "calendar-2",
+          "expected": "calendar",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 527.86,
+          "finish_reason": "stop",
+          "prompt_tokens": 158,
+          "completion_tokens": 7,
+          "inference_ms": 527.5019349992363,
+          "peak_rss_bytes": 1181700096
+        },
+        {
+          "id": "reminder-1",
+          "expected": "reminder",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 536.79,
+          "finish_reason": "stop",
+          "prompt_tokens": 156,
+          "completion_tokens": 7,
+          "inference_ms": 536.3909089992376,
+          "peak_rss_bytes": 1181712384
+        },
+        {
+          "id": "noise-1",
+          "expected": "noise",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 511.44,
+          "finish_reason": "stop",
+          "prompt_tokens": 157,
+          "completion_tokens": 7,
+          "inference_ms": 511.02009500027634,
+          "peak_rss_bytes": 1182187520
+        },
+        {
+          "id": "noise-2",
+          "expected": "noise",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 542.7,
+          "finish_reason": "stop",
+          "prompt_tokens": 159,
+          "completion_tokens": 7,
+          "inference_ms": 542.3004799995397,
+          "peak_rss_bytes": 1182842880
+        }
+      ],
+      "load": {
+        "sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0",
+        "model_bytes": 668788096,
+        "load_ms": 923.6217809993832,
+        "peak_rss_bytes": 1143717888,
+        "n_ctx": 1024,
+        "n_threads": 2
+      },
+      "correct": 2,
+      "total": 8,
+      "p50_ms": 539.75,
+      "peak_rss_bytes": 1182842880
+    },
+    {
+      "model": "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
+      "context": 1024,
+      "threads": 4,
+      "max_tokens": 64,
+      "memory_limit_mb": 2304,
+      "cases": [
+        {
+          "id": "delivery-1",
+          "expected": "delivery",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": true,
+          "elapsed_ms": 175.82,
+          "finish_reason": "stop",
+          "prompt_tokens": 162,
+          "completion_tokens": 7,
+          "inference_ms": 175.44265000015002,
+          "peak_rss_bytes": 1251749888
+        },
+        {
+          "id": "delivery-2",
+          "expected": "delivery",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": true,
+          "elapsed_ms": 355.21,
+          "finish_reason": "stop",
+          "prompt_tokens": 160,
+          "completion_tokens": 7,
+          "inference_ms": 354.83668000051694,
+          "peak_rss_bytes": 1252274176
+        },
+        {
+          "id": "transport-1",
+          "expected": "transport",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 370.97,
+          "finish_reason": "stop",
+          "prompt_tokens": 157,
+          "completion_tokens": 9,
+          "inference_ms": 370.58582800000295,
+          "peak_rss_bytes": 1252274176
+        },
+        {
+          "id": "calendar-1",
+          "expected": "calendar",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 385.46,
+          "finish_reason": "stop",
+          "prompt_tokens": 165,
+          "completion_tokens": 7,
+          "inference_ms": 385.09216500006005,
+          "peak_rss_bytes": 1252274176
+        },
+        {
+          "id": "calendar-2",
+          "expected": "calendar",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 349.7,
+          "finish_reason": "stop",
+          "prompt_tokens": 158,
+          "completion_tokens": 7,
+          "inference_ms": 349.30787900066207,
+          "peak_rss_bytes": 1252667392
+        },
+        {
+          "id": "reminder-1",
+          "expected": "reminder",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 353.78,
+          "finish_reason": "stop",
+          "prompt_tokens": 156,
+          "completion_tokens": 7,
+          "inference_ms": 353.39188699981605,
+          "peak_rss_bytes": 1252724736
+        },
+        {
+          "id": "noise-1",
+          "expected": "noise",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 336.84,
+          "finish_reason": "stop",
+          "prompt_tokens": 157,
+          "completion_tokens": 7,
+          "inference_ms": 336.4938999993683,
+          "peak_rss_bytes": 1252835328
+        },
+        {
+          "id": "noise-2",
+          "expected": "noise",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 356.19,
+          "finish_reason": "stop",
+          "prompt_tokens": 159,
+          "completion_tokens": 7,
+          "inference_ms": 355.8145639999566,
+          "peak_rss_bytes": 1253265408
+        }
+      ],
+      "load": {
+        "sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0",
+        "model_bytes": 668788096,
+        "load_ms": 916.7980429992895,
+        "peak_rss_bytes": 1236422656,
+        "n_ctx": 1024,
+        "n_threads": 4
+      },
+      "correct": 2,
+      "total": 8,
+      "p50_ms": 354.5,
+      "peak_rss_bytes": 1253265408
+    },
+    {
+      "model": "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
+      "context": 2048,
+      "threads": 2,
+      "max_tokens": 64,
+      "memory_limit_mb": 2304,
+      "cases": [
+        {
+          "id": "delivery-1",
+          "expected": "delivery",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": true,
+          "elapsed_ms": 205.54,
+          "finish_reason": "stop",
+          "prompt_tokens": 162,
+          "completion_tokens": 7,
+          "inference_ms": 205.1817409992509,
+          "peak_rss_bytes": 1277853696
+        },
+        {
+          "id": "delivery-2",
+          "expected": "delivery",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": true,
+          "elapsed_ms": 554.96,
+          "finish_reason": "stop",
+          "prompt_tokens": 160,
+          "completion_tokens": 7,
+          "inference_ms": 554.5818500004316,
+          "peak_rss_bytes": 1278377984
+        },
+        {
+          "id": "transport-1",
+          "expected": "transport",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 553.11,
+          "finish_reason": "stop",
+          "prompt_tokens": 157,
+          "completion_tokens": 9,
+          "inference_ms": 552.7339259997461,
+          "peak_rss_bytes": 1278377984
+        },
+        {
+          "id": "calendar-1",
+          "expected": "calendar",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 617.16,
+          "finish_reason": "stop",
+          "prompt_tokens": 165,
+          "completion_tokens": 7,
+          "inference_ms": 616.8114559995956,
+          "peak_rss_bytes": 1278771200
+        },
+        {
+          "id": "calendar-2",
+          "expected": "calendar",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 543.46,
+          "finish_reason": "stop",
+          "prompt_tokens": 158,
+          "completion_tokens": 7,
+          "inference_ms": 543.0199440006618,
+          "peak_rss_bytes": 1278824448
+        },
+        {
+          "id": "reminder-1",
+          "expected": "reminder",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 549.83,
+          "finish_reason": "stop",
+          "prompt_tokens": 156,
+          "completion_tokens": 7,
+          "inference_ms": 549.4084409992865,
+          "peak_rss_bytes": 1278869504
+        },
+        {
+          "id": "noise-1",
+          "expected": "noise",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 517.76,
+          "finish_reason": "stop",
+          "prompt_tokens": 157,
+          "completion_tokens": 7,
+          "inference_ms": 517.4092400002337,
+          "peak_rss_bytes": 1279393792
+        },
+        {
+          "id": "noise-2",
+          "expected": "noise",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 549.82,
+          "finish_reason": "stop",
+          "prompt_tokens": 159,
+          "completion_tokens": 7,
+          "inference_ms": 549.4618419998005,
+          "peak_rss_bytes": 1279934464
+        }
+      ],
+      "load": {
+        "sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0",
+        "model_bytes": 668788096,
+        "load_ms": 892.173479000121,
+        "peak_rss_bytes": 1260507136,
+        "n_ctx": 2048,
+        "n_threads": 2
+      },
+      "correct": 2,
+      "total": 8,
+      "p50_ms": 549.83,
+      "peak_rss_bytes": 1279934464
+    },
+    {
+      "model": "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
+      "context": 2048,
+      "threads": 4,
+      "max_tokens": 64,
+      "memory_limit_mb": 2304,
+      "cases": [
+        {
+          "id": "delivery-1",
+          "expected": "delivery",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": true,
+          "elapsed_ms": 174.63,
+          "finish_reason": "stop",
+          "prompt_tokens": 162,
+          "completion_tokens": 7,
+          "inference_ms": 174.26579699986178,
+          "peak_rss_bytes": 1277849600
+        },
+        {
+          "id": "delivery-2",
+          "expected": "delivery",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": true,
+          "elapsed_ms": 366.06,
+          "finish_reason": "stop",
+          "prompt_tokens": 160,
+          "completion_tokens": 7,
+          "inference_ms": 365.68981599975814,
+          "peak_rss_bytes": 1278373888
+        },
+        {
+          "id": "transport-1",
+          "expected": "transport",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 380.48,
+          "finish_reason": "stop",
+          "prompt_tokens": 157,
+          "completion_tokens": 9,
+          "inference_ms": 380.1215310004409,
+          "peak_rss_bytes": 1278373888
+        },
+        {
+          "id": "calendar-1",
+          "expected": "calendar",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 391.49,
+          "finish_reason": "stop",
+          "prompt_tokens": 165,
+          "completion_tokens": 7,
+          "inference_ms": 391.1167750002278,
+          "peak_rss_bytes": 1278898176
+        },
+        {
+          "id": "calendar-2",
+          "expected": "calendar",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 353.28,
+          "finish_reason": "stop",
+          "prompt_tokens": 158,
+          "completion_tokens": 7,
+          "inference_ms": 352.92683100033173,
+          "peak_rss_bytes": 1278898176
+        },
+        {
+          "id": "reminder-1",
+          "expected": "reminder",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 351.22,
+          "finish_reason": "stop",
+          "prompt_tokens": 156,
+          "completion_tokens": 7,
+          "inference_ms": 350.87328999998135,
+          "peak_rss_bytes": 1278898176
+        },
+        {
+          "id": "noise-1",
+          "expected": "noise",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 333.87,
+          "finish_reason": "stop",
+          "prompt_tokens": 157,
+          "completion_tokens": 7,
+          "inference_ms": 333.511972999986,
+          "peak_rss_bytes": 1279389696
+        },
+        {
+          "id": "noise-2",
+          "expected": "noise",
+          "output": {
+            "category": "delivery"
+          },
+          "correct": false,
+          "elapsed_ms": 358.0,
+          "finish_reason": "stop",
+          "prompt_tokens": 159,
+          "completion_tokens": 7,
+          "inference_ms": 357.5675490001231,
+          "peak_rss_bytes": 1279836160
+        }
+      ],
+      "load": {
+        "sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0",
+        "model_bytes": 668788096,
+        "load_ms": 1014.7921199995835,
+        "peak_rss_bytes": 1259520000,
+        "n_ctx": 2048,
+        "n_threads": 4
+      },
+      "correct": 2,
+      "total": 8,
+      "p50_ms": 355.64,
+      "peak_rss_bytes": 1279836160
+    }
+  ],
+  "cpu": "AMD Ryzen 5 5600H with Radeon Graphics"
+}

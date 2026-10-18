@@ -12,6 +12,7 @@ import statistics
 import sys
 import tempfile
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 
 CORE = Path(__file__).resolve().parents[1]
@@ -65,6 +66,12 @@ async def measure(model, context, threads):
                     schema=SCHEMA,
                 )
                 parsed = json.loads(result.content)
+                if (
+                    not isinstance(parsed, dict)
+                    or set(parsed) != {"category"}
+                    or parsed["category"] not in CATEGORIES
+                ):
+                    raise ValueError("Неверная схема")
                 profile["cases"].append(
                     {
                         "id": case["id"],
@@ -109,6 +116,7 @@ def main():
     output = args.output.resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
     results = {
+        "started_at": datetime.now(UTC).isoformat(),
         "platform": "development-computer",
         "machine": platform.machine(),
         "python": platform.python_version(),
@@ -143,7 +151,11 @@ def main():
                         )
                         profile = asyncio.run(measure(model, context, threads))
                         results["profiles"].append(profile)
-                        output.write_text(json.dumps(results, ensure_ascii=False, indent=2) + "\n")
+                        temporary = output.with_suffix(output.suffix + ".tmp")
+                        temporary.write_text(
+                            json.dumps(results, ensure_ascii=False, indent=2) + "\n"
+                        )
+                        temporary.replace(output)
                         print(
                             json.dumps(
                                 {
