@@ -82,6 +82,7 @@ class NotificationBufferTest {
         capture.deliver(id)
         assertEquals(DeliveryStatus.FAILED, db.pendingNotifications().byId(id)!!.status)
         transport = { row -> requests += row.toRequest(); DeliveryStatus.SENT }
+        now += 30_000
         capture.sync(); capture.deliver(id); capture.sync()
         assertEquals(2, requests.size)
         assertEquals(requests[0], requests[1])

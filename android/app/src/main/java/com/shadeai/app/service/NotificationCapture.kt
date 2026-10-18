@@ -1,5 +1,7 @@
 package com.shadeai.app.service
 
+import com.shadeai.app.data.db.DeliveryControl
+import com.shadeai.app.core.network.DeliveryFailure
 import com.shadeai.app.data.db.DeliveryStatus
 import com.shadeai.app.data.db.PendingNotificationDao
 import com.shadeai.app.data.db.PendingNotificationEntity
@@ -14,6 +16,7 @@ class NotificationCapture(
     private val access: () -> Boolean,
     private val send: suspend (PendingNotificationEntity) -> DeliveryStatus,
     private val clock: () -> Long = System::currentTimeMillis,
+    private val revision: () -> String = { "" },
 ) {
     private val stateMutex = Mutex()
     private val deliveryMutex = Mutex()
@@ -21,6 +24,22 @@ class NotificationCapture(
     // Общий порядок блокировок: delivery → state; запись новых событий не ждёт сеть.
     suspend fun choose(sources: Set<String>) = deliveryMutex.withLock {
         stateMutex.withLock { save(sources); purge() }
+    }
+
+    suspend fun configure(action: () -> Unit) = deliveryMutex.withLock { action() }
+
+    private suspend fun control(): DeliveryControl {
+        val current = revision()
+        val saved = dao.control()
+        return if (saved == null || saved.revision != current) DeliveryControl(revision = current).also { dao.putControl(it) } else saved
+    }
+
+    // null: очередь пуста/остановлена; 0: готова; >0: минимальная задержка.
+    suspend fun nextDelay(): Long? = stateMutex.withLock {
+        purge()
+        if (dao.unsent(1).isEmpty()) return@withLock null
+        val gate = control()
+        if (gate.blocked) null else (gate.nextAttemptAt - clock()).coerceAtLeast(0)
     }
 
     suspend fun refresh() = stateMutex.withLock { purge() }
@@ -68,29 +87,51 @@ class NotificationCapture(
     }
 
     suspend fun sync() {
-        val pending = quietly { stateMutex.withLock { purge(); dao.unsent() } }.orEmpty()
-        for (item in pending) deliver(item.id)
+        val pending = stateMutex.withLock { purge(); dao.unsent() }
+        for (item in pending) {
+            val ready = stateMutex.withLock { control().let { !it.blocked && it.nextAttemptAt <= clock() } }
+            if (!ready) break
+            deliver(item.id)
+        }
     }
 
     suspend fun deliver(id: Long) {
-        quietly {
-            deliveryMutex.withLock delivery@ {
-                val item = stateMutex.withLock row@ {
-                    val row = dao.byId(id) ?: return@row null
-                    if (row.status == DeliveryStatus.SENT || row.status == DeliveryStatus.SKIPPED) return@row null
-                    if (!access() || !NotificationPolicy.allows(row.packageName, row.title, row.text, selected()) ||
-                        row.createdAt < clock() - 7 * DAY) {
-                        dao.delete(id)
-                        return@row null
-                    }
-                    row
-                } ?: return@delivery
-                val result = try { send(item) }
-                    catch (error: CancellationException) { throw error }
-                    catch (_: Exception) { DeliveryStatus.FAILED }
-                stateMutex.withLock {
-                    dao.markResult(id, result, if (result == DeliveryStatus.SENT || result == DeliveryStatus.SKIPPED) clock() else null)
+        deliveryMutex.withLock delivery@ {
+            val item = stateMutex.withLock row@ {
+                val row = dao.byId(id) ?: return@row null
+                if (row.status !in setOf(DeliveryStatus.PENDING, DeliveryStatus.FAILED)) return@row null
+                val gate = control()
+                if (gate.blocked || gate.nextAttemptAt > clock()) return@row null
+                if (!access() || !NotificationPolicy.allows(row.packageName, row.title, row.text, selected()) ||
+                    row.createdAt < clock() - 7 * DAY) {
+                    dao.delete(id)
+                    return@row null
                 }
+                row
+            } ?: return@delivery
+            var failure: DeliveryFailure? = null
+            val result = try { send(item) }
+                catch (error: CancellationException) { throw error }
+                catch (error: DeliveryFailure) { failure = error; DeliveryStatus.FAILED }
+                catch (_: Exception) { failure = DeliveryFailure("network"); DeliveryStatus.FAILED }
+            stateMutex.withLock {
+                val gate = control()
+                val error = failure ?: when (result) {
+                    DeliveryStatus.PENDING -> DeliveryFailure("credentials", pause = true)
+                    DeliveryStatus.FAILED -> DeliveryFailure("network")
+                    else -> null
+                }
+                val status = if (error?.permanent == true) DeliveryStatus.REJECTED else result
+                val next = when {
+                    error == null || error.permanent -> gate.copy(failures = 0, nextAttemptAt = 0)
+                    error.pause -> gate.copy(blocked = true, nextAttemptAt = 0)
+                    else -> {
+                        val failures = (gate.failures + 1).coerceAtMost(20)
+                        gate.copy(failures = failures, nextAttemptAt = clock() + backoff(failures))
+                    }
+                }
+                val terminal = status in setOf(DeliveryStatus.SENT, DeliveryStatus.SKIPPED, DeliveryStatus.REJECTED)
+                dao.finish(id, status, if (terminal) clock() else null, error?.category, next)
             }
         }
     }
@@ -99,5 +140,8 @@ class NotificationCapture(
         catch (error: CancellationException) { throw error }
         catch (_: Exception) { null }
 
-    companion object { const val DAY = 86_400_000L }
+    companion object {
+        const val DAY = 86_400_000L
+        fun backoff(failures: Int): Long = (30_000L * (1L shl (failures - 1).coerceIn(0, 10))).coerceAtMost(6 * 60 * 60_000L)
+    }
 }

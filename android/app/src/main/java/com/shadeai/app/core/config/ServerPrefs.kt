@@ -5,6 +5,7 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import java.security.KeyStore
+import java.util.UUID
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -24,6 +25,9 @@ object ServerPrefs {
     private const val KEY_ALIAS = "shade.connection.v1"
 
     const val DEFAULT_BASE_URL = "http://192.168.1.100:8000/api/v1/"
+
+    fun revision(context: Context): String =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("delivery_revision", "legacy") ?: "legacy"
 
     @Synchronized
     fun load(context: Context): SavedConnection = safely {
@@ -51,12 +55,12 @@ object ServerPrefs {
         val encoded = Base64.encodeToString(cipher.iv, Base64.NO_WRAP) + ":" +
             Base64.encodeToString(cipher.doFinal(key.toByteArray(Charsets.UTF_8)), Base64.NO_WRAP)
         check(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putString(KEY_BASE_URL, url).putString(KEY_CIPHER, encoded).commit())
+            .putString("delivery_revision", UUID.randomUUID().toString()).putString(KEY_BASE_URL, url).putString(KEY_CIPHER, encoded).commit())
     }
 
     @Synchronized
     fun clearKey(context: Context) = safely {
-        check(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(KEY_CIPHER).commit())
+        check(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("delivery_revision", UUID.randomUUID().toString()).remove(KEY_CIPHER).commit())
     }
 
     private fun secretKey(create: Boolean): SecretKey {

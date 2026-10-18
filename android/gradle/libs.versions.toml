@@ -7,6 +7,7 @@ activityCompose = "1.9.3"
 composeBom = "2024.12.01"
 lifecycle = "2.8.7"
 room = "2.6.1"
+work = "2.10.1"
 retrofit = "2.11.0"
 retrofitSerialization = "1.0.0"
 okhttp = "4.12.0"
@@ -16,6 +17,7 @@ androidTestRunner = "1.6.2"
 androidTestJunit = "1.2.1"
 
 [libraries]
+androidx-work = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }

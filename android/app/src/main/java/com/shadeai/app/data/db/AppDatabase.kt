@@ -5,7 +5,7 @@ import androidx.room.*
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
-enum class DeliveryStatus { PENDING, SENT, SKIPPED, FAILED }
+enum class DeliveryStatus { PENDING, SENT, SKIPPED, FAILED, REJECTED }
 
 class BufferConverters {
     @TypeConverter fun encode(value: DeliveryStatus) = value.name
@@ -25,6 +25,8 @@ data class PendingNotificationEntity(
     val status: DeliveryStatus = DeliveryStatus.PENDING,
     val createdAt: Long = System.currentTimeMillis(),
     val completedAt: Long? = null,
+    @ColumnInfo(defaultValue = "0") val attempts: Int = 0,
+    val lastError: String? = null,
 ) {
     override fun toString() = "PendingNotification(id=$id, status=$status)"
 }
@@ -39,8 +41,26 @@ data class NotificationHead(
     val updatedAt: Long,
 )
 
+@Entity(tableName = "delivery_control")
+data class DeliveryControl(
+    @PrimaryKey val id: Int = 1,
+    val revision: String = "",
+    val failures: Int = 0,
+    val nextAttemptAt: Long = 0,
+    val blocked: Boolean = false,
+)
+
 @Dao
 interface PendingNotificationDao {
+    @Query("SELECT * FROM delivery_control WHERE id = 1") suspend fun control(): DeliveryControl?
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putControl(control: DeliveryControl)
+    @Query("UPDATE pending_notifications SET status = :status, completedAt = :completedAt, attempts = min(attempts + 1, 2147483647), lastError = :error WHERE id = :id")
+    suspend fun finishRow(id: Long, status: DeliveryStatus, completedAt: Long?, error: String?)
+    @Transaction
+    suspend fun finish(id: Long, status: DeliveryStatus, completedAt: Long?, error: String?, control: DeliveryControl) {
+        finishRow(id, status, completedAt, error)
+        putControl(control)
+    }
     @Insert suspend fun insert(notification: PendingNotificationEntity): Long
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putHead(head: NotificationHead)
     @Query("SELECT * FROM notification_heads WHERE sourceKey = :key") suspend fun head(key: String): NotificationHead?
@@ -51,8 +71,6 @@ interface PendingNotificationDao {
     @Query("SELECT * FROM pending_notifications ORDER BY id DESC LIMIT 50") fun recent(): Flow<List<PendingNotificationEntity>>
     @Query("SELECT * FROM pending_notifications WHERE id > :after ORDER BY id LIMIT 100")
     suspend fun page(after: Long): List<PendingNotificationEntity>
-    @Query("UPDATE pending_notifications SET status = :status, completedAt = :completedAt WHERE id = :id")
-    suspend fun markResult(id: Long, status: DeliveryStatus, completedAt: Long?)
     @Query("DELETE FROM pending_notifications WHERE packageName NOT IN (:selected)") suspend fun deleteOtherSources(selected: Set<String>)
     @Query("DELETE FROM notification_heads WHERE packageName NOT IN (:selected)") suspend fun deleteOtherHeads(selected: Set<String>)
     @Query("DELETE FROM pending_notifications") suspend fun clear()
@@ -60,7 +78,7 @@ interface PendingNotificationDao {
     @Query("DELETE FROM pending_notifications WHERE id = :id") suspend fun delete(id: Long)
     @Query("UPDATE notification_heads SET active = 0 WHERE sourceKey = :key") suspend fun removed(key: String)
     @Query("UPDATE notification_heads SET active = 0 WHERE sourceKey NOT IN (:activeKeys)") suspend fun reconcile(activeKeys: Set<String>)
-    @Query("DELETE FROM pending_notifications WHERE createdAt < :oldest OR (status IN ('SENT','SKIPPED') AND completedAt < :completedBefore)")
+    @Query("DELETE FROM pending_notifications WHERE createdAt < :oldest OR (status IN ('SENT','SKIPPED','REJECTED') AND completedAt < :completedBefore)")
     suspend fun expire(oldest: Long, completedBefore: Long)
     @Query("DELETE FROM notification_heads WHERE updatedAt < :oldest") suspend fun expireHeads(oldest: Long)
     @Query("DELETE FROM notification_heads WHERE sourceKey IN (SELECT sourceKey FROM notification_heads ORDER BY active, updatedAt, sourceKey LIMIT max(0, (SELECT count(*) FROM notification_heads) - 2000))")
@@ -82,13 +100,13 @@ interface PendingNotificationDao {
     }
 }
 
-@Database(entities = [PendingNotificationEntity::class, NotificationHead::class], version = 2, exportSchema = true)
+@Database(entities = [PendingNotificationEntity::class, NotificationHead::class, DeliveryControl::class], version = 3, exportSchema = true)
 @TypeConverters(BufferConverters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun pendingNotifications(): PendingNotificationDao
     companion object {
         fun create(context: Context, name: String = "shade.db"): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, name)
-                .addMigrations(BufferMigrations.FROM_1_TO_2).build()
+                .addMigrations(BufferMigrations.FROM_1_TO_2, BufferMigrations.FROM_2_TO_3).build()
     }
 }

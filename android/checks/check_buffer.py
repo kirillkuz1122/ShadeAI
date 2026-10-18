@@ -47,7 +47,7 @@ def snapshot():
         if result.returncode == 0:
             path.write_bytes(result.stdout)
     with sqlite3.connect(ARTIFACTS / "shade.db") as db:
-        assert db.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert db.execute("PRAGMA user_version").fetchone()[0] == 3
         db.row_factory = sqlite3.Row
         return [
             dict(row)
@@ -89,12 +89,6 @@ def publish(kind, identifier, variant="original"):
     time.sleep(0.6)
 
 
-def reconnect():
-    adb("shell", "cmd", "notification", "disallow_listener", COMPONENT)
-    adb("shell", "cmd", "notification", "allow_listener", COMPONENT)
-    time.sleep(0.7)
-
-
 def main():
     assert adb("shell", "getprop", "ro.kernel.qemu").strip() == "1", "Нужен эмулятор"
     assert not core_items(), "Нужен свежий checks/core_server.py"
@@ -130,12 +124,14 @@ def main():
         tap(find("Ozon"))
         assert checked("Ozon")
         adb("reverse", "--remove", "tcp:8000")
+        adb("shell", "svc", "wifi", "disable")
+        adb("shell", "svc", "data", "disable")
         adb("shell", "cmd", "notification", "allow_listener", COMPONENT)
         time.sleep(0.7)
         print("PASS: чистая настройка, выбран Ozon, сеть Core отключена", flush=True)
 
         publish("big", 41)
-        first = wait_rows(1, "FAILED")[0]
+        first = wait_rows(1, "PENDING")[0]
         assert first["text"] == "Курьер в пути. Доставка ожидается вечером"
         UUID(first["eventId"])
         publish("big", 41)
@@ -160,7 +156,7 @@ def main():
         ):
             publish(kind, i)
             assert len(snapshot()) == 5
-        before = wait_rows(5, "FAILED")
+        before = wait_rows(5, "PENDING")
         assert not core_items()
         print(
             "PASS: Inbox/ticker/без text; скрытый код и служебные уведомления не попали в Room/Core",
@@ -170,8 +166,8 @@ def main():
         adb("shell", "am", "force-stop", PACKAGE)
         assert snapshot() == before
         adb("shell", "am", "start", "-W", "-n", PACKAGE + "/.MainActivity")
-        reconnect()
-        assert wait_rows(5, "FAILED") == before
+        time.sleep(1)
+        assert wait_rows(5, "PENDING") == before
         publish("big", 41, "updated")
         assert wait_rows(5) == before
         publish("cancel", 41)
@@ -180,12 +176,13 @@ def main():
         reposted = wait_rows(6)[-1]
         assert reposted["eventId"] != changed["eventId"]
         print(
-            "PASS: force-stop сохраняет payload/UUID/статусы; повтор после rebind пропущен, cancel/repost — новая запись",
+            "PASS: force-stop сохраняет payload/UUID/статусы; повтор после запуска пропущен, cancel/repost — новая запись",
             flush=True,
         )
 
         adb("reverse", "tcp:8000", "tcp:8000")
-        reconnect()
+        adb("shell", "svc", "wifi", "enable")
+        adb("shell", "svc", "data", "enable")
         delivered = wait_rows(6, "SENT")
         items = core_items()
         assert len(items) == 6
@@ -227,7 +224,7 @@ def main():
             assert json.load(response)["status"] == "duplicate"
         assert len(core_items()) == 6
         print(
-            "PASS: reconnect доставляет 6 сохранённых UUID/времён в Core; повтор payload даёт duplicate",
+            "PASS: восстановление сети доставляет 6 сохранённых UUID/времён в Core; повтор payload даёт duplicate",
             flush=True,
         )
 
@@ -241,6 +238,8 @@ def main():
             flush=True,
         )
     finally:
+        adb("shell", "svc", "wifi", "enable")
+        adb("shell", "svc", "data", "enable")
         if installed:
             adb("uninstall", ALLOWED)
         adb("shell", "cmd", "notification", "disallow_listener", COMPONENT)

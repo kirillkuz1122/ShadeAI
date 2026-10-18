@@ -18,7 +18,6 @@ class ShadeNotificationListener : NotificationListenerService() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var session: Job? = null
     private var callbacks: Channel<Callback>? = null
-    private var deliveries: Channel<Long>? = null
     private val redactedText by lazy { systemRedactedText() }
 
     @SuppressLint("DiscouragedApi")
@@ -33,9 +32,7 @@ class ShadeNotificationListener : NotificationListenerService() {
         super.onListenerConnected()
         stopSession()
         val incoming = Channel<Callback>(128)
-        val outgoing = Channel<Long>(128)
         callbacks = incoming
-        deliveries = outgoing
         val activeKeys = try {
             activeNotifications?.filter { it.packageName in NotificationSources.catalog }
                 ?.map { NotificationIdentity.hash(it.key) }?.toSet()
@@ -43,19 +40,14 @@ class ShadeNotificationListener : NotificationListenerService() {
         session = scope.launch {
             val capture = ShadeApp.instance.capture
             capture.connected(activeKeys)
-            coroutineScope {
-                launch {
-                    capture.sync()
-                    for (id in outgoing) capture.deliver(id)
-                }
-                for (event in incoming) {
-                    when (event) {
-                        is Callback.Posted -> {
-                            val id = capture.record(event.pkg, event.content.title, event.content.text, event.postTime, event.key)
-                            if (id != null) outgoing.trySend(id)
-                        }
-                        is Callback.Removed -> capture.removed(event.key)
+            ShadeApp.instance.delivery.wake()
+            for (event in incoming) {
+                when (event) {
+                    is Callback.Posted -> {
+                        val id = capture.record(event.pkg, event.content.title, event.content.text, event.postTime, event.key)
+                        if (id != null) ShadeApp.instance.delivery.wake()
                     }
+                    is Callback.Removed -> capture.removed(event.key)
                 }
             }
         }
@@ -76,7 +68,6 @@ class ShadeNotificationListener : NotificationListenerService() {
 
     private fun stopSession() {
         callbacks?.close(); callbacks = null
-        deliveries?.close(); deliveries = null
         session?.cancel(); session = null
     }
 

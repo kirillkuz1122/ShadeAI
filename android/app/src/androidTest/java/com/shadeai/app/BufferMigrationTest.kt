@@ -84,5 +84,34 @@ class BufferMigrationTest {
         assertEquals(1, open().pendingNotifications().count())
     }
 
+    @Test fun versionTwoMigrationPreservesIdentityHeadsAndRetryableRows() = runBlocking {
+        val file = context.getDatabasePath(NAME)
+        file.parentFile!!.mkdirs()
+        SQLiteDatabase.openOrCreateDatabase(file, null).use { old ->
+            val schema = instrumentation.context.assets.open("com.shadeai.app.data.db.AppDatabase/2.json")
+                .bufferedReader().use { JSONObject(it.readText()).getJSONObject("database") }
+            val entities = schema.getJSONArray("entities")
+            for (i in 0 until entities.length()) {
+                val entity = entities.getJSONObject(i)
+                old.execSQL(entity.getString("createSql").replace("\${TABLE_NAME}", entity.getString("tableName")))
+                val indices = entity.getJSONArray("indices")
+                for (j in 0 until indices.length()) old.execSQL(indices.getJSONObject(j).getString("createSql")
+                    .replace("\${TABLE_NAME}", entity.getString("tableName")))
+            }
+            val setup = schema.getJSONArray("setupQueries")
+            for (i in 0 until setup.length()) old.execSQL(setup.getString(i))
+            old.execSQL("INSERT INTO pending_notifications VALUES (12, 'ru.ozon.app.android', 'Заказ', 'Готов', 12345, 'persisted-uuid', 'source-hash', 'content-hash', 'FAILED', 12345, NULL)")
+            old.execSQL("INSERT INTO notification_heads VALUES ('source-hash', 'ru.ozon.app.android', 'content-hash', 'persisted-uuid', 1, 12345)")
+            old.version = 2
+        }
+        val dao = open().pendingNotifications()
+        val row = dao.byId(12)!!
+        assertEquals("persisted-uuid", row.eventId); assertEquals(DeliveryStatus.FAILED, row.status)
+        assertEquals(0, row.attempts); assertNull(row.lastError)
+        assertEquals(row.eventId, dao.head("source-hash")!!.eventId)
+        assertNull(dao.control())
+        assertEquals(13L, dao.insert(row.copy(id = 0, eventId = "new-uuid")))
+    }
+
     companion object { private const val NAME = "task11-migration-test.db" }
 }

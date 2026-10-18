@@ -4,6 +4,16 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 object BufferMigrations {
+    val FROM_2_TO_3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE pending_notifications ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE pending_notifications ADD COLUMN lastError TEXT")
+            db.execSQL("""CREATE TABLE delivery_control (
+                id INTEGER NOT NULL PRIMARY KEY, revision TEXT NOT NULL, failures INTEGER NOT NULL,
+                nextAttemptAt INTEGER NOT NULL, blocked INTEGER NOT NULL)""")
+        }
+    }
+
     val FROM_1_TO_2 = object : Migration(1, 2) {
         override fun migrate(db: SupportSQLiteDatabase) {
             val previousSequence = db.query("SELECT seq FROM sqlite_sequence WHERE name = 'pending_notifications'").use {

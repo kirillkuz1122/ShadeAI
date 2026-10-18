@@ -1,6 +1,7 @@
 package com.shadeai.app.ui
 
 import android.app.Application
+import com.shadeai.app.ShadeApp
 import android.security.NetworkSecurityPolicy
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -106,7 +107,10 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                     mutable.update { it.copy(busy = false, keyError = "Введите ключ для этого адреса Core", message = "Настройки не изменены") }
                     return@launch
                 }
-                withContext(Dispatchers.IO) { ServerPrefs.save(getApplication(), url, key) }
+                withContext(Dispatchers.IO) {
+                    (getApplication<Application>() as ShadeApp).capture.configure { ServerPrefs.save(getApplication(), url, key) }
+                    (getApplication<Application>() as ShadeApp).delivery.settingsChanged()
+                }
                 if (generation != current) return@launch
                 mutable.update { it.copy(url = url, keyInput = "", keySaved = true, dirty = false,
                     health = null, coreMessage = "Проверка…", accessMessage = "Проверка…", message = "Настройки сохранены") }
@@ -133,7 +137,10 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
         mutable.update { it.copy(busy = true, keyInput = "", health = null, accessMessage = "Не проверено") }
         request = viewModelScope.launch {
             try {
-                withContext(Dispatchers.IO) { ServerPrefs.clearKey(getApplication()) }
+                withContext(Dispatchers.IO) {
+                    (getApplication<Application>() as ShadeApp).capture.configure { ServerPrefs.clearKey(getApplication()) }
+                    (getApplication<Application>() as ShadeApp).delivery.settingsChanged()
+                }
                 if (generation == current) mutable.update { it.copy(busy = false, keySaved = false, keyError = null,
                     coreMessage = "Не проверено", message = "Ключ удалён с устройства") }
             } catch (_: SettingsStorageException) {
