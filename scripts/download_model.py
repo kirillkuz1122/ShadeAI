@@ -5,10 +5,21 @@ import fcntl
 import hashlib
 import json
 import os
+import shutil
 import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+DISK_RESERVE_BYTES = 4 * 1024**3
+
+
+def require_space(folder, incoming_bytes):
+    free = shutil.disk_usage(folder).free
+    if free < DISK_RESERVE_BYTES + incoming_bytes:
+        raise RuntimeError(
+            "Недостаточно места: загрузка остановлена, "
+            "необходимо сохранить 4 GiB свободного места"
+        )
 
 
 def digest(path):
@@ -43,6 +54,7 @@ def download(name):
         )
         print(f"Загрузка {target.name}; ожидается {spec['bytes']} байт", flush=True)
         if offset < spec["bytes"]:
+            require_space(folder, spec["bytes"] - offset)
             with urllib.request.urlopen(request, timeout=60) as response:
                 resumed = offset and response.status == 206
                 if resumed and not response.headers.get("Content-Range", "").startswith(
@@ -55,6 +67,7 @@ def download(name):
                         total += len(chunk)
                         if total > spec["bytes"]:
                             raise RuntimeError("Ответ превышает размер модели")
+                        require_space(folder, len(chunk))
                         output.write(chunk)
                     output.flush()
                     os.fsync(output.fileno())
@@ -67,5 +80,9 @@ def download(name):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--model", choices=("tinyllama", "qwen"), default="tinyllama")
+    parser.add_argument(
+        "--model",
+        choices=tuple(json.loads((ROOT / "scripts/models.json").read_text())),
+        default="tinyllama",
+    )
     download(parser.parse_args().model)

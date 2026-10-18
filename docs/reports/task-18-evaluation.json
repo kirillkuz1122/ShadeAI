@@ -1,0 +1,1734 @@
+{
+  "platform": "development-computer",
+  "python": "3.14.8",
+  "machine": "x86_64",
+  "kernel": "7.2.9-2-cachyos",
+  "llama_cpp_python": "0.3.36",
+  "prompt_sha256": "5ccc7c409952c2112cc13737b48785d67787f0bdbd1670580d721b92efa6ac78",
+  "dataset_version": 1,
+  "schema_sha256": "ed5797df012292d566c8d93a1198895705649ea8516f5790399d0f1148686be7",
+  "temperature": 0.0,
+  "seed": 42,
+  "threads": 2,
+  "context": 2048,
+  "max_tokens": 256,
+  "memory_limit_mb": 2304,
+  "annotation": "synthetic-by-agent; requires-human-review",
+  "rows": [
+    {
+      "id": "d01",
+      "expected_category": "delivery",
+      "predicted_category": "delivery",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "delivery",
+        "priority": "default",
+        "intent": "delivery_event",
+        "entities": {
+          "subject": "Посылка A-101",
+          "location": "Речной 8",
+          "service": "Ozon"
+        },
+        "time": {
+          "source": null,
+          "timezone": "Asia/Yekaterinburg",
+          "at": null,
+          "date": null,
+          "resolution": "absent"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": true,
+        "location": true,
+        "service": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": true,
+      "elapsed_ms": 3209.92
+    },
+    {
+      "id": "d02",
+      "expected_category": "delivery",
+      "predicted_category": "delivery",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "delivery",
+        "priority": "high",
+        "intent": "delivery_event",
+        "entities": {
+          "subject": "Курьер Wildberries",
+          "location": null,
+          "service": "Wildberries"
+        },
+        "time": {
+          "source": "через 20 минут",
+          "timezone": "Asia/Yekaterinburg",
+          "at": "2026-10-10T10:20:00Z",
+          "date": null,
+          "resolution": "exact"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": true,
+        "service": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": true,
+      "elapsed_ms": 2839.26
+    },
+    {
+      "id": "d03",
+      "expected_category": "delivery",
+      "predicted_category": "delivery",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "delivery",
+        "priority": "low",
+        "intent": "delivery_event",
+        "entities": {
+          "subject": "Заказ A-103",
+          "location": "Ozon",
+          "service": "Ozon"
+        },
+        "time": {
+          "source": "завтра",
+          "timezone": "Asia/Yekaterinburg",
+          "at": null,
+          "date": "2026-10-11",
+          "resolution": "date_only"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": false,
+        "service": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": false,
+      "elapsed_ms": 2932.29
+    },
+    {
+      "id": "d04",
+      "expected_category": "delivery",
+      "predicted_category": "delivery",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "delivery",
+        "priority": "low",
+        "intent": "delivery_event",
+        "entities": {
+          "subject": "Доставка заказа",
+          "location": null,
+          "service": "Посылка"
+        },
+        "time": {
+          "source": " послезавтра в 11:45",
+          "timezone": "Asia/Yekaterinburg",
+          "at": "2026-10-12T06:45:00Z",
+          "date": null,
+          "resolution": "exact"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": false,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": false,
+      "elapsed_ms": 3401.36
+    },
+    {
+      "id": "d05",
+      "expected_category": "delivery",
+      "predicted_category": null,
+      "result": null,
+      "error": "LLM_BAD_RESPONSE",
+      "fields": {
+        "category": false,
+        "priority": false,
+        "location": false,
+        "service": false,
+        "time.resolution": false,
+        "time.at": false,
+        "time.date": false
+      },
+      "exact_match": false,
+      "elapsed_ms": 3263.75
+    },
+    {
+      "id": "d06",
+      "expected_category": "delivery",
+      "predicted_category": null,
+      "result": null,
+      "error": "LLM_BAD_RESPONSE",
+      "fields": {
+        "category": false,
+        "priority": false,
+        "time.resolution": false,
+        "time.at": false,
+        "time.date": false
+      },
+      "exact_match": false,
+      "elapsed_ms": 3219.11
+    },
+    {
+      "id": "d07",
+      "expected_category": "delivery",
+      "predicted_category": "delivery",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "delivery",
+        "priority": "default",
+        "intent": "delivery_event",
+        "entities": {
+          "subject": "Заказ A-107 в пути",
+          "location": null,
+          "service": "Wildberries"
+        },
+        "time": {
+          "source": "сегодня между 17:00 и 19:00",
+          "timezone": "Asia/Yekaterinburg",
+          "at": null,
+          "date": null,
+          "resolution": "unresolved"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": true,
+        "service": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": true,
+      "elapsed_ms": 3905.25
+    },
+    {
+      "id": "d08",
+      "expected_category": "delivery",
+      "predicted_category": "delivery",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "delivery",
+        "priority": "high",
+        "intent": "delivery_event",
+        "entities": {
+          "subject": "Доставка A-108",
+          "location": null,
+          "service": "Курьер"
+        },
+        "time": {
+          "source": "через 2 часа",
+          "timezone": "Asia/Yekaterinburg",
+          "at": "2026-10-10T12:00:00Z",
+          "date": null,
+          "resolution": "exact"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": true,
+      "elapsed_ms": 3062.19
+    },
+    {
+      "id": "d09",
+      "expected_category": "delivery",
+      "predicted_category": "delivery",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "delivery",
+        "priority": "default",
+        "intent": "delivery_event",
+        "entities": {
+          "subject": "Хранение заказа",
+          "location": "Wildberries",
+          "service": "Wildberries"
+        },
+        "time": {
+          "source": "22.10.2026",
+          "timezone": "Asia/Yekaterinburg",
+          "at": null,
+          "date": "2026-10-22",
+          "resolution": "date_only"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": true,
+        "service": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": true,
+      "elapsed_ms": 3296.86
+    },
+    {
+      "id": "d10",
+      "expected_category": "delivery",
+      "predicted_category": "delivery",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "delivery",
+        "priority": "default",
+        "intent": "delivery_event",
+        "entities": {
+          "subject": "Заказ A-110",
+          "location": null,
+          "service": null
+        },
+        "time": {
+          "source": null,
+          "timezone": "Asia/Yekaterinburg",
+          "at": null,
+          "date": null,
+          "resolution": "absent"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": true,
+        "time.resolution": false,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": false,
+      "elapsed_ms": 2682.6
+    },
+    {
+      "id": "t01",
+      "expected_category": "transport",
+      "predicted_category": "delivery",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "delivery",
+        "priority": "low",
+        "intent": "delivery_event",
+        "entities": {
+          "subject": "Такси ожидает",
+          "location": "Берёзовой 6",
+          "service": "Яндекс Go"
+        },
+        "time": {
+          "source": "ждёт",
+          "timezone": "Asia/Yekaterinburg",
+          "at": null,
+          "date": null,
+          "resolution": "unresolved"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": false,
+        "priority": false,
+        "location": true,
+        "service": true,
+        "time.resolution": false,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": false,
+      "elapsed_ms": 3345.04
+    },
+    {
+      "id": "t02",
+      "expected_category": "transport",
+      "predicted_category": null,
+      "result": null,
+      "error": "LLM_BAD_RESPONSE",
+      "fields": {
+        "category": false,
+        "priority": false,
+        "time.resolution": false,
+        "time.at": false,
+        "time.date": false
+      },
+      "exact_match": false,
+      "elapsed_ms": 2873.95
+    },
+    {
+      "id": "t03",
+      "expected_category": "transport",
+      "predicted_category": "transport",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "transport",
+        "priority": "default",
+        "intent": "transport_event",
+        "entities": {
+          "subject": "Поездка завершена",
+          "location": null,
+          "service": "Яндекс Go"
+        },
+        "time": {
+          "source": null,
+          "timezone": "Asia/Yekaterinburg",
+          "at": null,
+          "date": null,
+          "resolution": "absent"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": true,
+        "service": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": true,
+      "elapsed_ms": 2672.86
+    },
+    {
+      "id": "t04",
+      "expected_category": "transport",
+      "predicted_category": "delivery",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "delivery",
+        "priority": "low",
+        "intent": "delivery_event",
+        "entities": {
+          "subject": "Предзаказ такси",
+          "location": null,
+          "service": "Такси"
+        },
+        "time": {
+          "source": "завтра в 08:15",
+          "timezone": "Asia/Yekaterinburg",
+          "at": "2026-10-11T03:15:00Z",
+          "date": null,
+          "resolution": "exact"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": false,
+        "priority": false,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": false,
+      "elapsed_ms": 3292.54
+    },
+    {
+      "id": "t05",
+      "expected_category": "transport",
+      "predicted_category": "delivery",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "delivery",
+        "priority": "high",
+        "intent": "delivery_event",
+        "entities": {
+          "subject": "Поездка отменена",
+          "location": null,
+          "service": "такси"
+        },
+        "time": {
+          "source": null,
+          "timezone": "Asia/Yekaterinburg",
+          "at": null,
+          "date": null,
+          "resolution": "absent"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": false,
+        "priority": false,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": false,
+      "elapsed_ms": 2558.34
+    },
+    {
+      "id": "c01",
+      "expected_category": "calendar",
+      "predicted_category": "calendar",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "calendar",
+        "priority": "high",
+        "intent": "calendar_event",
+        "entities": {
+          "subject": "Обсуждение макета",
+          "location": "Кабинете 5",
+          "service": null
+        },
+        "time": {
+          "source": "завтра в 14:20",
+          "timezone": "Asia/Yekaterinburg",
+          "at": "2026-10-11T09:20:00Z",
+          "date": null,
+          "resolution": "exact"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": false,
+        "location": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": false,
+      "elapsed_ms": 3706.81
+    },
+    {
+      "id": "c02",
+      "expected_category": "calendar",
+      "predicted_category": "calendar",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "calendar",
+        "priority": "high",
+        "intent": "calendar_event",
+        "entities": {
+          "subject": "Встреча с наставником",
+          "location": null,
+          "service": null
+        },
+        "time": {
+          "source": "сегодня в 18:30",
+          "timezone": "Asia/Yekaterinburg",
+          "at": "2026-10-10T13:30:00Z",
+          "date": null,
+          "resolution": "exact"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": true,
+      "elapsed_ms": 3125.05
+    },
+    {
+      "id": "c03",
+      "expected_category": "calendar",
+      "predicted_category": null,
+      "result": null,
+      "error": "LLM_BAD_RESPONSE",
+      "fields": {
+        "category": false,
+        "priority": false,
+        "time.resolution": false,
+        "time.at": false,
+        "time.date": false
+      },
+      "exact_match": false,
+      "elapsed_ms": 3414.07
+    },
+    {
+      "id": "c04",
+      "expected_category": "calendar",
+      "predicted_category": null,
+      "result": null,
+      "error": "LLM_BAD_RESPONSE",
+      "fields": {
+        "category": false,
+        "priority": false,
+        "location": false,
+        "time.resolution": false,
+        "time.at": false,
+        "time.date": false
+      },
+      "exact_match": false,
+      "elapsed_ms": 4136.85
+    },
+    {
+      "id": "c05",
+      "expected_category": "calendar",
+      "predicted_category": "calendar",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "calendar",
+        "priority": "default",
+        "intent": "calendar_event",
+        "entities": {
+          "subject": "Общая встреча послезавтра",
+          "location": null,
+          "service": null
+        },
+        "time": {
+          "source": "позже",
+          "timezone": "Asia/Yekaterinburg",
+          "at": null,
+          "date": null,
+          "resolution": "unresolved"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": true,
+        "time.resolution": false,
+        "time.at": true,
+        "time.date": false
+      },
+      "exact_match": false,
+      "elapsed_ms": 2711.05
+    },
+    {
+      "id": "c06",
+      "expected_category": "calendar",
+      "predicted_category": "calendar",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "calendar",
+        "priority": "high",
+        "intent": "calendar_event",
+        "entities": {
+          "subject": "Созвон команды",
+          "location": null,
+          "service": null
+        },
+        "time": {
+          "source": "через 1 час",
+          "timezone": "Asia/Yekaterinburg",
+          "at": "2026-10-10T11:00:00Z",
+          "date": null,
+          "resolution": "exact"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": false,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": false,
+      "elapsed_ms": 2642.11
+    },
+    {
+      "id": "c07",
+      "expected_category": "calendar",
+      "predicted_category": "calendar",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "calendar",
+        "priority": "high",
+        "intent": "calendar_event",
+        "entities": {
+          "subject": "Изменено место встречи",
+          "location": "Зале 2",
+          "service": null
+        },
+        "time": {
+          "source": "сегодня в 16:00",
+          "timezone": "Asia/Yekaterinburg",
+          "at": "2026-10-10T11:00:00Z",
+          "date": null,
+          "resolution": "exact"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": true,
+        "location": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": true,
+      "elapsed_ms": 3509.01
+    },
+    {
+      "id": "c08",
+      "expected_category": "calendar",
+      "predicted_category": "calendar",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "calendar",
+        "priority": "default",
+        "intent": "calendar_event",
+        "entities": {
+          "subject": "Плановая встреча",
+          "location": null,
+          "service": null
+        },
+        "time": {
+          "source": "в понедельник в 10:00",
+          "timezone": "Asia/Yekaterinburg",
+          "at": null,
+          "date": null,
+          "resolution": "unresolved"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": true,
+      "elapsed_ms": 3120.5
+    },
+    {
+      "id": "c09",
+      "expected_category": "calendar",
+      "predicted_category": "calendar",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "calendar",
+        "priority": "default",
+        "intent": "calendar_event",
+        "entities": {
+          "subject": "Встреча 2026-10-27",
+          "location": "Коворкинге",
+          "service": null
+        },
+        "time": {
+          "source": "17:40",
+          "timezone": "Asia/Yekaterinburg",
+          "at": null,
+          "date": null,
+          "resolution": "unresolved"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": true,
+        "location": true,
+        "time.resolution": false,
+        "time.at": false,
+        "time.date": true
+      },
+      "exact_match": false,
+      "elapsed_ms": 3979.27
+    },
+    {
+      "id": "c10",
+      "expected_category": "calendar",
+      "predicted_category": "calendar",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "calendar",
+        "priority": "default",
+        "intent": "calendar_event",
+        "entities": {
+          "subject": "Встреча с командой",
+          "location": null,
+          "service": null
+        },
+        "time": {
+          "source": "через 30 минут",
+          "timezone": "Asia/Yekaterinburg",
+          "at": "2026-10-10T10:30:00Z",
+          "date": null,
+          "resolution": "exact"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": true,
+      "elapsed_ms": 2822.64
+    },
+    {
+      "id": "r01",
+      "expected_category": "reminder",
+      "predicted_category": "reminder",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "reminder",
+        "priority": "default",
+        "intent": "reminder",
+        "entities": {
+          "subject": "Полить фикус",
+          "location": null,
+          "service": null
+        },
+        "time": {
+          "source": "сегодня в 19:15",
+          "timezone": "Asia/Yekaterinburg",
+          "at": "2026-10-10T14:15:00Z",
+          "date": null,
+          "resolution": "exact"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": true,
+        "subject": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": true,
+      "elapsed_ms": 3175.92
+    },
+    {
+      "id": "r02",
+      "expected_category": "reminder",
+      "predicted_category": null,
+      "result": null,
+      "error": "LLM_BAD_RESPONSE",
+      "fields": {
+        "category": false,
+        "priority": false,
+        "subject": false,
+        "location": false,
+        "time.resolution": false,
+        "time.at": false,
+        "time.date": false
+      },
+      "exact_match": false,
+      "elapsed_ms": 3761.72
+    },
+    {
+      "id": "r03",
+      "expected_category": "reminder",
+      "predicted_category": "reminder",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "reminder",
+        "priority": "default",
+        "intent": "reminder",
+        "entities": {
+          "subject": "Проветрить комнату",
+          "location": null,
+          "service": null
+        },
+        "time": {
+          "source": "через 10 минут",
+          "timezone": "Asia/Yekaterinburg",
+          "at": "2026-10-10T10:10:00Z",
+          "date": null,
+          "resolution": "exact"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": true,
+        "subject": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": true,
+      "elapsed_ms": 3044.21
+    },
+    {
+      "id": "r04",
+      "expected_category": "reminder",
+      "predicted_category": "reminder",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "reminder",
+        "priority": "default",
+        "intent": "reminder",
+        "entities": {
+          "subject": "Проверить рассаду",
+          "location": null,
+          "service": null
+        },
+        "time": {
+          "source": " послезавтра",
+          "timezone": "Asia/Yekaterinburg",
+          "at": null,
+          "date": "2026-10-12",
+          "resolution": "date_only"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": true,
+        "subject": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": true,
+      "elapsed_ms": 2642.79
+    },
+    {
+      "id": "r05",
+      "expected_category": "reminder",
+      "predicted_category": "reminder",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "reminder",
+        "priority": "default",
+        "intent": "reminder",
+        "entities": {
+          "subject": "Сдать макет",
+          "location": null,
+          "service": null
+        },
+        "time": {
+          "source": "2026-10-28 в 15:00",
+          "timezone": "Asia/Yekaterinburg",
+          "at": "2026-10-28T10:00:00Z",
+          "date": null,
+          "resolution": "exact"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": true,
+        "subject": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": true,
+      "elapsed_ms": 3550.51
+    },
+    {
+      "id": "r06",
+      "expected_category": "reminder",
+      "predicted_category": "reminder",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "reminder",
+        "priority": "default",
+        "intent": "reminder",
+        "entities": {
+          "subject": "Помыть фильтр",
+          "location": null,
+          "service": null
+        },
+        "time": {
+          "source": "через 1 день",
+          "timezone": "Asia/Yekaterinburg",
+          "at": "2026-10-11T10:00:00Z",
+          "date": null,
+          "resolution": "exact"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": true,
+        "subject": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": true,
+      "elapsed_ms": 2923.82
+    },
+    {
+      "id": "r07",
+      "expected_category": "reminder",
+      "predicted_category": "reminder",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "reminder",
+        "priority": "default",
+        "intent": "reminder",
+        "entities": {
+          "subject": "Разобрать инструменты",
+          "location": null,
+          "service": null
+        },
+        "time": {
+          "source": "в 18:00",
+          "timezone": "Asia/Yekaterinburg",
+          "at": null,
+          "date": null,
+          "resolution": "unresolved"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": true,
+        "subject": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": true,
+      "elapsed_ms": 3196.58
+    },
+    {
+      "id": "r08",
+      "expected_category": "reminder",
+      "predicted_category": "reminder",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "reminder",
+        "priority": "default",
+        "intent": "reminder",
+        "entities": {
+          "subject": "Протереть датчики",
+          "location": null,
+          "service": null
+        },
+        "time": {
+          "source": "29.10.2026",
+          "timezone": "Asia/Yekaterinburg",
+          "at": null,
+          "date": "2026-10-29",
+          "resolution": "date_only"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": true,
+        "subject": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": true,
+      "elapsed_ms": 3428.14
+    },
+    {
+      "id": "r09",
+      "expected_category": "reminder",
+      "predicted_category": "reminder",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "reminder",
+        "priority": "default",
+        "intent": "reminder",
+        "entities": {
+          "subject": "Проверить клапан",
+          "location": null,
+          "service": null
+        },
+        "time": {
+          "source": "завтра",
+          "timezone": "Asia/Yekaterinburg",
+          "at": null,
+          "date": "2026-10-11",
+          "resolution": "date_only"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": true,
+        "subject": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": true,
+      "elapsed_ms": 2847.11
+    },
+    {
+      "id": "r10",
+      "expected_category": "reminder",
+      "predicted_category": "reminder",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "reminder",
+        "priority": "default",
+        "intent": "reminder",
+        "entities": {
+          "subject": "Измерить влажность",
+          "location": null,
+          "service": null
+        },
+        "time": {
+          "source": "через 3 часа",
+          "timezone": "Asia/Yekaterinburg",
+          "at": "2026-10-10T13:00:00Z",
+          "date": null,
+          "resolution": "exact"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": true,
+        "subject": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": true,
+      "elapsed_ms": 2927.44
+    },
+    {
+      "id": "n01",
+      "expected_category": "noise",
+      "predicted_category": "noise",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "noise",
+        "priority": "low",
+        "intent": "none",
+        "entities": {
+          "subject": null,
+          "location": null,
+          "service": null
+        },
+        "time": {
+          "source": null,
+          "timezone": "Asia/Yekaterinburg",
+          "at": null,
+          "date": null,
+          "resolution": "absent"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": true,
+        "subject": true,
+        "location": true,
+        "service": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": true,
+      "elapsed_ms": 2090.16
+    },
+    {
+      "id": "n02",
+      "expected_category": "noise",
+      "predicted_category": null,
+      "result": null,
+      "error": "LLM_BAD_RESPONSE",
+      "fields": {
+        "category": false,
+        "priority": false,
+        "subject": false,
+        "location": false,
+        "service": false,
+        "time.resolution": false,
+        "time.at": false,
+        "time.date": false
+      },
+      "exact_match": false,
+      "elapsed_ms": 2326.84
+    },
+    {
+      "id": "n03",
+      "expected_category": "noise",
+      "predicted_category": "calendar",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "calendar",
+        "priority": "default",
+        "intent": "calendar_event",
+        "entities": {
+          "subject": "Обновление приложения",
+          "location": null,
+          "service": null
+        },
+        "time": {
+          "source": null,
+          "timezone": "Asia/Yekaterinburg",
+          "at": null,
+          "date": null,
+          "resolution": "absent"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": false,
+        "priority": false,
+        "subject": false,
+        "location": true,
+        "service": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": false,
+      "elapsed_ms": 2430.21
+    },
+    {
+      "id": "n04",
+      "expected_category": "noise",
+      "predicted_category": "reminder",
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "reminder",
+        "priority": "default",
+        "intent": "reminder",
+        "entities": {
+          "subject": "Оцените приложение",
+          "location": null,
+          "service": null
+        },
+        "time": {
+          "source": null,
+          "timezone": "Asia/Yekaterinburg",
+          "at": null,
+          "date": null,
+          "resolution": "absent"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": false,
+        "priority": false,
+        "subject": false,
+        "location": true,
+        "service": true,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": false,
+      "elapsed_ms": 2318.96
+    },
+    {
+      "id": "n05",
+      "expected_category": "noise",
+      "predicted_category": null,
+      "result": null,
+      "error": "LLM_BAD_RESPONSE",
+      "fields": {
+        "category": false,
+        "priority": false,
+        "subject": false,
+        "location": false,
+        "service": false,
+        "time.resolution": false,
+        "time.at": false,
+        "time.date": false
+      },
+      "exact_match": false,
+      "elapsed_ms": 2261.13
+    }
+  ],
+  "load": {
+    "sha256": "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e",
+    "model_bytes": 1117320736,
+    "load_ms": 1411.1221949997343,
+    "peak_rss_bytes": 1907355648,
+    "n_ctx": 2048,
+    "n_threads": 2
+  },
+  "warmup": "ok",
+  "completions": [
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 680,
+      "completion_tokens": 50,
+      "inference_ms": 3208.94744799989,
+      "peak_rss_bytes": 2015731712
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 669,
+      "completion_tokens": 46,
+      "inference_ms": 2838.1372109997756,
+      "peak_rss_bytes": 2017042432
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 670,
+      "completion_tokens": 47,
+      "inference_ms": 2920.322264999413,
+      "peak_rss_bytes": 2017828864
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 671,
+      "completion_tokens": 55,
+      "inference_ms": 3400.2825039997333,
+      "peak_rss_bytes": 2020913152
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 671,
+      "completion_tokens": 52,
+      "inference_ms": 3262.638073000744,
+      "peak_rss_bytes": 2023202816
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 680,
+      "completion_tokens": 49,
+      "inference_ms": 3218.1204060007076,
+      "peak_rss_bytes": 2024394752
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 682,
+      "completion_tokens": 61,
+      "inference_ms": 3904.192255000453,
+      "peak_rss_bytes": 2026549248
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 667,
+      "completion_tokens": 50,
+      "inference_ms": 3061.0732600007395,
+      "peak_rss_bytes": 2029232128
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 674,
+      "completion_tokens": 52,
+      "inference_ms": 3295.538449999185,
+      "peak_rss_bytes": 2032467968
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 672,
+      "completion_tokens": 41,
+      "inference_ms": 2681.5588360004767,
+      "peak_rss_bytes": 2034040832
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 670,
+      "completion_tokens": 53,
+      "inference_ms": 3343.8101689998803,
+      "peak_rss_bytes": 2037055488
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 662,
+      "completion_tokens": 47,
+      "inference_ms": 2872.652121000101,
+      "peak_rss_bytes": 2038439936
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 665,
+      "completion_tokens": 43,
+      "inference_ms": 2671.683478999512,
+      "peak_rss_bytes": 2040008704
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 669,
+      "completion_tokens": 52,
+      "inference_ms": 3291.003338000337,
+      "peak_rss_bytes": 2041552896
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 660,
+      "completion_tokens": 42,
+      "inference_ms": 2557.2221150005134,
+      "peak_rss_bytes": 2043547648
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 681,
+      "completion_tokens": 56,
+      "inference_ms": 3705.69734899982,
+      "peak_rss_bytes": 2044796928
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 674,
+      "completion_tokens": 48,
+      "inference_ms": 3123.7100040007135,
+      "peak_rss_bytes": 2047692800
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 671,
+      "completion_tokens": 53,
+      "inference_ms": 3413.003877999472,
+      "peak_rss_bytes": 2047692800
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 683,
+      "completion_tokens": 62,
+      "inference_ms": 4135.726911000347,
+      "peak_rss_bytes": 2047692800
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 668,
+      "completion_tokens": 43,
+      "inference_ms": 2709.8858219997055,
+      "peak_rss_bytes": 2047692800
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 660,
+      "completion_tokens": 43,
+      "inference_ms": 2640.887313999883,
+      "peak_rss_bytes": 2047692800
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 671,
+      "completion_tokens": 54,
+      "inference_ms": 3507.677687999603,
+      "peak_rss_bytes": 2047692800
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 667,
+      "completion_tokens": 49,
+      "inference_ms": 3119.0782630001195,
+      "peak_rss_bytes": 2047692800
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 687,
+      "completion_tokens": 57,
+      "inference_ms": 3977.9531569993196,
+      "peak_rss_bytes": 2047692800
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 665,
+      "completion_tokens": 45,
+      "inference_ms": 2821.445827000389,
+      "peak_rss_bytes": 2047692800
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 671,
+      "completion_tokens": 48,
+      "inference_ms": 3174.761970999498,
+      "peak_rss_bytes": 2047692800
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 680,
+      "completion_tokens": 54,
+      "inference_ms": 3760.631475000082,
+      "peak_rss_bytes": 2047692800
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 671,
+      "completion_tokens": 46,
+      "inference_ms": 3043.1277819998286,
+      "peak_rss_bytes": 2047692800
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 668,
+      "completion_tokens": 43,
+      "inference_ms": 2641.6334819996337,
+      "peak_rss_bytes": 2047692800
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 680,
+      "completion_tokens": 55,
+      "inference_ms": 3549.3177919997834,
+      "peak_rss_bytes": 2047692800
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 672,
+      "completion_tokens": 46,
+      "inference_ms": 2922.683992000202,
+      "peak_rss_bytes": 2047692800
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 676,
+      "completion_tokens": 49,
+      "inference_ms": 3195.318798999324,
+      "peak_rss_bytes": 2047692800
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 679,
+      "completion_tokens": 51,
+      "inference_ms": 3427.065584999582,
+      "peak_rss_bytes": 2047692800
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 682,
+      "completion_tokens": 41,
+      "inference_ms": 2845.7610069999646,
+      "peak_rss_bytes": 2047692800
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 671,
+      "completion_tokens": 46,
+      "inference_ms": 2926.281879000271,
+      "peak_rss_bytes": 2047692800
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 668,
+      "completion_tokens": 33,
+      "inference_ms": 2089.0759610001624,
+      "peak_rss_bytes": 2047692800
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 675,
+      "completion_tokens": 35,
+      "inference_ms": 2325.7680110000365,
+      "peak_rss_bytes": 2047692800
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 667,
+      "completion_tokens": 38,
+      "inference_ms": 2429.031613999541,
+      "peak_rss_bytes": 2047692800
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 662,
+      "completion_tokens": 38,
+      "inference_ms": 2317.8954680006427,
+      "peak_rss_bytes": 2047692800
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 679,
+      "completion_tokens": 33,
+      "inference_ms": 2260.0539580007535,
+      "peak_rss_bytes": 2047692800
+    }
+  ],
+  "peak_rss_bytes": 2047692800,
+  "summary": {
+    "total": 40,
+    "valid": 32,
+    "classification_correct": 27,
+    "classification_accuracy": 0.675,
+    "macro_f1": 0.6341,
+    "per_class": {
+      "delivery": {
+        "support": 10,
+        "precision": 0.7273,
+        "recall": 0.8,
+        "f1": 0.7619
+      },
+      "transport": {
+        "support": 5,
+        "precision": 1.0,
+        "recall": 0.2,
+        "f1": 0.3333
+      },
+      "calendar": {
+        "support": 10,
+        "precision": 0.8889,
+        "recall": 0.8,
+        "f1": 0.8421
+      },
+      "reminder": {
+        "support": 10,
+        "precision": 0.9,
+        "recall": 0.9,
+        "f1": 0.9
+      },
+      "noise": {
+        "support": 5,
+        "precision": 1.0,
+        "recall": 0.2,
+        "f1": 0.3333
+      }
+    },
+    "fields": {
+      "category": {
+        "correct": 27,
+        "total": 40,
+        "accuracy": 0.675
+      },
+      "priority": {
+        "correct": 23,
+        "total": 40,
+        "accuracy": 0.575
+      },
+      "location": {
+        "correct": 8,
+        "total": 13,
+        "accuracy": 0.6154
+      },
+      "service": {
+        "correct": 10,
+        "total": 13,
+        "accuracy": 0.7692
+      },
+      "time.resolution": {
+        "correct": 28,
+        "total": 40,
+        "accuracy": 0.7
+      },
+      "time.at": {
+        "correct": 31,
+        "total": 40,
+        "accuracy": 0.775
+      },
+      "time.date": {
+        "correct": 31,
+        "total": 40,
+        "accuracy": 0.775
+      },
+      "subject": {
+        "correct": 10,
+        "total": 15,
+        "accuracy": 0.6667
+      }
+    },
+    "exact_match": 20,
+    "courier_reminder": {
+      "correct": 14,
+      "total": 20,
+      "accuracy": 0.7,
+      "wilson_95": [
+        0.481,
+        0.8545
+      ],
+      "inference": "reference-only; synthetic nonrandom cases do not establish population accuracy",
+      "sample_target_90_percent": false
+    },
+    "processor_ms": {
+      "p50": 3062.19,
+      "p95": 3905.25,
+      "max": 4136.85,
+      "sample_target_4_seconds": false
+    }
+  },
+  "hardware_acceptance": "not-performed; development CPU does not establish Pi goals",
+  "dataset_sha256": "fd8764067857aaa219519ec2637a5e323181b7752a737706a149b4c5c3cf897f",
+  "cpu": "AMD Ryzen 5 5600H with Radeon Graphics"
+}

@@ -3,6 +3,7 @@ import importlib.util
 import io
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -16,6 +17,7 @@ def downloader(tmp_path, monkeypatch):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module.shutil, "disk_usage", lambda _: SimpleNamespace(free=10 * 1024**3))
     (tmp_path / "scripts").mkdir()
     (tmp_path / "models").mkdir()
     (tmp_path / "scripts/models.json").write_text(
@@ -114,3 +116,37 @@ def test_wrong_content_range_does_not_append(downloader, monkeypatch):
     with pytest.raises(RuntimeError, match="продолжение"):
         module.download("qwen")
     assert partial.read_bytes() == DATA[:4] and not target(module).exists()
+
+
+def test_low_disk_blocks_request_without_removing_partial(downloader, monkeypatch):
+    module, calls, _ = downloader
+    (module.ROOT / "core/models").mkdir(parents=True)
+    partial = target(module).with_suffix(".gguf.part")
+    partial.write_bytes(DATA[:4])
+    monkeypatch.setattr(
+        module.shutil, "disk_usage", lambda _: SimpleNamespace(free=module.DISK_RESERVE_BYTES)
+    )
+    with pytest.raises(RuntimeError, match="4 GiB"):
+        module.download("qwen")
+    assert not calls and partial.read_bytes() == DATA[:4]
+
+
+def test_disk_consumed_by_other_process_blocks_next_write(downloader, monkeypatch):
+    module, _, _ = downloader
+    (module.ROOT / "core/models").mkdir(parents=True)
+    free = iter([10 * 1024**3, module.DISK_RESERVE_BYTES])
+    monkeypatch.setattr(module.shutil, "disk_usage", lambda _: SimpleNamespace(free=next(free)))
+    with pytest.raises(RuntimeError, match="4 GiB"):
+        module.download("qwen")
+    assert not target(module).exists()
+    assert target(module).with_suffix(".gguf.part").stat().st_size == 0
+
+
+def test_already_downloaded_model_does_not_require_extra_space(downloader, monkeypatch):
+    module, calls, _ = downloader
+    (module.ROOT / "core/models").mkdir(parents=True)
+    target(module).with_suffix(".gguf.part").write_bytes(DATA)
+    monkeypatch.setattr(module.shutil, "disk_usage", lambda _: SimpleNamespace(free=0))
+    module.download("qwen")
+    module.download("qwen")
+    assert target(module).read_bytes() == DATA and not calls

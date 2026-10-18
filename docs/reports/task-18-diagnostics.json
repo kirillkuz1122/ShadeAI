@@ -1,0 +1,82 @@
+{
+  "stage": "seen-eval-v1-is-now-dev",
+  "raw_answers_saved": false,
+  "rows": [
+    {
+      "id": "d05",
+      "fields": {
+        "subject": "literal",
+        "location": "literal",
+        "service": "literal",
+        "time_expression": "not_literal"
+      },
+      "finish_reason": "stop"
+    },
+    {
+      "id": "d06",
+      "fields": {
+        "subject": "literal",
+        "location": "null",
+        "service": "null",
+        "time_expression": "not_literal"
+      },
+      "finish_reason": "stop"
+    },
+    {
+      "id": "t02",
+      "fields": {
+        "subject": "literal",
+        "location": "null",
+        "service": "case_only",
+        "time_expression": "literal"
+      },
+      "finish_reason": "stop"
+    },
+    {
+      "id": "c03",
+      "fields": {
+        "subject": "not_literal",
+        "location": "literal",
+        "service": "null",
+        "time_expression": "literal"
+      },
+      "finish_reason": "stop"
+    },
+    {
+      "id": "c04",
+      "fields": {
+        "subject": "literal",
+        "location": "not_literal",
+        "service": "null",
+        "time_expression": "literal"
+      },
+      "finish_reason": "stop"
+    },
+    {
+      "id": "r02",
+      "fields": {
+        "subject": "literal",
+        "location": "not_literal",
+        "service": "null",
+        "time_expression": "literal"
+      },
+      "finish_reason": "stop"
+    },
+    {
+      "id": "n02",
+      "fields": {},
+      "finish_reason": "stop",
+      "schema_fields": [
+        "_"
+      ]
+    },
+    {
+      "id": "n05",
+      "fields": {},
+      "finish_reason": "stop",
+      "schema_fields": [
+        "_"
+      ]
+    }
+  ]
+}
