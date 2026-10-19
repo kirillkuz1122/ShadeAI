@@ -16,7 +16,9 @@
 
 **OS TASK-21 допроверен:** APK8df0ac55…/AOSP35/read-only, trueCore/synthetic feed/настоящие WorkManager+NotificationManager: permissiondeny/opt-in/baseline/фон/repeat/restart/feed/unknown/401pause/resume/disable/revision/privacy PASS,HA0. [Отчёт21](reports/task-21.md), [JSON](reports/task-21-android-os.json). Свои сервер/AVD остановлены, reverse/XML/temporaryDB удалены. Новых Gradle/скачиваний0.
 
-**Следующий шаг:** сверить git/push21. Возможная доступная допроверка — OS boot/forced-idle24 на AOSP сохранённым APK (не аппаратная приёмка Doze/OEM). При нехватке обычной квоты продолжить по подтверждённому будильнику02:00 после01:51, без reset/кредитов; не считать отсутствие квоты закрытием задач. NativeAndroid→GGUF→оба клиента/телефон/Pi/14дней остаются;17задач открыты, этапы не приняты;18:70%/max4.137с. После07:10сводки ждать Кирилла.
+**Контрольная точка после push21:** main/origin **2d152df**, рабочее дерево было чистым, все свои Core/AVD/Chromium остановлены; disk~27GiB, modelsпусто, скачиваний0. Android regenerable очистка901836800байт выполнена, APK8df0ac55… сохранён. Обычнаяквота ещё разрешена, но primary98%/weekly92% использовано; reset/кредиты не применялись.
+
+**Следующий шаг02:00:** сначала git/processes/df/квота; не дублировать. Возможная доступная допроверка — OS boot/forced-idle24 на AOSP сохранённым APK (не аппаратная приёмка Doze/OEM): читать android/checks/check_reminders.py/reminder_server.py и фактический boot recovery приложения. Писать новый отдельный QA/report только после определения проверяемого поведения; Gradle/загрузки без необходимости не запускать. Если обнаружится продуктовая ошибка, исправить/проверить/русскийcommit/push. После доступного среза снова сверить все оставшиеся DoD; аппаратные/модельные критерии не закрывать тестами. NativeAndroid→GGUF→оба клиента/телефон/Pi/14дней остаются;17задач открыты, этапы не приняты;18:70%/max4.137с. **07:10сводка, затем ждать Кирилла.**
 
 Изоляция аналитического seed исправлена отдельно3e74556: исходный Python3.11 462/1FAIL, после остановки collector до seed полный463PASS. [Отчёт](reports/analytics-test-isolation-2026-10-19.md).
 
