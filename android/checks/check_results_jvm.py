@@ -64,10 +64,12 @@ sources = [
     main / "ui/CoreResultsController.kt",
     main / "ui/CoreResultsPresentation.kt",
     main / "ui/SuggestionsController.kt",
+    main / "ui/CalendarController.kt",
     main / "ui/SuggestionsPresentation.kt",
     main / "hints/HintPlan.kt",
     *list(tests.glob("CoreResults*Test.kt")),
     *list(tests.glob("Suggestions*Test.kt")),
+    *list(tests.glob("Calendar*Test.kt")),
 ]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument(
@@ -109,6 +111,7 @@ with tempfile.TemporaryDirectory(prefix="task19-jvm-", dir=ANDROID / ".gradle") 
             "com.shadeai.app.CoreResultsControllerTest",
             "com.shadeai.app.CoreResultsNetworkTest",
             "com.shadeai.app.SuggestionsTest",
+            "com.shadeai.app.CalendarTest",
         ],
         timeout=60,
     )

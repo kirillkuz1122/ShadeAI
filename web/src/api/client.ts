@@ -1,3 +1,4 @@
+import type { CalendarPage } from "./calendar";
 import type { AutomationPage, AutomationRule, AutomationDetail, HintPage, RunPage } from "./automation";
 const API_KEY_STORAGE = "shade_api_key";
 
@@ -134,6 +135,8 @@ async function request<T>(
 }
 
 export const api = {
+  calendar:(options:RequestOptions,offset=0,includeInactive=false)=>request<CalendarPage>(`/api/v1/calendar/events?limit=50&offset=${offset}&include_inactive=${includeInactive}`,options),
+  syncCalendar:(options:RequestOptions)=>request<{status:string}>("/api/v1/calendar/sync",options,{method:"POST"}),
   automations: (options: RequestOptions, offset = 0) =>
     request<AutomationPage>(`/api/v1/automations?limit=20&offset=${offset}`, options),
   automation: (options: RequestOptions, id: string) =>

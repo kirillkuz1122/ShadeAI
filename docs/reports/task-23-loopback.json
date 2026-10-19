@@ -1,0 +1,13 @@
+{
+  "synthetic_report_server": true,
+  "native_llm": false,
+  "real_caldav_implementation": false,
+  "hardware": false,
+  "real_core_and_report_http": "PASS",
+  "expanded_instances_and_dates": "PASS",
+  "stable_ids_update": "PASS",
+  "cancel_series_and_removed": "PASS",
+  "failure_preserves_cache": "PASS",
+  "restart_preserves_cache": "PASS",
+  "synthetic_report_calls": 6
+}

@@ -4,6 +4,7 @@ import { useResource } from "./hooks/useResource";
 import { HealthPanel } from "./components/HealthPanel";
 import { Notifications } from "./components/Notifications";
 import { Automations } from "./components/Automations";
+import {Calendar} from "./components/Calendar";
 import { Journal } from "./components/Journal";
 
 export default function App() {
@@ -14,7 +15,7 @@ export default function App() {
   const [draft, setDraft] = useState(credential.key);
   const [saved, setSaved] = useState("");
   const [connectionOpen, setConnectionOpen] = useState(!credential.key);
-  const [section, setSection] = useState<"notifications" | "journal" | "automations">(
+  const [section, setSection] = useState<"notifications" | "journal" | "automations" | "calendar">(
     "notifications",
   );
   const loadHealth = useCallback(
@@ -70,6 +71,7 @@ export default function App() {
           <button aria-current={section === "automations" ? "page" : undefined} onClick={()=>setSection("automations")}>
             <span aria-hidden="true">03</span> Сценарии и подсказки
           </button>
+          <button aria-current={section==="calendar"?"page":undefined} onClick={()=>setSection("calendar")}><span aria-hidden="true">04</span> Календарь</button>
         </nav>
         <div className="local-note">
           <svg
@@ -100,12 +102,12 @@ export default function App() {
           <div>
             <p className="eyebrow">Домашний контур / Обзор</p>
             <h1>
-              {section === "notifications" ? "Уведомления" : "Журнал команд"}
+              {{notifications:"Уведомления",journal:"Журнал команд",automations:"Сценарии и подсказки",calendar:"Календарь"}[section]}
             </h1>
             <p className="intro">
               {section === "notifications"
                 ? "История событий с ваших устройств."
-                : "Что Core отправил в Home Assistant и какой ответ получил."}
+                : section==="calendar"?"Расписание из вашего локального календаря.":section==="automations"?"Предложения, ваши решения и исполнение сценариев.":"Что Core отправил в Home Assistant и какой ответ получил."}
             </p>
           </div>
           <span className="local-badge">
@@ -181,6 +183,8 @@ export default function App() {
           <div key={credential.version}>
             {section === "notifications" ? (
               <Notifications apiKey={credential.key} />
+            ) : section === "calendar" ? (
+              <Calendar key={credential.key} apiKey={credential.key}/>
             ) : section === "automations" ? (
               <Automations apiKey={credential.key} />
             ) : (
@@ -189,7 +193,7 @@ export default function App() {
           </div>
         )}
         <footer className="workspace-footer">
-          <span>Обновление каждые 10 секунд · время вашего браузера</span>
+          <span>{section==="calendar"?"Кэш каждые 30 секунд · пояс календаря":"Обновление каждые 10 секунд · время вашего браузера"}</span>
           <span>Мой дом — мои данные.</span>
         </footer>
       </main>

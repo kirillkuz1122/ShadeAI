@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
 fun ConnectionScreen(
     state: ConnectionUiState, onUrl: (String) -> Unit, onKey: (String) -> Unit,
     onCheck: () -> Unit, onClear: () -> Unit, onTest: () -> Unit,
-    onSources: () -> Unit, onJournal: () -> Unit, onResults: () -> Unit = {}, onSuggestions: () -> Unit = {},
+    onSources: () -> Unit, onJournal: () -> Unit, onResults: () -> Unit = {}, onSuggestions: () -> Unit = {}, onCalendar:()->Unit={},
 ) {
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
@@ -46,6 +46,7 @@ fun ConnectionScreen(
         ) {
             Text("Shade AI", style = MaterialTheme.typography.headlineLarge)
             Text("Подключение к домашнему Core", style = MaterialTheme.typography.titleMedium)
+            OutlinedButton(onClick=onCalendar,colors=ButtonDefaults.outlinedButtonColors(contentColor=MaterialTheme.colorScheme.onSurface)){Text("Локальный календарь")}
             Text("Zero Cloud · данные остаются в локальной сети", style = MaterialTheme.typography.bodySmall)
             OutlinedButton(onClick = onSources, modifier = Modifier.fillMaxWidth()) {
                 Text("Уведомления и источники")

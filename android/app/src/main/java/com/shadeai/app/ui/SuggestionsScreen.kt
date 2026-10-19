@@ -117,12 +117,14 @@ private fun RuleCard(row:CoreRule,targets:List<String>,busy:Boolean,decide:(Core
             if(!row.sourceCurrent)Text("Профиль изменился или устарел. Обновите предложения.")
             row.action?.let {Text("$verb: ${it.entityId}")}
             Text(if(row.executorStatus=="not_implemented")"Исполнитель ещё не подключён. Команды устройствам не отправляются." else if(row.executorStatus=="disabled")"Исполнение выключено в настройках Core." else "Решение применяется только к условиям, показанным в Core. Статус исполнителя проверьте на сервере.")
-            if(row.status!="accepted"){
-                Text("Светильник для сценария")
-                row.executionPolicy?.let { policy ->
+            row.executionPolicy?.let { policy ->
                 Text("Общее присутствие: ${policy.homeEntity ?: "не выбрано"}. Отмена до отправки: ${policy.cancelSeconds} с; cooldown: ${policy.cooldownSeconds} с. Изменение этих условий требует нового подтверждения.")
             }
-            if(targets.isEmpty())Text("Разрешённые светильники пока не заданы в настройках Core.")
+            if(row.status!="accepted"){
+                Text("Светильник для сценария")
+                if(targets.isEmpty()) {
+                    Text("Разрешённые светильники пока не заданы в настройках Core.")
+                }
                 targets.filter(::allowedLight).forEach {target->FilterChip(selected=selected==target,
                     onClick={selected=target},enabled=!busy && row.sourceCurrent,label={Text(target)})}
                 OutlinedButton(onClick={decide(row,"accept",selected)},colors=buttons,

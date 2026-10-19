@@ -21,6 +21,11 @@ class MissingCredentialsException : IOException("Не задан ключ Core")
 
 interface ShadeApi {
 
+    @GET("calendar/events")
+    suspend fun calendar(@Query("offset")offset:Int,@Query("include_inactive")inactive:Boolean,@Query("limit")limit:Int=50):CoreCalendarPage
+    @POST("calendar/sync")
+    suspend fun syncCalendar():CoreStatus
+
     @GET("health")
     suspend fun health(): HealthResponse
 

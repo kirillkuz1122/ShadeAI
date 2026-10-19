@@ -847,6 +847,24 @@ curl -X POST "http://<raspberry-pi-ip>:8000/api/v1/voice" \
 
 ---
 
+### 4.7. Локальный календарь — программная TASK-23
+
+Все маршруты требуют Bearer Core. Default CALENDAR_URL пустой — синхронизации/сети нет. Настройки только окружением/.env и перезапуском: точный URL коллекции по локальному IP (loopback/RFC1918/ULA/link-local), http/https, без credentials/query/fragment, путь оканчивается /. DNS/облачные URL не принимаются. CALENDAR_USERNAME/PASSWORD либо обе пустые, либо обе заданы; API/логи/health их не возвращают. CALENDAR_TIMEZONE IANA, default Asia/Yekaterinburg; интервал300с (60..3600), timeout10с (1..30). Proxy/redirect/автоповтор отключены, TLS проверяется. После смены URL/username/timezone старый scope не выдаётся и удаляется при старте; отключение коллекции удаляет её кэш. Пароль не участвует в сохраняемом хеше.
+
+Core делает REPORT calendar-query/calendar-data/expand в диапазоне последних7 и следующих60 UTC-суток от текущей полуночи; запрос дополнительно расширен на48ч с каждой стороны для DATE/floating при разных поясах коллекции и Core. Возвращённые экземпляры фильтруются в основное окно. [RFC4791 §9.6.5](https://www.rfc-editor.org/rfc/rfc4791.txt) разрешает серверную развёртку для ограниченного клиента. Неразвёрнутые RRULE/RDATE/EXDATE, VTIMEZONE, частичный207 и невалидные времена не становятся успешным снимком. Конкретная реализация CalDAV и её RRULE-движок ещё не приняты; стенд отдаёт подготовленные развёрнутые экземпляры.
+
+Вход ограничен1MiB XML/500экземплярами,5000XML-узлами; DTD/ENTITY и не-UTF8 не принимаются. Парсинг вне event loop, сеть вне DB-транзакции. Хранится только summary≤200/location≤255, UTC-время/DATE, статус/занятость/ревизия и хеш UID/recurrence; descriptions/attendees/alarms/attachments/rawICS не сохраняются, внешние ссылки не загружаются. IANA/UTC/floating/DATE нормализуются явно; неоднозначные/несуществующие DST-часы не угадываются. DTEND для DATE исключает конечную дату. DURATION различает номинальные дни и часы при DST.
+
+`GET /calendar/events?limit=50&offset=0&include_inactive=false`: limit1..50,offset0..1000. Ответ200: status,configured,stale,timezone,last_success,window_start/window_end,error_code,events[],total. По умолчанию только confirmed/tentative; include_inactive добавляет cancelled/removed. Сортировка starts_at/id. До1000 строк кэша с очисткой вне окна/старых terminal; одновременных активных экземпляров≤500. При ошибке связи/данных прежний кэш сохраняется и stale=true. Последняя успешная синхронизация старше2интервалов/из будущего, starting/syncing/error также stale. Эти данные нельзя считать подтверждённым текущим контекстом для TASK-24.
+
+Событие: id=cal_+32hex,summary,location,starts_at/ends_at UTC,start_date/end_date (YYYY-MM-DD/null),all_day,status,busy,revision,updated_at. ID определяется scope+хешем UID+RECURRENCE-ID, перенос времени/изменение заголовка сохраняет ID и повышает revision; неизменённый повтор sync ревизию не повышает. Мастер без RECURRENCE-ID имеет отдельную устойчивую идентичность. STATUS:CANCELLED без DTSTART отменяет сохранённый экземпляр/всю серию для master. Пропавшее из полного успешного окна получает removed: это не утверждение о причине (удаление/перенос). Неактивные события не разрешают напоминания/режимы дома.
+
+`GET /calendar/events/{event_id}`: те же metadata + event;404 CALENDAR_EVENT_NOT_FOUND, чужой scope не раскрывается. `POST /calendar/sync`: запросить чтение сервера, без изменения календаря/HA;64KiB лимит тела.200 {status:"ready"|"disabled"};503 с фиксированным code CALENDAR_AUTH_FAILED, CALENDAR_REDIRECT_BLOCKED, CALENDAR_UNSUPPORTED, CALENDAR_UNAVAILABLE, CALENDAR_BAD_RESPONSE, CALENDAR_PARTIAL_RESPONSE, CALENDAR_EXPANSION_REQUIRED, CALENDAR_BAD_TIME, CALENDAR_LIMIT, CALENDAR_STORAGE_ERROR. Raw input/credentials не возвращаются. Повтор после503 вручную, не автоматический повтор POST клиента; фоновое следующее чтение идёт по интервалу.
+
+Миграция0010_calendar_events, один CalendarService/процесс на БД; ошибка применения откатывает весь снимок. Перезапуск сохраняет кэш и до успешного нового чтения помечает его stale. Web/Android показывают пояс/DATE/статусы и актуальность, очищают данные при смене подключения/STOP/401. TASK-23 не создаёт напоминаний/HA-команд. [Проверки и ограничения](reports/task-23.md).
+
+---
+
 ## 5. Таблица кодов ответов HTTP
 
 | HTTP-код | Статус | Применение в Shade Core |

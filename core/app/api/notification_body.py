@@ -15,6 +15,7 @@ class NotificationBodyLimit:
             or not (
                 scope["path"].rstrip("/") in {"/api/v1/notifications", "/api/v1/ha/action"}
                 or scope["path"].startswith("/api/v1/automations/")
+                or scope["path"].startswith("/api/v1/calendar/")
                 or scope["path"].startswith("/api/v1/devices/")
                 and scope["path"].rstrip("/").endswith("/command")
             )

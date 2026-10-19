@@ -202,3 +202,34 @@ class AutomationRun(Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     event_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+
+class CalendarEvent(Base):
+    __tablename__ = "calendar_events"
+    __table_args__ = (Index("ix_calendar_events_scope_start", "config_key", "starts_at", "id"),)
+    id: Mapped[str] = mapped_column(Text, primary_key=True)
+    config_key: Mapped[str] = mapped_column(Text, nullable=False)
+    uid_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    recurrence: Mapped[str] = mapped_column(Text, nullable=False)
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    location: Mapped[str | None] = mapped_column(Text, nullable=True)
+    starts_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    ends_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    start_date: Mapped[str | None] = mapped_column(Text, nullable=True)
+    end_date: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    busy: Mapped[int] = mapped_column(Integer, nullable=False)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
+class CalendarSyncState(Base):
+    __tablename__ = "calendar_sync_state"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    config_key: Mapped[str] = mapped_column(Text, nullable=False)
+    last_attempt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    last_success: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    window_start: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    window_end: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    error_code: Mapped[str | None] = mapped_column(Text, nullable=True)

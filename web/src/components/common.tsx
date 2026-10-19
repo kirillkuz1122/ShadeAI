@@ -51,29 +51,31 @@ export function Pager({
   total,
   loading,
   onChange,
+  pageSize=PAGE_SIZE,
 }: {
   offset: number;
   total: number;
   loading: boolean;
   onChange: (offset: number) => void;
+  pageSize?:number;
 }) {
   return (
     <nav className="pagination" aria-label="Страницы списка">
       <span className="mono">
         {total === 0
           ? "0 записей"
-          : `${Math.min(offset + 1, total)}–${Math.min(offset + PAGE_SIZE, total)} из ${total}`}
+          : `${Math.min(offset + 1, total)}–${Math.min(offset + pageSize, total)} из ${total}`}
       </span>
       <div>
         <button
           disabled={offset === 0 || loading}
-          onClick={() => onChange(Math.max(0, offset - PAGE_SIZE))}
+          onClick={() => onChange(Math.max(0, offset - pageSize))}
         >
           Назад
         </button>
         <button
-          disabled={offset + PAGE_SIZE >= total || loading}
-          onClick={() => onChange(offset + PAGE_SIZE)}
+          disabled={offset + pageSize >= total || loading}
+          onClick={() => onChange(offset + pageSize)}
         >
           Далее
         </button>

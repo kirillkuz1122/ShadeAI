@@ -29,6 +29,12 @@ TEST_ENV = {
     "AUTOMATION_COOLDOWN_SECONDS": "1800",
     "SENSOR_RETENTION_DAYS": "90",
     "SENSOR_HISTORY_MAX_ROWS": "100000",
+    "CALENDAR_URL": "",
+    "CALENDAR_USERNAME": "",
+    "CALENDAR_PASSWORD": "",
+    "CALENDAR_TIMEZONE": "Asia/Yekaterinburg",
+    "CALENDAR_INTERVAL_SECONDS": "300",
+    "CALENDAR_TIMEOUT_SECONDS": "10",
     "EVENT_RETENTION_DAYS": "90",
     "LOG_DIR": "./logs",
     "LOG_MAX_BYTES": "1048576",
@@ -139,10 +145,28 @@ class HAMock:
         self.error = None
         self.overrides = {}
         self.hook = None
+        self.calendar_xml = None
+        self.calendar_code = 207
+        self.calendar_error = None
         self.unexpected_requests: list[httpx.Request] = []
 
     def handle(self, request: httpx.Request) -> httpx.Response:
         self.requests.append(request)
+        if (
+            request.method == "REPORT"
+            and request.url.host == "127.0.0.1"
+            and request.url.port == 8533
+            and request.url.path == "/calendar/synthetic/"
+        ):
+            assert request.headers.get("Authorization") == "Basic c3ludGhldGljOnRlc3QtcGFzc3dvcmQ="
+            assert self.calendar_xml is not None, "Нужен явный синтетический CalDAV-ответ"
+            if self.calendar_error:
+                raise self.calendar_error
+            return httpx.Response(
+                self.calendar_code,
+                content=self.calendar_xml,
+                headers={"Content-Type": "application/xml"},
+            )
         known_route = (
             request.method == "GET"
             and request.url.path

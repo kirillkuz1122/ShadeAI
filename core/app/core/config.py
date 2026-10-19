@@ -1,3 +1,4 @@
+import ipaddress
 import re
 from typing import Literal
 from urllib.parse import urlsplit
@@ -37,6 +38,12 @@ class Settings(BaseSettings):
     automation_cancel_seconds: int = Field(default=30, ge=10, le=120)
     automation_cooldown_seconds: int = Field(default=1800, ge=300, le=86400)
     suggestions_interval_seconds: int = Field(default=30, ge=5, le=3600)
+    calendar_url: str | None = Field(default=None, repr=False)
+    calendar_username: str = Field(default="", max_length=128, repr=False)
+    calendar_password: str = Field(default="", max_length=512, repr=False)
+    calendar_timezone: str = "Asia/Yekaterinburg"
+    calendar_interval_seconds: int = Field(default=300, ge=60, le=3600)
+    calendar_timeout_seconds: int = Field(default=10, ge=1, le=30)
     event_retention_days: int = Field(default=90, ge=1, le=365)
     log_dir: str = "./logs"
     log_max_bytes: int = Field(default=1_048_576, ge=1024, le=10_485_760)
@@ -97,6 +104,55 @@ class Settings(BaseSettings):
             raise ValueError("AUTOMATION_ALLOWED_LIGHTS должен содержать только entity_id light")
         return list(dict.fromkeys(value))
 
+    @field_validator("calendar_url", mode="before")
+    @classmethod
+    def check_calendar_url(cls, value):
+        if value is None or value == "":
+            return None
+        if not isinstance(value, str):
+            raise ValueError("CALENDAR_URL: ожидается строка")
+        try:
+            url = urlsplit(value)
+            address = ipaddress.ip_address(url.hostname or "")
+            local = address.is_loopback or any(
+                address in ipaddress.ip_network(net)
+                for net in (
+                    "10.0.0.0/8",
+                    "172.16.0.0/12",
+                    "192.168.0.0/16",
+                    "fc00::/7",
+                    "fe80::/10",
+                )
+            )
+            if (
+                not local
+                or url.scheme not in {"http", "https"}
+                or url.username is not None
+                or url.password is not None
+                or url.query
+                or url.fragment
+                or not url.path.endswith("/")
+                or "%" in (url.hostname or "")
+                or len(value) > 2048
+                or any(ord(c) < 33 for c in value)
+            ):
+                raise ValueError
+            if url.port is not None and not 1 <= url.port <= 65535:
+                raise ValueError
+        except (ValueError, TypeError):
+            raise ValueError(
+                "CALENDAR_URL: нужен локальный IP и URL коллекции без credentials/query"
+            ) from None
+        return value
+
+    @model_validator(mode="after")
+    def check_calendar_credentials(self):
+        if bool(self.calendar_username) != bool(self.calendar_password) or any(
+            ord(c) < 32 for c in self.calendar_username + self.calendar_password
+        ):
+            raise ValueError("CalDAV: задайте обе credentials или оставьте обе пустыми")
+        return self
+
     @field_validator("ha_token")
     @classmethod
     def check_ha_token(cls, value: str) -> str:
@@ -153,7 +209,7 @@ class Settings(BaseSettings):
         max_length=100,
     )
 
-    @field_validator("notification_timezone", "analytics_timezone")
+    @field_validator("notification_timezone", "analytics_timezone", "calendar_timezone")
     @classmethod
     def check_notification_timezone(cls, value: str) -> str:
         try:

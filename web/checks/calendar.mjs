@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import ts from 'typescript';
+const code=ts.transpileModule(readFileSync(new URL('../src/api/calendar.ts',import.meta.url),'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText;
+const {knownCalendarPage,calendarTime}=await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
+const event={id:'cal_'+'a'.repeat(32),summary:'Синтетическая встреча',location:null,starts_at:'2026-10-19T05:00:00Z',ends_at:'2026-10-19T06:00:00Z',start_date:null,end_date:null,all_day:false,status:'confirmed',busy:true,revision:1,updated_at:'2026-10-19T03:00:00Z'};
+const page={status:'ready',configured:true,stale:false,timezone:'Asia/Yekaterinburg',last_success:null,window_start:null,window_end:null,error_code:null,events:[event],total:1};
+assert(knownCalendarPage(page));assert(calendarTime(event,page.timezone).includes('10:00'));
+const all={...event,all_day:true,start_date:'2026-10-19',end_date:'2026-10-20'};
+assert(knownCalendarPage({...page,events:[all]}));assert(calendarTime(all,'America/Los_Angeles').includes('19 октября'));
+for(const data of [{...page,events:[null]},{...page,timezone:'Invalid/Private'},{...page,events:[{...event,status:'private-future'}]},{...page,events:[{...all,end_date:'2026-99-99'}]}])assert(!knownCalendarPage(data));
+console.log('PASS: calendar schema/status/timezone/all-day/unknown guards');
