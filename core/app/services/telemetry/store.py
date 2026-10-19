@@ -1,5 +1,7 @@
+import asyncio
 import json
 from datetime import UTC, datetime, timedelta
+from functools import wraps
 
 from sqlalchemy import delete, func, select
 
@@ -33,6 +35,24 @@ def attributes(state: HAState) -> str:
     )
 
 
+def complete_on_cancel(operation):
+    @wraps(operation)
+    async def protected(*args, **kwargs):
+        # Отмена во время native BEGIN может оставить фоновый SQLite-вызов живым.
+        # Короткая транзакция должна завершить commit/rollback до закрытия владельца.
+        task = asyncio.create_task(operation(*args, **kwargs))
+        try:
+            return await asyncio.shield(task)
+        except asyncio.CancelledError:
+            try:
+                await task
+            except Exception:
+                pass
+            raise
+
+    return protected
+
+
 class TelemetryStore:
     def __init__(self, entities: tuple[str, ...]):
         self.entities = entities
@@ -57,6 +77,7 @@ class TelemetryStore:
         newest_gap = select(func.max(TelemetryGap.id)).scalar_subquery()
         await session.execute(delete(TelemetryGap).where(TelemetryGap.id <= newest_gap - 1000))
 
+    @complete_on_cancel
     async def gap(self, reason: str) -> None:
         async with base.async_session() as session, session.begin():
             await session.connection(execution_options={"sqlite_immediate": True})
@@ -74,12 +95,14 @@ class TelemetryStore:
             await session.flush()
             await self.prune(session)
 
+    @complete_on_cancel
     async def checkpoint(self) -> None:
         async with base.async_session() as session, session.begin():
             await session.connection(execution_options={"sqlite_immediate": True})
             await session.merge(TelemetryCheckpoint(id=1, last_seen=naive(clock.utcnow())))
             await self.prune(session)
 
+    @complete_on_cancel
     async def write(
         self,
         states: dict[str, HAState | None],

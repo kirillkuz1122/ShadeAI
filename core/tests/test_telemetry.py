@@ -421,3 +421,48 @@ def test_sync_events_are_covered_by_gap_not_fabricated(telemetry_client):
     assert collector.current[ENTITY].state == "30"
     assert all(row.state != "25" for row in rows(client, SensorHistory))
     assert rows(client, TelemetryGap)[-1].ended_at is not None
+
+
+@pytest.mark.parametrize("operation", ["gap", "checkpoint", "write"])
+def test_cancel_waits_for_short_transaction_and_releases_writer(client, monkeypatch, operation):
+    async def scenario():
+        await client.app.state.telemetry.stop()
+        store = TelemetryStore((ENTITY,))
+        entered, release = asyncio.Event(), asyncio.Event()
+        original = store.prune
+
+        async def slow_prune(session):
+            entered.set()
+            await release.wait()
+            await original(session)
+
+        monkeypatch.setattr(store, "prune", slow_prune)
+        if operation == "gap":
+            async with base.async_session() as session, session.begin():
+                from sqlalchemy import delete
+
+                await session.execute(delete(TelemetryGap))
+            task = asyncio.create_task(store.gap("SYNTHETIC_CANCEL"))
+        elif operation == "checkpoint":
+            task = asyncio.create_task(store.checkpoint())
+        else:
+            task = asyncio.create_task(store.write({ENTITY: sensor_state(state(), ENTITY)}))
+        await asyncio.wait_for(entered.wait(), 2)
+        task.cancel()
+        await asyncio.sleep(0)
+        release.set()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        # После отмены нет незавершённой записи/осиротевшей блокировки.
+        monkeypatch.setattr(store, "prune", original)
+        await asyncio.wait_for(store.gap("FOLLOWUP"), 2)
+        async with base.async_session() as session:
+            if operation == "gap":
+                assert await session.scalar(select(TelemetryGap.reason)) == "SYNTHETIC_CANCEL"
+            elif operation == "checkpoint":
+                assert await session.get(TelemetryCheckpoint, 1) is not None
+            else:
+                row = await session.get(DeviceState, ENTITY)
+                assert row is not None and row.state == "21.5"
+
+    client.portal.call(scenario)
