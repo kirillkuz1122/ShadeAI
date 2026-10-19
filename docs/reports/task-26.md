@@ -76,3 +76,35 @@ delivery_checked и checked — обязательные сериализуем�
 временные20,693,179байт AAR-классов удалены. APK/KSP/lint/AVD этого изменения ещё
 не проверены. **Controller/экран/FLAG_SECURE ещё отсутствуют**, это промежуточная
 подготовка, не работающая кнопка выдачи кода. Следующий шаг — эти части и их проверки.
+
+## Контракт следующего Android-среза
+
+Текущий checkpoint отправлен: Core d64dca4, Android-сеть83cb0e1. Рабочее дерево
+после них чистое; следующий код ещё не написан. Оставшийся UI/controller делать
+в существующем маршруте MainActivity и через ServerPrefs/ResultsCredentials:
+
+- Выбор исходной записи из Core notifications, просмотр контекста, проверка typed
+  delivery результата; отдельный checkbox «Доставку проверил» и явный замок/окно.
+  Категория LLM сама не является согласием. При смене источника/цели/окна/scope
+  сбрасывать согласия. Не разрешать произвольный notification_id без просмотра.
+- Перед каждой сетью читать snapshot credentials и revision, после await проверять
+  generation/revision/lifecycle. Старая страница или поздний ответ не возвращают
+  PIN/источник после PAUSE/выхода/смены Core/401. Наблюдение только RESUMED.
+- FLAG_SECURE устанавливать **до запроса выдачи** и держать на всём экране, включая
+  исходное уведомление; при выходе восстанавливать прежние flags аккуратно. Проверить
+  системный screenshot и recents на AOSP, не ограничиваться компиляцией.
+- PIN только в RAM первого create-ответа, без SavedState/rememberSaveable/Clipboard/
+  prefs/Room/WorkManager/логов/уведомлений. PAUSE/выход/изменение подключения скрывают
+  и забывают его. Скрытие PIN не означает серверный отзыв: явно объяснить это в UI.
+- Потерянный POST-ответ: не повторять автоматически. Обновить owner-список и найти
+  grant по source; сервер повторно PIN не покажет. Предложить отзыв, не новую выдачу
+  для того же события. Длительность/срок только показываются, Core решает допуск.
+- unknown/dispatching никогда не предлагать повтор unlock. Для unknown отдельный
+  checkbox ручного осмотра и revoke(checked=true); обычный active revoke(false).
+  used означает принято HA, наблюдение двери отдельно; отзыв не запирает дверь.
+
+Проверки: JVM lifecycle/late responses/revision/401/consent/uncertain, offline
+APK/KSP/штатныеJVM/lint с disk guard, затем read-only AOSP +настоящий Core/fakeHA:
+create0unlock, keypad1unlock, duplicate/revoke/expiry/unknown/restart и отсутствие
+PIN в storage/recents/screenshot. Сначала измерить df/RAM; модели не скачивать.
+Если место ниже порога — сохранить непроверенные критерии открытыми, не обходить guard.
