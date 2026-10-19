@@ -43,6 +43,10 @@ class Settings(BaseSettings):
     calendar_password: str = Field(default="", max_length=512, repr=False)
     calendar_timezone: str = "Asia/Yekaterinburg"
     calendar_interval_seconds: int = Field(default=300, ge=60, le=3600)
+    meeting_mode_enabled: bool = False
+    meeting_mode_allowed_switches: list[str] = Field(default_factory=list, max_length=5)
+    calendar_reminders_enabled: bool = False
+    calendar_reminder_lead_minutes: int = Field(default=10, ge=1, le=120)
     calendar_timeout_seconds: int = Field(default=10, ge=1, le=30)
     event_retention_days: int = Field(default=90, ge=1, le=365)
     log_dir: str = "./logs"
@@ -151,6 +155,19 @@ class Settings(BaseSettings):
             ord(c) < 32 for c in self.calendar_username + self.calendar_password
         ):
             raise ValueError("CalDAV: задайте обе credentials или оставьте обе пустыми")
+        return self
+
+    @field_validator("meeting_mode_allowed_switches")
+    @classmethod
+    def check_meeting_switches(cls, value):
+        if any(len(e) > 255 or not re.fullmatch(r"switch\.[a-z0-9_]+", e) for e in value):
+            raise ValueError("MEETING_MODE_ALLOWED_SWITCHES: только явные switch.*")
+        return list(dict.fromkeys(value))
+
+    @model_validator(mode="after")
+    def check_meeting_enabled(self):
+        if self.meeting_mode_enabled and not self.meeting_mode_allowed_switches:
+            raise ValueError("Режиму встречи нужен непустой явный список DND-переключателей")
         return self
 
     @field_validator("ha_token")

@@ -34,6 +34,10 @@ TEST_ENV = {
     "CALENDAR_PASSWORD": "",
     "CALENDAR_TIMEZONE": "Asia/Yekaterinburg",
     "CALENDAR_INTERVAL_SECONDS": "300",
+    "MEETING_MODE_ENABLED": "false",
+    "MEETING_MODE_ALLOWED_SWITCHES": "[]",
+    "CALENDAR_REMINDERS_ENABLED": "false",
+    "CALENDAR_REMINDER_LEAD_MINUTES": "10",
     "CALENDAR_TIMEOUT_SECONDS": "10",
     "EVENT_RETENTION_DAYS": "90",
     "LOG_DIR": "./logs",
@@ -148,6 +152,15 @@ class HAMock:
         self.calendar_xml = None
         self.calendar_code = 207
         self.calendar_error = None
+        self.switch_counter = 0
+        self.switch_state = {
+            "entity_id": "switch.test",
+            "state": "off",
+            "attributes": {},
+            "last_changed": "2026-10-17T00:00:00Z",
+            "last_updated": "2026-10-17T00:00:00Z",
+            "context": {"id": "synthetic_initial_context", "user_id": "private-mode-user"},
+        }
         self.unexpected_requests: list[httpx.Request] = []
 
     def handle(self, request: httpx.Request) -> httpx.Response:
@@ -174,10 +187,17 @@ class HAMock:
                 "/api/",
                 "/api/states",
                 "/api/states/light.test",
+                "/api/states/switch.test",
             }
         ) or (
             request.method == "POST"
-            and request.url.path in {"/api/services/light/turn_on", "/api/services/light/turn_off"}
+            and request.url.path
+            in {
+                "/api/services/light/turn_on",
+                "/api/services/light/turn_off",
+                "/api/services/switch/turn_on",
+                "/api/services/switch/turn_off",
+            }
         )
         if (
             request.url.host != "ha.test"
@@ -194,6 +214,24 @@ class HAMock:
             self.hook(request)
         if request.url.path in self.overrides:
             return self.overrides[request.url.path]()
+        if request.url.path == "/api/states/switch.test":
+            return httpx.Response(200, json=self.switch_state)
+        if request.url.path in {"/api/services/switch/turn_on", "/api/services/switch/turn_off"}:
+            from app.core import clock
+
+            assert request.read() == b'{"entity_id":"switch.test"}'
+            self.switch_counter += 1
+            self.switch_state = {
+                **self.switch_state,
+                "state": "on" if request.url.path.endswith("turn_on") else "off",
+                "last_changed": clock.iso_utc(clock.utcnow()),
+                "last_updated": clock.iso_utc(clock.utcnow()),
+                "context": {
+                    "id": f"synthetic_mode_{self.switch_counter}",
+                    "user_id": "private-mode-user",
+                },
+            }
+            return httpx.Response(200, json=[self.switch_state])
         if request.url.path == "/api/":
             body = {"message": "API running."}
         elif request.url.path == "/api/states":

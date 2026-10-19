@@ -1,0 +1,15 @@
+{
+  "synthetic": true,
+  "hardware": false,
+  "native_llm": false,
+  "reminder_due_and_expiry": "PASS",
+  "explicit_consent": "PASS",
+  "overlap_single_lease": "PASS",
+  "stale_stored_end_restore": "PASS",
+  "audit_and_privacy": "PASS",
+  "restart_no_replay": "PASS",
+  "synthetic_ha_commands": [
+    "turn_on",
+    "turn_off"
+  ]
+}

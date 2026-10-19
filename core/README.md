@@ -397,3 +397,11 @@ CALENDAR_URL по умолчанию пустой. Для своего лока�
 Protected GET calendar/events, GET detail, POST calendar/sync. Пока stale или событие неактивно, будущие планировщики не используют его для команд/напоминаний. На этом этапе календарь вообще не исполняет действий.
 
 `.venv/bin/python checks/check_calendar.py --output <новый JSON>` из core/: собственный временный Core/синтетический REPORT по loopback, стабильные ID/изменения/отмена/сбой/restart. Это не проверка установленного CalDAV/RRULE-движка. [Отчёт TASK-23](../docs/reports/task-23.md).
+
+## Core-основа напоминаний и встреч (TASK-24 в работе)
+
+CALENDAR_REMINDERS_ENABLED=false,lead10мин; GET calendar/reminders выводит устойчивые rmd-ID из сохранённых событий/ревизий, без текста. Отдельная проверка ID перед показом исключает полученную Core отмену/изменение/stale/истечение300с после due. До50/24ч, overflow не выдаётся как полное расписание. source_id — хеш коллекции, его смена требует нового согласия клиента. Это серверное расписание, **Android exactAlarm/opt-in ещё не реализованы**, API само не доставляет OS-уведомлений.
+
+MEETING_MODE_ENABLED=false,MEETING_MODE_ALLOWED_SWITCHES=[]: до5 выделенных DND switch.*, не произвольные сервисы. Для события отдельно подтверждаются revision/policy_scope/targets, свежий confirmed busy non-DATE≤8ч. Общий lease для пересечений; исходное on не присваивается себе. Последнее завершение/отмена снимает только наблюдаемое собственное состояние, после сравнения context hash/timestamps. Смена scope/политики снимает согласие, удалённая цель не управляется. Команды только execute_command/audit вне DB-транзакции; in-flight после сбоя unknown и не повторяется. Ack unknown после ручной проверки закрывает запись без команды/без сброса started-target. [Контракт](../docs/api-spec.md#472-подтверждённый-режим-встречи--core-основа-task-24).
+
+`.venv/bin/python checks/check_meeting.py --output <новый JSON>`: настоящий loopback HTTP Core/синтетические CalDAV+HA, две перекрывающиеся встречи/restore/stale/restart/reminder due/expiry;2команды только вымышленному HA.394 pytest на Python3.14/3.11 прошли, [текущий отчёт24](../docs/reports/task-24.md). Web/Android управление и OS-проверки ещё нужно сделать; не считать TASK-24 выполненной.

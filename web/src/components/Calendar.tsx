@@ -38,7 +38,7 @@ export function Calendar({apiKey}:{apiKey:string}) {
     {state.data && <>
       {!state.data.configured ? <p className="empty">Локальный календарь ещё не подключён.</p> : <>
         {state.data.stale && <p className="notice">Кэш устарел или обновляется. События могут отличаться от календаря.</p>}
-        <p className="help">Последняя синхронизация: {state.data.last_success ? new Intl.DateTimeFormat("ru-RU",{timeZone:state.data.timezone,dateStyle:"short",timeStyle:"short"}).format(new Date(state.data.last_success)) : "ещё не выполнялась"}. Часовой пояс: {state.data.timezone}. Календарь не управляет домом и пока не отправляет напоминания.</p>
+        <p className="help">Последняя синхронизация: {state.data.last_success ? new Intl.DateTimeFormat("ru-RU",{timeZone:state.data.timezone,dateStyle:"short",timeStyle:"short"}).format(new Date(state.data.last_success)) : "ещё не выполнялась"}. Часовой пояс: {state.data.timezone}. Режим встречи и доставка напоминаний включаются отдельно.</p>
         {state.data.events.length ? <ul className="record-list">{state.data.events.map(event=><li className="record-copy" key={event.id}>
           <strong>{event.summary || "Событие без названия"}</strong><p>{calendarTime(event,state.data!.timezone)}</p>
           {event.location && <p>{event.location}</p>}<small>{calendarStatus[event.status]}{event.busy?" · Время занято":""}</small>

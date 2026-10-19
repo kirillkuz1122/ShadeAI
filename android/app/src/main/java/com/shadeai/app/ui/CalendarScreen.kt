@@ -27,7 +27,7 @@ fun CalendarRoute(model:CalendarViewModel,onBack:()->Unit){
         LazyColumn(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(24.dp),verticalArrangement=Arrangement.spacedBy(16.dp)){
             item{Text("Локальный календарь",style=MaterialTheme.typography.headlineMedium)}
             item{OutlinedButton(onClick=onBack,colors=buttons){Text("Назад к подключению")}}
-            item{Text("События из Core. Календарь пока не управляет домом и не отправляет напоминания.")}
+            item{Text("События из Core. Режим встречи и доставка напоминаний включаются отдельно.")}
             item{Row{Checkbox(checked=state.inactive,onCheckedChange=model::filter);Text("Показывать отменённые и исчезнувшие")}}
             item{Column(verticalArrangement=Arrangement.spacedBy(8.dp)){
                 OutlinedButton(onClick=model::refresh,enabled=!state.busy,colors=buttons){Text("Обновить")}

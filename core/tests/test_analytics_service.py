@@ -220,6 +220,7 @@ def test_invalid_snapshot_does_not_expose_raw_data(client, auth_headers, monkeyp
 
     async def corrupt():
         async with base.async_session() as session, session.begin():
+            await session.connection(execution_options={"sqlite_immediate": True})
             row = await session.get(AnalyticsState, 1)
             row.snapshot_json = "private-synthetic-invalid-json"
 

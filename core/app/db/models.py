@@ -233,3 +233,45 @@ class CalendarSyncState(Base):
     window_start: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     window_end: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     error_code: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class MeetingPlan(Base):
+    __tablename__ = "meeting_plans"
+    event_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    calendar_scope: Mapped[str] = mapped_column(Text, nullable=False)
+    event_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    policy_scope: Mapped[str] = mapped_column(Text, nullable=False)
+    targets_json: Mapped[str] = mapped_column(Text, nullable=False)
+    started_json: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    starts_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    ends_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
+class MeetingLease(Base):
+    __tablename__ = "meeting_leases"
+    entity_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    generation: Mapped[str] = mapped_column(Text, nullable=False)
+    state: Mapped[str] = mapped_column(Text, nullable=False)
+    members_json: Mapped[str] = mapped_column(Text, nullable=False)
+    context_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_changed: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_updated: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    event_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    retry_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
+class MeetingLog(Base):
+    __tablename__ = "meeting_log"
+    __table_args__ = ({"sqlite_autoincrement": True},)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    entity_id: Mapped[str] = mapped_column(Text, nullable=False)
+    generation: Mapped[str] = mapped_column(Text, nullable=False)
+    state: Mapped[str] = mapped_column(Text, nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    event_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)

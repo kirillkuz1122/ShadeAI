@@ -64,7 +64,15 @@ class HAAction(BaseModel):
         return self
 
 
+class HAContext(BaseModel):
+    model_config = ConfigDict(extra="ignore", hide_input_in_errors=True)
+    id: Annotated[
+        str, Field(strict=True, min_length=1, max_length=128, pattern=r"^[a-zA-Z0-9_-]+$")
+    ]
+
+
 class HAState(BaseModel):
+    context: HAContext | None = None
     entity_id: EntityId
     state: Annotated[str, Field(strict=True, max_length=255)]
     attributes: dict[str, Any]

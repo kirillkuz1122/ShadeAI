@@ -865,6 +865,30 @@ Core делает REPORT calendar-query/calendar-data/expand в диапазон
 
 ---
 
+#### 4.7.1. Расписание напоминаний — Core-основа TASK-24
+
+Default CALENDAR_REMINDERS_ENABLED=false, CALENDAR_REMINDER_LEAD_MINUTES=10 (1..120). Это отдельный opt-in от delivery hints21; LocalHint/его cursor не меняются. Только свежие confirmed+busy, не DATE, текущий calendar scope. Напоминание определяется из durable CalendarEvent (сохранённый ID/revision) и настроек, поэтому после рестарта ID тот же; фоновой очереди отправки телефона в Core нет. Android exactAlarm/отдельный opt-in ещё в работе, эти GET сами ничего не доставляют.
+
+`GET /calendar/reminders` (Bearer): version=1,source_id (64hex-хеш календарной конфигурации, без URL/username),policy_scope (64hex),enabled,configured,stale,server_time UTC,timezone,lead_minutes,grace_seconds=300,overflow,reminders[]. Окно ближайших24ч плюс ещё не истёкшие due; максимум50. При stale/disabled список пуст; при>50 overflow=true и пустой список, не усечённое «полное» расписание. ID rmd_+32hex зависит от source/policy,event_id/revision/lead. В объекте id,event_id,event_revision,due_at,expires_at=due_at+300с,due (server_time≥due_at). Нет title/location/Calendar-текста. Клиент сверяет часы/источник и хранит только минимальные alarm metadata; изменение source требует отдельного нового согласия.
+
+`GET /calendar/reminders/{reminder_id}` — перед показом ещё раз проверяет источник/ревизию/статус/время.200 metadata без общего массива + reminder. Пока due=false показывать нельзя; истёкшее/отменённое/изменённое/disabled —404 CALENDAR_REMINDER_NOT_FOUND, stale —503 CALENDAR_STALE. Старый ID не переигрывается после изменения. При офлайн/Core-unavailable точная доставка не обещается; retry допустим только до expires_at. Получение удалённой отмены ограничено интервалом CalDAV-синхронизации, не является мгновенной подпиской на внешний сервер.
+
+#### 4.7.2. Подтверждённый режим встречи — Core-основа TASK-24
+
+Default MEETING_MODE_ENABLED=false, MEETING_MODE_ALLOWED_SWITCHES=[] (до5 конкретных switch.*). Это пользовательские выделенные DND-переключатели; соответствие реальному устройству требует приёмки. Только confirmed/busy/non-DATE, положительная длительность≤8ч, свежий календарь, отдельное согласие для события/времени/ревизии/политики и целей. Никаких произвольных params/автоматического принятия. В рабочей конфигурации режим не включался.
+
+`GET /calendar/events/{event_id}/meeting`: event_id,event_revision,starts_at/ends_at,policy {version:1,enabled,allowed_targets,max_duration_seconds:28800},policy_scope,eligible,stale,status (not_approved/approved/disabled/needs_review/finished),targets[],approval_valid,started_targets[]. Scope включает источник/событие/ревизию/время/политику. GET не вызывает HA.
+
+`POST /calendar/events/{event_id}/meeting`: strict JSON {decision:"approve",event_revision,policy_scope,targets:["switch.dnd"]} либо {decision:"disable",event_revision}. Approve требует совпадения scope/ревизии, eligible/свежести/enabled и явных allowed targets. Disable не требует свежей ревизии/календаря и снимает согласие даже после очистки прежнего календарного события.200 {status:"approved"|"disabled"}; это сохранённое решение, не подтверждение команды/восстановления.404 CALENDAR_EVENT_NOT_FOUND,409 MEETING_DISABLED/CALENDAR_STALE/MEETING_SCOPE_CHANGED/MEETING_CAPACITY,422 MEETING_NOT_ELIGIBLE/MEETING_TARGET_NOT_ALLOWED/безопасная валидация,503 MEETING_UNAVAILABLE. POST клиент автоматически не повторяет.
+
+Сохранённый MeetingPlan/started-target не повторяет уже пробовавшуюся цель того же scope. Пересекающиеся встречи используют общий MeetingLease: последняя снимает только собственное off→on. Исходное on — external, не выключается. Уже активное при stale держится до сохранённого конца; новые при stale не начинаются. Изменение/отмена/другой scope снимает согласие. Смена allowlist требует нового решения; отозванная цель не управляется даже для restore (unknown/manual review). Период2с, планы≤200/leases≤100, история1000/90дней, чтение недоступного HA с backoff30с.
+
+Команда проходит через общий execute_command/audit; applying/restoring фиксируются до сети, DB-lock во время HTTP отсутствует. Ownership сверяется с наблюдавшимся response/current state, хешем context.id и timestamps; user_id/parent_id/raw attrs/Calendar-текст не сохраняются. Перед restore текущее состояние должно совпадать с наблюдавшимся owned-on; ручное изменение сохраняется. Это наблюдаемая защита, не атомарное доказательство причинности физического мира/REST и не детектор одинаковой внешней команды без state/context-изменения. После отправки disable не обещает отозвать HTTP, после завершения текущего запроса worker проверяет необходимость restore. Успех restore называется RESTORE_OBSERVED только если off отдельно наблюдался. Crash/in-flight/timeout/неподтверждённый итог→unknown, автоматического повтора нет.
+
+`GET /calendar/meeting`: policy,status,plans[] (до200, без title/location),leases[] (до100) и history[] (50последних). Lease:entity_id,generation(UUID),state waiting/applying/active/external/restoring/completed/unknown,reason,members(event_id[]),event_id аудита,updated_at. История: id/entity_id/generation/state/reason/event_id/created_at. Unknown/отказ не называть включённым/восстановленным.
+
+`POST /calendar/meeting/leases/{entity_id}/ack`: {generation,checked:true}, strict JSON; только для прочитанной unknown-generation после ручной проверки устройства.200 {status:"acknowledged"} закрывает запись **без HA-команды**; started-target не сбрасывается.404 MEETING_LEASE_NOT_FOUND,409 MEETING_LEASE_CHANGED,503 MEETING_UNAVAILABLE; checked=false/1/строка отвергаются. Внешний UI/Android-управление ещё не реализованы, пока доступно owner API. Миграция0011_meeting_mode, optional HAState.context.id нужен только для владения, прежние REST-контракты не расширяются произвольным raw context. [Состояние и оставшаяся работа](reports/task-24.md).
+
 ## 5. Таблица кодов ответов HTTP
 
 | HTTP-код | Статус | Применение в Shade Core |

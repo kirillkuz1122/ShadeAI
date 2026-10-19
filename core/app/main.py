@@ -16,6 +16,7 @@ from app.api.v1 import (
     habits,
     health,
     hints,
+    meeting,
     notifications,
     telemetry,
 )
@@ -29,6 +30,7 @@ from app.services.calendar.service import CalendarService
 from app.services.ha_bridge.audit import maintain_events
 from app.services.ha_bridge.client import HAClient
 from app.services.llm.engine import LocalLLMEngine
+from app.services.meeting.service import MeetingService
 from app.services.notification.maintenance import cleanup, cleanup_loop
 from app.services.notification.worker import NotificationWorker
 from app.services.suggestions.service import SuggestionService
@@ -54,12 +56,15 @@ async def lifespan(app: FastAPI):
         app.state.automation_executor = executor
         calendar_service = CalendarService()
         app.state.calendar = calendar_service
+        meeting_service = MeetingService(calendar_service, client)
+        app.state.meeting = meeting_service
         llm = LocalLLMEngine()
         app.state.llm = llm
         worker = NotificationWorker(llm=llm)
         app.state.notification_worker = worker
         try:
             await calendar_service.start()
+            await meeting_service.start()
             await collector.start()
             await analytics.start()
             await suggestions.start()
@@ -68,6 +73,7 @@ async def lifespan(app: FastAPI):
             await worker.start()
         except BaseException:
             await executor.stop()
+            await meeting_service.close()
             await calendar_service.close()
             await worker.stop()
             await llm.close()
@@ -83,6 +89,7 @@ async def lifespan(app: FastAPI):
             yield
         finally:
             await executor.stop()
+            await meeting_service.close()
             await calendar_service.close()
             await worker.stop()
             await llm.close()
@@ -169,6 +176,7 @@ def create_app() -> FastAPI:
     app.include_router(automations.router, prefix="/api/v1")
     app.include_router(hints.router, prefix="/api/v1")
     app.include_router(calendar.router, prefix="/api/v1")
+    app.include_router(meeting.router, prefix="/api/v1")
 
     return app
 

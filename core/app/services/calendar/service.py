@@ -44,6 +44,31 @@ class CalendarService:
         self.client: httpx.AsyncClient | None = None
         self.lock = asyncio.Lock()
 
+    async def snapshot(self, session):
+        from app.services.telemetry.store import iso
+
+        state = await session.get(CalendarSyncState, 1)
+        valid = state is not None and state.config_key == self.config_key
+        success = state.last_success if valid else None
+        now = naive(clock.utcnow())
+        stale = (
+            success is None
+            or self.status != "ready"
+            or not now - timedelta(seconds=self.interval * 2)
+            <= success
+            <= now + timedelta(seconds=5)
+        )
+        return dict(
+            status=self.status,
+            configured=self.url is not None,
+            stale=stale,
+            timezone=self.timezone,
+            last_success=iso(success),
+            window_start=iso(state.window_start) if valid else None,
+            window_end=iso(state.window_end) if valid else None,
+            error_code=state.error_code if valid else None,
+        )
+
     async def start(self):
         if self.task is not None:
             return

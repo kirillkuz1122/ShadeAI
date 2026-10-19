@@ -1,4 +1,3 @@
-from datetime import timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
@@ -6,11 +5,11 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import verify_api_key
-from app.core import clock
 from app.db.base import get_session
-from app.db.models import CalendarEvent, CalendarSyncState
+from app.db.models import CalendarEvent
 from app.services.calendar.codec import CalendarError
-from app.services.telemetry.store import iso, naive
+from app.services.calendar.reminders import schedule, valid_reminder
+from app.services.telemetry.store import iso
 
 router = APIRouter(prefix="/calendar", tags=["calendar"], dependencies=[Depends(verify_api_key)])
 Session = Annotated[AsyncSession, Depends(get_session)]
@@ -34,27 +33,37 @@ def payload(row):
 
 
 async def metadata(service, session):
-    state = await session.get(CalendarSyncState, 1)
-    valid = state is not None and state.config_key == service.config_key
-    success = state.last_success if valid else None
-    now = naive(clock.utcnow())
-    stale = (
-        success is None
-        or service.status != "ready"
-        or not now - timedelta(seconds=service.interval * 2)
-        <= success
-        <= now + timedelta(seconds=5)
-    )
-    return dict(
-        status=service.status,
-        configured=service.url is not None,
-        stale=stale,
-        timezone=service.timezone,
-        last_success=iso(success),
-        window_start=iso(state.window_start) if valid else None,
-        window_end=iso(state.window_end) if valid else None,
-        error_code=state.error_code if valid else None,
-    )
+    return await service.snapshot(session)
+
+
+@router.get("/reminders")
+async def reminders(request: Request, session: Session):
+    async with session.begin():
+        page = await schedule(request.app.state.calendar, session)
+    # Никогда не выдаём усечённую выборку как полное расписание.
+    if page["overflow"]:
+        page["reminders"] = []
+    return page
+
+
+@router.get("/reminders/{reminder_id}")
+async def reminder(
+    reminder_id: Annotated[str, Path(pattern=r"^rmd_[0-9a-f]{32}$")],
+    request: Request,
+    session: Session,
+):
+    async with session.begin():
+        page = await schedule(request.app.state.calendar, session)
+    if not page["enabled"]:
+        raise HTTPException(404, {"code": "CALENDAR_REMINDER_NOT_FOUND"})
+    if page["stale"]:
+        raise HTTPException(503, {"code": "CALENDAR_STALE"})
+    item = valid_reminder(page, reminder_id)
+    if item is None:
+        raise HTTPException(404, {"code": "CALENDAR_REMINDER_NOT_FOUND"})
+    return {key: value for key, value in page.items() if key not in {"reminders", "overflow"}} | {
+        "reminder": item
+    }
 
 
 @router.get("/events")

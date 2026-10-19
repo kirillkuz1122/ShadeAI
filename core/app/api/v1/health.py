@@ -70,6 +70,7 @@ async def health(
             "llm": request.app.state.llm.status,
             "notification_worker": request.app.state.notification_worker.status,
             "analytics": request.app.state.analytics.status,
+            "meeting_mode": request.app.state.meeting.status,
             "calendar": request.app.state.calendar.status,
             "suggestions": request.app.state.suggestions.status,
             "automation_executor": request.app.state.automation_executor.status,
