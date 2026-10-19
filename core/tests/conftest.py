@@ -34,6 +34,9 @@ TEST_ENV = {
     "CALENDAR_PASSWORD": "",
     "CALENDAR_TIMEZONE": "Asia/Yekaterinburg",
     "CALENDAR_INTERVAL_SECONDS": "300",
+    "ACCESS_ENABLED": "false",
+    "ACCESS_ALLOWED_LOCKS": "[]",
+    "ACCESS_KEYPAD_TOKEN": "",
     "VOICE_ENABLED": "false",
     "VOICE_TARGETS": "{}",
     "VOICE_MODEL_PATH": "",
@@ -194,6 +197,7 @@ class HAMock:
                 "/api/states",
                 "/api/states/light.test",
                 "/api/states/switch.test",
+                "/api/states/lock.test",
             }
         ) or (
             request.method == "POST"
@@ -203,6 +207,7 @@ class HAMock:
                 "/api/services/light/turn_off",
                 "/api/services/switch/turn_on",
                 "/api/services/switch/turn_off",
+                "/api/services/lock/unlock",
             }
         )
         if (
@@ -220,6 +225,20 @@ class HAMock:
             self.hook(request)
         if request.url.path in self.overrides:
             return self.overrides[request.url.path]()
+        if request.url.path == "/api/states/lock.test":
+            return httpx.Response(
+                200,
+                json={
+                    "entity_id": "lock.test",
+                    "state": "unlocked",
+                    "attributes": {},
+                    "last_changed": "2026-10-19T12:00:00Z",
+                    "last_updated": "2026-10-19T12:00:00Z",
+                },
+            )
+        if request.url.path == "/api/services/lock/unlock":
+            assert request.read() == b'{"entity_id":"lock.test"}'
+            return httpx.Response(200, json=[])
         if request.url.path == "/api/states/switch.test":
             return httpx.Response(200, json=self.switch_state)
         if request.url.path in {"/api/services/switch/turn_on", "/api/services/switch/turn_off"}:

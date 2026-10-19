@@ -66,7 +66,10 @@ Authorization: Bearer <SHADE_API_KEY>
 | `GET /devices`, `GET /devices/{entity_id}/state`, `POST /devices/{entity_id}/command` | ✅ реализованы (TASK-06) | `core/app/api/v1/devices.py` |
 | `GET /events` | ✅ журнал команд HA (TASK-06) | `core/app/api/v1/events.py` |
 | `GET /telemetry`, `/telemetry/history`, `/telemetry/gaps` | ✅ выбранные датчики HA (TASK-14) | `core/app/api/v1/telemetry.py` |
-| `GET /habits`, `/automations`, `GET/PUT /config` | ⏳ запланированы (v0.2–v0.5) | `docs/mvp.md` |
+| `/habits`, `/automations`, `/hints` | Программные TASK-20–22 | соответствующие роутеры `core/app/api/v1/` |
+| `/calendar/*`, `/voice` | Программные TASK-23–25, аппаратная приёмка открыта | `core/app/api/v1/` |
+| `/access/*` | Core-основа TASK-26, локальный Shade Keypad | `core/app/api/v1/access.py` |
+| `GET/PUT /config` | Запланированы | `docs/mvp.md` |
 
 Отличия текущего скелета от целевого контракта:
 
@@ -835,6 +838,77 @@ Default MEETING_MODE_ENABLED=false, MEETING_MODE_ALLOWED_SWITCHES=[] (до5 ко
 `GET /calendar/meeting`: policy,status,plans[] (до200, без title/location),leases[] (до100) и history[] (50последних). Lease:entity_id,generation(UUID),state waiting/applying/active/external/restoring/completed/unknown,reason,members(event_id[]),event_id аудита,updated_at. История: id/entity_id/generation/state/reason/event_id/created_at. Unknown/отказ не называть включённым/восстановленным.
 
 `POST /calendar/meeting/leases/{entity_id}/ack`: {generation,checked:true}, strict JSON; только для прочитанной unknown-generation после ручной проверки устройства.200 {status:"acknowledged"} закрывает запись **без HA-команды**; started-target не сбрасывается.404 MEETING_LEASE_NOT_FOUND,409 MEETING_LEASE_CHANGED,503 MEETING_UNAVAILABLE; checked=false/1/строка отвергаются. Внешний UI/Android-управление ещё не реализованы, пока доступно owner API. Миграция0011_meeting_mode, optional HAState.context.id нужен только для владения, прежние REST-контракты не расширяются произвольным raw context. [Состояние и оставшаяся работа](reports/task-24.md).
+
+### 4.8. Временный доступ Shade Keypad — Core-основа TASK-26
+
+Только локальный адаптер **Shade Keypad → Core → HA lock.unlock**. Встроенные
+слоты PIN замка не программируются. Требуется совместимая локальная клавиатура,
+передающая PIN в Core; выключенный Core не принимает код. Lock-интеграция должна
+поддерживать unlock без дополнительного постоянного кода. Рабочие устройства в
+проверках не использовались. Android-клиент пока отсутствует.
+
+`ACCESS_ENABLED=false`, `ACCESS_ALLOWED_LOCKS=[]` (до пяти точных `lock.*`),
+`ACCESS_KEYPAD_TOKEN=` — отдельный случайный ASCII-токен ≥32 знаков, отличающийся
+от `SHADE_API_KEY`. Включение без целей/токена запрещено. Владелец использует обычный
+Bearer; keypad — только отдельный токен. Эти ключи не взаимозаменяемы.
+
+| Метод и путь `/api/v1` | Авторизация и результат |
+|---|---|
+| GET `/access` | Владелец: version=1, enabled, adapter=shade_keypad, policy_scope, allowed_locks, max_minutes=15, one_use=true, owner_confirmation=true, последние 50 grants |
+| POST `/access/grants` | Владелец: `{notification_id:int>0,entity_id:"lock.*",duration_minutes:1..15,policy_scope:hex64,confirmed:true,delivery_checked:true}`; оба true обязательны, strict bool |
+| GET `/access/grants/{uuid}` | Владелец: метаданные одного разрешения; PIN не восстанавливается |
+| POST `/access/grants/{uuid}/revoke` | Владелец: `{checked:false}`; active→revoked. Для unknown обязательно явное `{checked:true}` после ручного осмотра двери; команды не посылает. dispatching→409 |
+| POST `/access/keypad/verify` | Только отдельный keypad Bearer: `{entity_id:"lock.*",pin:"012345"}`. Код строго строка из шести цифр. Ответ только state/error_code/new_state/state_observed, без источника и owner-журнала |
+
+Grant: id(UUID),notification_id,entity_id,policy_scope,duration_minutes,state,
+error_code,event_id(общий аудит),new_state,state_observed,created_at/expires_at/updated_at
+(UTC ISO),pin. **Только первая выдача** содержит случайный шестизначный PIN;
+все GET и повторы POST возвращают `pin:null`. Заголовок `Cache-Control:no-store`.
+Не помещать PIN в URL, логи, буфер обмена, постоянное хранилище или OS-уведомления.
+
+Источник — каноническое уведомление допущенного приложения: актуальный payload_hash,
+processed, валидный ExtractedNotification schema1/category=delivery; timestamp и
+created_at не старше24ч и не в будущем. Это фильтр, **не доказательство реальной
+доставки**: владелец отдельно проверяет контекст (TASK-18 ещё не принята). Нет
+автоматического согласия по результату LLM. Изменение/удаление источника, allowlist,
+политики, любого ключа или отключение функции отзывает код до исполнения.
+
+Один grant на notification_id и канонический payload_hash, даже если отправитель
+передал новый event_id с теми же полями. Изменённый текст — другое событие; для него
+снова требуется явное решение владельца. Дубликат с другими целью/окном/scope→409,
+обычный повтор не возвращает PIN и не продлевает срок. Один active/dispatching/unknown
+на замок; unknown блокирует новые выдачи до ручного checked/revoke. Максимум1000
+записей, terminal retention90дней, раннее вытеснение дедупликации запрещено. Источник
+допускается только24ч, поэтому после удаления старых tombstones он уже не подходит.
+При прежнем ключе случайный код не переиспользуется для того же замка в пределах
+сохранённой истории (HMAC fingerprint). Ротация ключа меняет пространство fingerprint.
+
+Срок отсчитывается с момента выдачи, только 1–15минут. Проверяются UTC и монотонный
+таймер; откат до created_at блокирует доступ, истёкший код не оживает. Restart
+отзывает все active и превращает dispatching→unknown, без повторного unlock.
+Во время штатного запроса код атомарно потребляется active→dispatching до общего
+аудита/HA HTTP; в SQLite остаётся HMAC, открытого PIN нет. После потребления нельзя
+повторить код, включая timeout/отказ аудита/HA/неподтверждённую запись результата.
+Сеть не удерживает DB-транзакцию. Один Core-процесс на БД.
+
+Лимит клавиатуры — максимум5попыток на замок за60с, счётчик сохраняется в SQLite;
+пять неверных PIN отзывают grant. Откат часов не снимает ограничение. Неверный,
+отозванный, истёкший и отсутствующий PIN→403 `ACCESS_DENIED`; лимит/занятый обработчик
+→429. Секрет/сырое тело в ошибках не возвращаются; тело POST≤64KiB. Только доверенная
+локальная сеть, HTTPS при необходимости: данный адаптер не предназначен для публичного
+интернета, отдельный токен не заменяет защиту канала/самой клавиатуры.
+
+Состояния: active/dispatching/used/failed/unknown/revoked/expired. **used означает
+принятие unlock Home Assistant**, состояние замка наблюдается отдельно. Таймаут
+может наступить после физического открытия. Отзыв кода не запирает уже открытую
+дверь; автоматического lock/retry/open-latch/внешней отправки кода нет.
+
+Основные ошибки409: ACCESS_POLICY_CHANGED,ACCESS_DELIVERY_NOT_ELIGIBLE,
+ACCESS_ID_CONFLICT,ACCESS_LOCK_BUSY,ACCESS_CAPACITY,ACCESS_IN_FLIGHT,
+ACCESS_MANUAL_CHECK_REQUIRED.404 ACCESS_NOT_FOUND;503 ACCESS_DISABLED,
+ACCESS_RANDOM_COLLISION,ACCESS_RESULT_UNCONFIRMED,ACCESS_UNAVAILABLE.
+`ACCESS_NOT_SENT`/`ACCESS_HA_REJECTED`/`ACCESS_UNKNOWN` — коды результата grant.
+
 
 ## 5. Таблица кодов ответов HTTP
 

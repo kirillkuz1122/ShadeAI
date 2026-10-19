@@ -427,3 +427,25 @@ cd core
 Linux child одноразовый, stdio bounded, 1параллельный STT, default virtual-memory cap768MiB/CPU/timeout30сек, не наследует секреты/proxy; Python-сеть отключена. До запуска нужен доступный RAM≥cap+256MiB, во время сохраняется резерв256MiB с учётом cgroup. CPU/декодирование/хеширование вне HTTP event loop. Timeout/cancel/resource-limit завершают и reap child. RLIMIT_AS и MemAvailable не заменяют измерение совместного RSS/температуры Pi4GB с LLM/HA; оно открыто. Общая LLM/notification queue не выгружается и не переигрывается голосом.
 
 Проверки: `.venv/bin/python -m pytest -q tests/test_voice.py tests/test_voice_engine.py`; настоящий HTTP WAV/Core↔фиктивныйHA/restart с **синтетическим STT** — `.venv/bin/python checks/check_voice.py --output ../docs/reports/<новый-файл>.json`. Существующий отчёт не перезаписывается. [Контракт](../docs/api-spec.md#46-голос--программный-срез-task-25), [отчёт25](../docs/reports/task-25.md), [loopback](../docs/reports/task-25-loopback.json). Ручной JSON-ввод в API является диагностическим; это не проверка микрофона или STT.
+
+## Временный доступ — Core-основа TASK-26
+
+Выключен по умолчанию. `ACCESS_ENABLED`, `ACCESS_ALLOWED_LOCKS` и отдельный
+`ACCESS_KEYPAD_TOKEN` задаются явно по [контракту](../docs/api-spec.md#48-временный-доступ-shade-keypad--core-основа-task-26).
+Это локальная клавиатура Shade Keypad, проверяющая код через Core перед HA unlock;
+встроенные PIN-слоты производителя не программируются. Отключённый Core код не
+принимает, restart отзывает активные коды. Не включать на реальной двери до проверки
+совместимости, канала и поведения устройства. Код одноразовый,1–15минут, только после
+проверки доставки владельцем; хранится HMAC. Ответ принятия HA не подтверждает дверь.
+
+Обычные тесты `tests/test_access.py` используют изолированную SQLite и mock HA, без
+TCP. Отдельный синтетический HTTP-стенд: из `core/` выполнить
+`.venv/bin/python checks/check_access.py --output ../docs/reports/<новый-отчёт>.json`.
+Он не перезаписывает отчёт, создаёт временную БД/ключи и настоящий loopback Core↔fakeHA,
+имитирует результат извлечения (без модели). [Результаты/ограничения](../docs/reports/task-26.md).
+
+Ручная клавиатура (без внешней отправки): подготовьте локальные переменные
+`SHADE_KEYPAD_URL=http://<локальный-IP>:8000/api/v1` и `ACCESS_KEYPAD_TOKEN`, затем
+`.venv/bin/python checks/keypad_client.py --entity lock.<выбранный_замок>`.
+PIN вводится скрыто. Не передавайте секреты аргументами CLI; эмулятор может послать
+настоящий unlock указанному Core, поэтому используйте его сначала только на стенде.

@@ -294,3 +294,32 @@ class VoiceRequest(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
+class AccessGrant(Base):
+    __tablename__ = "access_grants"
+    __table_args__ = (Index("ix_access_grants_created_at", "created_at"),)
+    id: Mapped[str] = mapped_column(Text, primary_key=True)
+    notification_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
+    source_hash: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    policy_scope: Mapped[str] = mapped_column(Text, nullable=False)
+    entity_id: Mapped[str] = mapped_column(Text, nullable=False)
+    duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
+    pin_digest: Mapped[str] = mapped_column(Text, nullable=False)
+    pin_fingerprint: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    state: Mapped[str] = mapped_column(Text, nullable=False)
+    error_code: Mapped[str | None] = mapped_column(Text, nullable=True)
+    event_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    new_state: Mapped[str | None] = mapped_column(Text, nullable=True)
+    state_observed: Mapped[int] = mapped_column(Integer, nullable=False)
+    bad_attempts: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
+class AccessGate(Base):
+    __tablename__ = "access_gates"
+    entity_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    window_start: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False)

@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.notification_body import NotificationBodyLimit
 from app.api.v1 import (
+    access,
     automations,
     calendar,
     devices,
@@ -25,6 +26,7 @@ from app.core.config import settings
 from app.core.logging import local_logging
 from app.db import base
 from app.db.base import init_db
+from app.services.access.service import AccessService
 from app.services.analytics.service import AnalyticsService
 from app.services.automation.executor import AutomationExecutor
 from app.services.calendar.service import CalendarService
@@ -64,9 +66,12 @@ async def lifespan(app: FastAPI):
         app.state.llm = llm
         voice_service = VoiceService(client)
         app.state.voice = voice_service
+        access_service = AccessService(client)
+        app.state.access = access_service
         worker = NotificationWorker(llm=llm)
         app.state.notification_worker = worker
         try:
+            await access_service.start()
             await voice_service.start()
             await calendar_service.start()
             await meeting_service.start()
@@ -77,6 +82,7 @@ async def lifespan(app: FastAPI):
             llm.start()
             await worker.start()
         except BaseException:
+            await access_service.close()
             await voice_service.close()
             await executor.stop()
             await meeting_service.close()
@@ -94,6 +100,7 @@ async def lifespan(app: FastAPI):
         try:
             yield
         finally:
+            await access_service.close()
             await voice_service.close()
             await executor.stop()
             await meeting_service.close()
@@ -185,6 +192,7 @@ def create_app() -> FastAPI:
     app.include_router(calendar.router, prefix="/api/v1")
     app.include_router(meeting.router, prefix="/api/v1")
     app.include_router(voice.router, prefix="/api/v1")
+    app.include_router(access.router, prefix="/api/v1")
 
     return app
 

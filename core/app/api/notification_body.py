@@ -17,6 +17,7 @@ class NotificationBodyLimit:
                 or scope["path"].startswith("/api/v1/automations/")
                 or scope["path"].startswith("/api/v1/calendar/")
                 or scope["path"].startswith("/api/v1/voice/")
+                or scope["path"].startswith("/api/v1/access/")
                 or scope["path"].startswith("/api/v1/devices/")
                 and scope["path"].rstrip("/").endswith("/command")
             )

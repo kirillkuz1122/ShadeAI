@@ -1,0 +1,14 @@
+{
+  "synthetic": true,
+  "native_llm": false,
+  "hardware": false,
+  "adapter": "shade_keypad",
+  "one_time_owner_only": "PASS",
+  "notification_dedupe": "PASS",
+  "expiry_and_revoke": "PASS",
+  "timeout_unknown_no_retry": "PASS",
+  "no_plain_pin_in_db_logs": "PASS",
+  "separate_key_permissions": "PASS",
+  "restart_revokes_without_replay": "PASS",
+  "synthetic_ha_unlocks": 2
+}

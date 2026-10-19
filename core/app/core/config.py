@@ -54,10 +54,30 @@ class Settings(BaseSettings):
     voice_model_manifest_sha256: str | None = None
     voice_memory_limit_mb: int = Field(default=768, ge=256, le=1024)
     voice_timeout_seconds: int = Field(default=30, ge=5, le=45)
+    access_enabled: bool = False
+    access_allowed_locks: list[str] = Field(default_factory=list, max_length=5)
+    access_keypad_token: str = Field(default="", repr=False)
     event_retention_days: int = Field(default=90, ge=1, le=365)
     log_dir: str = "./logs"
     log_max_bytes: int = Field(default=1_048_576, ge=1024, le=10_485_760)
     log_backup_count: int = Field(default=3, ge=1, le=10)
+
+    @field_validator("access_allowed_locks")
+    @classmethod
+    def access_locks(cls, value):
+        if any(not re.fullmatch(r"lock\.[a-z0-9_]{1,249}", item) for item in value):
+            raise ValueError("Нужны конкретные lock entity_id")
+        return list(dict.fromkeys(value))
+
+    @model_validator(mode="after")
+    def access_configuration(self):
+        if self.access_keypad_token:
+            validate_api_key(self.access_keypad_token)
+            if self.access_keypad_token == self.api_key:
+                raise ValueError("Ключ клавиатуры должен отличаться от ключа владельца")
+        if self.access_enabled and (not self.access_allowed_locks or not self.access_keypad_token):
+            raise ValueError("Доступу нужны явные замки и отдельный ключ клавиатуры")
+        return self
 
     @field_validator("voice_model_path", "voice_model_manifest_sha256", mode="before")
     @classmethod

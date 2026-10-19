@@ -71,6 +71,7 @@ async def health(
             "notification_worker": request.app.state.notification_worker.status,
             "analytics": request.app.state.analytics.status,
             "voice": request.app.state.voice.status,
+            "temporary_access": request.app.state.access.status,
             "meeting_mode": request.app.state.meeting.status,
             "calendar": request.app.state.calendar.status,
             "suggestions": request.app.state.suggestions.status,
