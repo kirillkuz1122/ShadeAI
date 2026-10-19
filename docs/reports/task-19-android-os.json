@@ -1,0 +1,24 @@
+{
+  "result": "PASS",
+  "apk_sha256": "8df0ac55f51cfbde21bdf7f1289aca6e041168a5d547d20214ff8fdbdcdf9f16",
+  "api_level": 35,
+  "read_only_avd": true,
+  "actual_core": true,
+  "synthetic_extraction": true,
+  "native_llm": false,
+  "hardware": false,
+  "ha_commands": 0,
+  "checks": [
+    "pending-processing-processed polling",
+    "fields/timezone",
+    "unknown schema",
+    "diagnostic vs LLM",
+    "failed safe fallback",
+    "404 clears text",
+    "pagination20/4",
+    "STOP pauses polling",
+    "resume",
+    "401 clears page",
+    "prefs private"
+  ]
+}

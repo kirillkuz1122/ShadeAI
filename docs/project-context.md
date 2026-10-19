@@ -12,7 +12,9 @@
 
 **TASK-27 программно подготовлен:** [протокол](acceptance.md), stdlib read-only bounded `scripts/acceptance_probe.py`,18новыхтестов на3.14/3.11networknone,полный498Core3.14/ruff PASS. Два реальных GEThealth/proc на компьютере: development_host/2degraded (HAнет)/hardwarefalse/nativefalse/cgroupfalse, maxRSSfamily117MiB **без моделей**, не Pi-budget и не14дней. [Отчёт27](reports/task-27.md), [JSON](reports/task-27-probe.json). Свои процессы/temporaryDB/JSONL удалены.
 
-**Следующий шаг:** при сверке всех открытых критериев обнаружены доступные отдельные OS-проверки19 (экран результата) и21 (системная подсказка). Общие APK/lint82JVM уже проверены26/voice-focus, APK сохранён; использовать его/read-only AVD/синтетический Core без повторной Gradle/загрузок. NativeAndroid→GGUF→оба клиента/реальный телефон/Pi/14дней остаются.17задач открыты, ни один этап не принят;18:70%/max4.137с. После07:10сводки ждать Кирилла.
+**OS TASK-19 допроверен:** сохранённый APK8df0ac55… без Gradle, AOSP35/read-only trueCore/synthetic extraction: polling/fields/timezone/unknown/diagnostic/failed/404/20+4pages/STOP/resume/401/prefs PASS,HA0. [Отчёт19](reports/task-19.md), [JSON](reports/task-19-android-os.json). Финальный crash-buffer чистый; прежняя UiAutomator-ошибка была вызвана параллельной диагностикой, не приложением. Свои сервер/AVD остановлены.
+
+**Следующий шаг:** TASK-21 системная доставка подсказки/opt-in/WorkManager/повтор/пауза/настройки на read-only AVD с тем же APK, синтетический настоящийCore, без новой Gradle/моделей. NativeAndroid→GGUF→оба клиента/телефон/Pi/14дней остаются;17задач открыты, этапы не приняты;18:70%/max4.137с. После07:10сводки ждать Кирилла.
 
 Изоляция аналитического seed исправлена отдельно3e74556: исходный Python3.11 462/1FAIL, после остановки collector до seed полный463PASS. [Отчёт](reports/analytics-test-isolation-2026-10-19.md).
 
