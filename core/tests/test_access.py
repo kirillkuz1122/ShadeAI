@@ -55,6 +55,7 @@ def delivery(client, auth_headers, text="Синтетическая посылк
 
     async def finish():
         async with base.async_session() as session, session.begin():
+            await session.connection(execution_options={"sqlite_immediate": True})
             await session.execute(
                 update(NotificationRaw)
                 .where(NotificationRaw.id == identity)
@@ -214,6 +215,7 @@ def test_only_fresh_canonical_delivery_can_receive_access(
 
     async def change():
         async with base.async_session() as session, session.begin():
+            await session.connection(execution_options={"sqlite_immediate": True})
             row = await session.get(NotificationRaw, source)
             if mutation == "deleted":
                 await session.delete(row)
@@ -254,6 +256,7 @@ def test_revocation_expiry_and_context_fail_closed(
 
         async def remove():
             async with base.async_session() as session, session.begin():
+                await session.connection(execution_options={"sqlite_immediate": True})
                 await session.execute(delete(NotificationRaw).where(NotificationRaw.id == source))
 
         client.portal.call(remove)
@@ -330,6 +333,7 @@ def test_restart_revokes_active_and_never_replays_dispatch(client, auth_headers,
 
     async def interrupted():
         async with base.async_session() as session, session.begin():
+            await session.connection(execution_options={"sqlite_immediate": True})
             row = await session.get(AccessGrant, grant["id"])
             row.state = "dispatching"
         service = AccessService(enabled.client)
