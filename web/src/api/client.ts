@@ -1,4 +1,4 @@
-import type { AutomationPage, AutomationRule, AutomationDetail, HintPage } from "./automation";
+import type { AutomationPage, AutomationRule, AutomationDetail, HintPage, RunPage } from "./automation";
 const API_KEY_STORAGE = "shade_api_key";
 
 export interface Health {
@@ -138,8 +138,10 @@ export const api = {
     request<AutomationPage>(`/api/v1/automations?limit=20&offset=${offset}`, options),
   automation: (options: RequestOptions, id: string) =>
     request<AutomationDetail>(`/api/v1/automations/${encodeURIComponent(id)}`, options),
+  automationRuns:(options:RequestOptions)=>request<RunPage>("/api/v1/automations/runs",options),
+  cancelAutomationRun:(options:RequestOptions,id:number)=>request<{status:string}>(`/api/v1/automations/runs/${id}/cancel`,options,{method:"POST"}),
   decideAutomation: (options: RequestOptions, id: string,
-    body: {decision: "accept" | "reject" | "disable"; version: number; target_entity?: string}) =>
+    body: {decision: "accept" | "reject" | "disable"; version: number; target_entity?: string; approval_scope?:string}) =>
     request<AutomationRule>(`/api/v1/automations/${encodeURIComponent(id)}/decision`, options,
       {method:"POST",body:JSON.stringify(body)}),
   refreshAutomations: (options: RequestOptions) =>

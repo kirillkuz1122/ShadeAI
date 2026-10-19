@@ -29,6 +29,7 @@ LIGHT = "light.synthetic_entry"
 
 
 def setup(client, monkeypatch):
+    client.portal.call(client.app.state.telemetry.stop)
     analytics = configure(client, monkeypatch)
     monkeypatch.setattr(settings, "automation_allowed_lights", [LIGHT])
     client.portal.call(seed)
@@ -47,6 +48,8 @@ def decide(client, headers, rule, decision="accept", version=None, target=LIGHT)
     body = {"decision": decision, "version": rule["version"] if version is None else version}
     if decision == "accept":
         body["target_entity"] = target
+        if rule.get("approval_scope") is not None:
+            body["approval_scope"] = rule["approval_scope"]
     return client.post(f"/api/v1/automations/{rule['id']}/decision", headers=headers, json=body)
 
 
@@ -55,7 +58,7 @@ def test_default_is_protected_empty_and_has_no_execution(client, auth_headers):
     assert client.get("/api/v1/hints").status_code == 401
     data = client.get("/api/v1/automations", headers=auth_headers).json()
     assert data["automations"] == [] and data["allowed_targets"] == []
-    assert data["executor_status"] == "not_implemented"
+    assert data["executor_status"] == "disabled"
     hints = client.get("/api/v1/hints", headers=auth_headers).json()
     assert hints["hints"] == [] and hints["latest_id"] == 0
     assert len(hints["feed_id"]) == 36

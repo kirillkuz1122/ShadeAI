@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     analytics_timezone: str = "Asia/Yekaterinburg"
     analytics_interval_seconds: int = Field(default=3600, ge=60, le=86400)
     automation_allowed_lights: list[str] = Field(default_factory=list, max_length=20)
+    automation_execution_enabled: bool = False
+    automation_home_presence_entity: str | None = None
+    automation_cancel_seconds: int = Field(default=30, ge=10, le=120)
+    automation_cooldown_seconds: int = Field(default=1800, ge=300, le=86400)
     suggestions_interval_seconds: int = Field(default=30, ge=5, le=3600)
     event_retention_days: int = Field(default=90, ge=1, le=365)
     log_dir: str = "./logs"
@@ -60,6 +64,28 @@ class Settings(BaseSettings):
             not entity.startswith("binary_sensor.") or entity not in self.ha_telemetry_entities
         ):
             raise ValueError("ANALYTICS_PRESENCE_ENTITY должен быть уже выбранным binary_sensor")
+        return self
+
+    @field_validator("automation_home_presence_entity", mode="before")
+    @classmethod
+    def normalize_home_presence(cls, value):
+        return None if value == "" else value
+
+    @model_validator(mode="after")
+    def check_execution_sources(self):
+        home = self.automation_home_presence_entity
+        if home is not None and (
+            not re.fullmatch(r"binary_sensor\.[a-z0-9_]+", home)
+            or home not in self.ha_telemetry_entities
+            or home == self.analytics_presence_entity
+        ):
+            raise ValueError("Общее присутствие должно быть другим выбранным binary_sensor")
+        if self.automation_execution_enabled and (
+            home is None
+            or self.analytics_presence_entity is None
+            or not self.automation_allowed_lights
+        ):
+            raise ValueError("Исполнителю нужны два выбранных источника и явные цели света")
         return self
 
     @field_validator("automation_allowed_lights")

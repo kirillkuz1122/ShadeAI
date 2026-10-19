@@ -494,11 +494,11 @@ curl http://<core>:8000/api/v1/habits -H "Authorization: Bearer <SHADE_API_KEY>"
 
 Предыдущее расширенное [ТЗ CRUD автоматизаций](automation-target-spec.md) сохранено отдельно; его маршруты пока не реализованы.
 
-Только Bearer, без облачного push. Исполнитель TASK-22 **пока отсутствует**: ни одно принятие/обновление здесь не отправляет команду HA. Произвольные POST /automations и PUT/DELETE CRUD из целевого ТЗ ещё не реализованы; текущие предложения создаются только из профилей TASK-20. Допуск целей — `AUTOMATION_ALLOWED_LIGHTS` (JSON-массив до20 уникальных light.*, default[]), период `SUGGESTIONS_INTERVAL_SECONDS` 5..3600, default30. Настройки требуют перезапуска.
+Только Bearer, без облачного push. Принятие/обновление само не отправляет команду HA. Исполнитель TASK-22 реализован, **по умолчанию выключен**; условия и журнал описаны в §4.4.6. Произвольные POST /automations и PUT/DELETE CRUD из целевого ТЗ ещё не реализованы; текущие предложения создаются только из профилей TASK-20. Допуск целей — `AUTOMATION_ALLOWED_LIGHTS` (JSON-массив до20 уникальных light.*, default[]), период `SUGGESTIONS_INTERVAL_SECONDS` 5..3600, default30. Настройки требуют перезапуска.
 
 #### 4.4.1. `GET /automations`
 
-Параметры: status (pending/accepted/rejected/disabled/needs_review, optional), limit1..20 (default20), offset0..200. Ответ200: automations[], total, allowed_targets[], status и executor_status=not_implemented. До200 предложений, до4 новых по текущему источнику, генерация при свежем профиле со score≥0.75.
+Параметры: status (pending/accepted/rejected/disabled/needs_review, optional), limit1..20 (default20), offset0..200. Ответ200: automations[], total, allowed_targets[], status и executor_status (disabled/starting/ready/capacity/EXECUTOR_ERROR). До200 предложений, до4 новых по текущему источнику, генерация при свежем профиле со score≥0.75.
 
 Объект предложения:
 
@@ -506,7 +506,8 @@ curl http://<core>:8000/api/v1/habits -H "Authorization: Bearer <SHADE_API_KEY>"
 - trigger: type=presence_transition, kind=arrival_home/departure_home, entity_id выбранного binary_sensor, from_state/to_state off→on или on→off, day_group weekdays/weekends, timezone, window_start/window_end HH:MM, wraps_midnight.
 - evidence: support_days/eligible_days/dispersion_minutes, confidence — эвристическая регулярность, не вероятность.
 - action=null до выбора цели; после принятия {entity_id:light.*,service:turn_on|turn_off,params:{}}. Приход — только turn_on, уход — turn_off. Произвольные params/сервисы не принимаются.
-- source_current — совпадают свежий профиль, конфигурация и условия. approval_valid/enabled — сохраняется явное решение для **этой** цели/условий/политики. Это не подтверждение работы исполнителя: executable=false, executor_status=not_implemented.
+- execution_policy: version=1, enabled, home_presence_entity (null/выбранный binary_sensor), cancel_seconds10..120, cooldown_seconds300..86400, max_event_age_seconds=300, pair_window_seconds=90. approval_scope —64hex-хеш показанных условий/целей/политики; клиент передаёт его при принятии. Неизвестная версия политики не позволяет принять правило.
+- source_current — совпадают свежий профиль, конфигурация и условия. approval_valid/enabled — сохраняется явное решение для **этой** цели/условий/политики. executable означает разрешение исполнителя при действующем согласии и включённом режиме, не факт срабатывания/отправки. Проверяются два источника и остальные gates §4.4.6. executor_status — состояние сервиса, по умолчанию disabled.
 
 Rejected/disabled не возвращаются в pending при обычном пересчёте. У принятых изменение условий/потеря достаточного источника или разрешений переводит в needs_review и снимает одобрение; обновление одной статистики не меняет действие. При временно устаревшем расчёте одобрение не выполняется. Все проверки свежести/хеша повторяются на решении, нельзя одобрить устаревшие параметры по старой карточке.
 
@@ -519,12 +520,12 @@ Rejected/disabled не возвращаются в pending при обычном
 Строгий JSON, лишние поля запрещены. Все POST /automations/* ограничены65536байт (413 при превышении).
 
 ```json
-{"decision":"accept","version":1,"target_entity":"light.entry"}
+{"decision":"accept","version":1,"target_entity":"light.entry","approval_scope":"<64hex из прочитанной карточки>"}
 ```
 
-Accept требует явной разрешённой цели, свежего профиля и совпадающей версии. Reject/disable передаются без target_entity. Disable принимается и с устаревшей версией, чтобы новое состояние не мешало выключению. Ответ200 — актуальный объект; создание записи/новая версия/история атомарны. Гонки/неподтверждённые ошибки не следует автоматически переигрывать как новое решение.
+Accept требует явной разрешённой цели, свежего профиля и совпадающей версии. При включённом исполнителе требуется совпадающий approval_scope, иначе409 AUTOMATION_SCOPE_CHANGED: старый клиент без показанной политики не даёт согласия на выполнение. При выключенном режиме поле необязательно ради совместимости TASK-21, но переданное проверяется; включение режима меняет хеш и требует нового accept. Reject/disable передаются без target_entity/approval_scope. Disable принимается и с устаревшей версией, чтобы новое состояние не мешало выключению. Ответ200 — актуальный объект; создание записи/новая версия/история атомарны. Гонки/неподтверждённые ошибки не следует автоматически переигрывать как новое решение.
 
-Коды: 404 AUTOMATION_NOT_FOUND; 409 AUTOMATION_CHANGED/AUTOMATION_SOURCE_STALE; 422 AUTOMATION_TARGET_NOT_ALLOWED либо безопасная ошибка валидации; 503 SUGGESTIONS_UNAVAILABLE. Ошибка не возвращает raw input, тело/исключения/SQL-параметры не логируются. Одновременные accept с одной версией дают одно принятие и409; не две записи истории.
+Коды: 404 AUTOMATION_NOT_FOUND; 409 AUTOMATION_CHANGED/AUTOMATION_SOURCE_STALE/AUTOMATION_SCOPE_CHANGED; 422 AUTOMATION_TARGET_NOT_ALLOWED либо безопасная ошибка валидации; 503 SUGGESTIONS_UNAVAILABLE. Ошибка не возвращает raw input, тело/исключения/SQL-параметры не логируются. Одновременные accept с одной версией дают одно принятие и409; не две записи истории.
 
 #### 4.4.4. `POST /automations/refresh`
 
@@ -546,6 +547,22 @@ latest_id — текущий максимум ленты, next_id — после
 Android использует только opt-in системные уведомления, разрешение Android13+, локальный WorkManager15мин + ручную проверку, без FCM. По умолчанию выключен. Смена ServerPrefs revision снимает прежний opt-in; API-ключ берётся из Keystore, не передаётся в WorkManager Data. Курсор содержит только feed_id/ID и привязан к revision. После401/403/404 фоновая проверка на паузе до явного повтора/настройки. Отсутствие INTERNET/VALIDATED не запрещает LAN, полностью без сетей HTTP не запускается. Doze/OEM/force-stop могут задержать работу; реальный срок и системная доставка ещё требуют проверки APK/телефона. Повтор использует стабильный notification tag/onlyAlertOnce; атомарности с Android NotificationManager нет — строгая exactly-once доставка не заявлена.
 
 Миграция0008_suggestions_hints добавляет automation_rules/automation_decisions/local_hints/local_hint_state. [Реализация, проверки и ограничения](reports/task-21.md).
+
+#### 4.4.6. Исполнение прихода/ухода — программная TASK-22
+
+Настройки: AUTOMATION_EXECUTION_ENABLED=false, AUTOMATION_HOME_PRESENCE_ENTITY=null, AUTOMATION_CANCEL_SECONDS=30 (10..120), AUTOMATION_COOLDOWN_SECONDS=1800 (300..86400). Для включения обязательны выбранный личный ANALYTICS_PRESENCE_ENTITY, другой выбранный binary_sensor **общего присутствия всех жильцов** и непустой разрешённый свет. Общее присутствие не должно быть копией личного датчика; действительное покрытие дома требует аппаратной приёмки. Настройки требуют перезапуска/нового подтверждения. Прежние approvals TASK-21 переводятся в needs_review из-за новой политики.
+
+Для кандидата нужны два последних согласованных live-перехода одинакового направления (off→on приход/ on→off уход), предыдущие противоположные состояния, не snapshot/unknown. Оба перехода не старше300с и с разницей≤90с, HA-время согласовано≤120с, checkpoint≤90с, collector connected и нет gap со времени предыдущих наблюдений. Срабатывание в локальном окне/группе дней правила. Если другой человек остаётся дома, общий датчик on и уход не допускается. Один личный датчик/LLM-контекст не разрешает команду.
+
+Кандидат durable pending до cancel_seconds; перед отправкой заново проверяются согласие/источники/ID/время/политика. Cancel/disable/reject до dispatching запрещают отправку. В dispatching начинается необратимая фаза: последующая отмена409, выключение запрещает будущие действия, уже начатая команда может завершиться. Cooldown общий для цели, учитывает неудачные/неизвестные попытки. Один переход/правило не переигрывается при повторе/новом согласии. После рестарта pending→cancelled, dispatching→unknown, команды автоматически не повторяются. HA success означает принятие, состояние отдельно наблюдается старым audit-путём.
+
+Журнал0009_automation_runs: максимум1000 записей, terminal TTL90дней; при заполнении удаляются самые старые terminal старше суток, свежие ID сохраняются. Если всё свежее — capacity, новые кандидаты не создаются. Pending максимум20; цикл2с/≤200правил (актуальных профилей≤4). Только метаданные без params/личных сообщений. Короткая writer-транзакция фиксирует dispatching до сети; execute_command пишет отдельный pending-аудит до HA. Отказ аудита до отправки не посылает команду, сбой итогового commit не повторяет HTTP.
+
+`GET /automations/runs?limit=20&before_id=<id>` — Bearer, limit1..20, before_id≥1 optional. Ответ200 {status,runs[]}, по убыванию ID. Поля: id,rule_id,state,reason,target_entity,service,created_at,due_at,started_at,finished_at,event_id,cancellable. state: pending/cancelled/dispatching/succeeded/failed/unknown/skipped. cancellable только pending; event_id связывает с обычным журналом команд.
+
+`POST /automations/runs/{run_id}/cancel` — Bearer, без параметров, лимит тела64KiB.200 {status:"cancelled"} для pending/уже cancelled;404 AUTOMATION_RUN_NOT_FOUND,409 AUTOMATION_RUN_ALREADY_DISPATCHED для прочих состояний,503 AUTOMATION_RUN_UNAVAILABLE. Отменённый переход не планируется заново. Web показывает последние20 действий и кнопку отмены до отправки; неизвестный результат не предлагается повторять.
+
+Фиксированные reason: WAITING_CANCEL_WINDOW,CORE_RESTARTED,USER_CANCELLED,RULE_DISABLED,APPROVAL_CHANGED,PRESENCE_UNCONFIRMED,COOLDOWN,COMMAND_IN_FLIGHT,HA_ACCEPTED,AUDIT_UNAVAILABLE,AUDIT_FINALIZATION_FAILED,HA_UNCONFIRMED,HA_FAILED,COMMAND_UNCONFIRMED. Неизвестный код клиент показывает общей подписью. Health services.automation_executor отражает фактический статус сервиса. [Проверки и ограничения](reports/task-22.md).
 
 ---
 

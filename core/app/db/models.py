@@ -177,3 +177,28 @@ class LocalHintState(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     feed_id: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+class AutomationRun(Base):
+    __tablename__ = "automation_runs"
+    __table_args__ = (
+        Index("ix_automation_runs_state_due", "state", "due_at"),
+        Index("ix_automation_runs_target_started", "target_entity", "started_at"),
+        {"sqlite_autoincrement": True},
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    identity: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    rule_id: Mapped[str] = mapped_column(Text, nullable=False)
+    approval_key: Mapped[str] = mapped_column(Text, nullable=False)
+    primary_event_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    home_event_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    target_entity: Mapped[str] = mapped_column(Text, nullable=False)
+    service: Mapped[str] = mapped_column(Text, nullable=False)
+    state: Mapped[str] = mapped_column(Text, nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    due_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    event_id: Mapped[int | None] = mapped_column(Integer, nullable=True)

@@ -3,12 +3,13 @@ import {api, ApiError, ProtocolError} from "../api/client";
 import {allowedLight, decisionLabels, knownRule, knownAutomationPage, knownHintPage, ruleLabels, type AutomationRule} from "../api/automation";
 import {useResource} from "../hooks/useResource";
 import {ErrorNotice, Freshness, Loading, Pager, time} from "./common";
+import {ExecutionJournal} from "./ExecutionJournal";
 import {NotificationDetail} from "./Notifications";
 
 function mutationError(error: unknown) {
   const detail = error instanceof ApiError ? error.detail : null;
   const code = detail && typeof detail === "object" && "code" in detail ? detail.code : null;
-  if (code === "AUTOMATION_CHANGED" || code === "AUTOMATION_SOURCE_STALE")
+  if (code === "AUTOMATION_CHANGED" || code === "AUTOMATION_SOURCE_STALE" || code === "AUTOMATION_SCOPE_CHANGED")
     return "Условия изменились или устарели. Обновите предложения и проверьте их заново.";
   if (code === "AUTOMATION_TARGET_NOT_ALLOWED") return "Эта цель больше не разрешена в настройках Core.";
   if (error instanceof ApiError && error.status === 401) return "Ключ не принят. Проверьте подключение.";
@@ -39,7 +40,8 @@ function RuleCard({row, targets, busy, decide, apiKey}: {row:AutomationRule; tar
       {" "}Регулярность {Math.round(row.confidence*100)}% — оценка алгоритма, не вероятность.</p>
     {!row.source_current && <p className="notice">Профиль изменился или устарел. Перед новым решением обновите предложения.</p>}
     {row.action && <p>{verb}: <strong>{row.action.entity_id}</strong></p>}
-    {row.executor_status === "not_implemented" && <p className="help">Исполнитель ещё не подключён. Сейчас команды устройствам не отправляются.</p>}
+    {row.executor_status === "not_implemented" ? <p className="help">Исполнитель ещё не подключён. Сейчас команды устройствам не отправляются.</p> : <p className="help">{row.executor_status === "disabled" ? "Исполнение выключено в настройках Core." : row.executable ? "Исполнение разрешено для подтверждённых условий. Доступны задержка отмены и журнал Core." : "Исполнение этого правила не разрешено."}</p>}
+    {row.execution_policy && <p className="help">Общее присутствие: {row.execution_policy.home_presence_entity ?? "не выбрано"}. Отмена до отправки: {row.execution_policy.cancel_seconds} с; cooldown: {row.execution_policy.cooldown_seconds} с. Изменение условий потребует нового подтверждения.</p>}
     {row.status !== "accepted" && <form onSubmit={event => {event.preventDefault(); if(validTarget) decide(row,"accept",target);}}>
       <label>Светильник для сценария
         <select value={validTarget ? target : ""} onChange={e=>setTarget(e.target.value)} disabled={busy || !row.source_current}>
@@ -107,7 +109,7 @@ export function Automations({apiKey}: {apiKey:string}) {
     finally{if(alive.current){setBusy(false);controller.current=null;}}
   }
   function decide(row:AutomationRule, decision:"accept"|"reject"|"disable", target?:string) {
-    void mutate(signal=>api.decideAutomation({apiKey,signal},row.id,{decision,version:row.version,...(target ? {target_entity:target} : {})}),
+    void mutate(signal=>api.decideAutomation({apiKey,signal},row.id,{decision,version:row.version,...(target ? {target_entity:target} : {}),...(decision==="accept" && row.approval_scope ? {approval_scope:row.approval_scope} : {})}),
       decision === "accept" ? "Выбранный сценарий подтверждён." : decision === "reject" ? "Предложение отклонено." : "Сценарий выключен.");
   }
   return <section className="panel" aria-labelledby="automations-title">
@@ -124,6 +126,7 @@ export function Automations({apiKey}: {apiKey:string}) {
         targets={state.data!.allowed_targets.filter(allowedLight)} busy={busy} decide={decide}/> : <p key={`unsupported-${index}`} className="notice">Формат предложения не поддерживается. Обновите клиент.</p>)}
       <Pager offset={offset} total={state.data.total} loading={state.loading || busy} onChange={setOffset}/>
     </>}
+    <ExecutionJournal key={apiKey} apiKey={apiKey}/>
     <Hints apiKey={apiKey}/>
   </section>;
 }

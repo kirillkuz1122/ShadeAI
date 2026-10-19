@@ -71,5 +71,6 @@ async def health(
             "notification_worker": request.app.state.notification_worker.status,
             "analytics": request.app.state.analytics.status,
             "suggestions": request.app.state.suggestions.status,
+            "automation_executor": request.app.state.automation_executor.status,
         },
     )

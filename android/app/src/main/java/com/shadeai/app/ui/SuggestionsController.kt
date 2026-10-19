@@ -70,7 +70,7 @@ class SuggestionsController(private val scope: CoroutineScope,
     fun decide(row:CoreRule,kind:String,target:String?=null) {
         if(!knownRule(row) || kind !in listOf("accept","reject","disable"))return
         if(kind=="accept" && (!row.sourceCurrent || target == null || target !in mutable.value.page?.allowedTargets.orEmpty()))return
-        mutate {api->api.decide(row.id,RuleDecision(kind,row.version,if(kind=="accept")target else null));
+        mutate {api->api.decide(row.id,RuleDecision(kind,row.version,if(kind=="accept")target else null,if(kind=="accept")row.approvalScope else null));
             when(kind){"accept"->"Выбранный сценарий подтверждён.";"reject"->"Предложение отклонено.";else->"Сценарий выключен."}}
     }
     fun updateSuggestions()=mutate(requireView=false) {api->api.refresh();"Предложения обновлены."}

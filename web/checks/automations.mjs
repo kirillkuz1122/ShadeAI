@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 const source = readFileSync(new URL('../src/api/automation.ts', import.meta.url), 'utf8');
 const code = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText;
-const { knownRule, knownAutomationPage, knownHintPage } = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
+const { knownRule, knownAutomationPage, knownHintPage, knownRunPage } = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
 const row = {id:'aut_'+'a'.repeat(32),source_habit_id:'hbt_'+'b'.repeat(32),name:'Синтетическое предложение',status:'pending',version:1,
   trigger:{type:'presence_transition',entity_id:'binary_sensor.test',kind:'arrival_home',from_state:'off',to_state:'on',day_group:'weekdays',timezone:'Asia/Yekaterinburg',window_start:'17:15',window_end:'18:45',wraps_midnight:false},
   action:null,evidence:{support_days:12,eligible_days:15,dispersion_minutes:5},confidence:0.8,source_current:true,approval_valid:false,enabled:false,executable:false,executor_status:'not_implemented',created_at:'2026-10-19T00:00:00Z',updated_at:'2026-10-19T00:00:00Z'};
@@ -25,3 +25,13 @@ assert(!knownHintPage({...hints,hints:[null]}));
 assert(!knownHintPage({...hints,next_id:NaN}));
 assert(!knownHintPage({...hints,hints:[{...hints.hints[0],notification_id:-1}]}));
 console.log('PASS: bounded proposals/targets/known actions and conditions; safe local hint feed');
+
+const withPolicy={...row,executor_status:'disabled',execution_policy:{version:1,enabled:false,home_presence_entity:null,cancel_seconds:30,cooldown_seconds:1800,max_event_age_seconds:300,pair_window_seconds:90}};
+assert(knownRule(withPolicy));
+assert(!knownRule({...withPolicy,execution_policy:{...withPolicy.execution_policy,version:2}}));
+assert(!knownRule({...withPolicy,execution_policy:{...withPolicy.execution_policy,cancel_seconds:0}}));
+
+const run={id:1,rule_id:row.id,state:'pending',reason:'WAITING_CANCEL_WINDOW',target_entity:'light.test',service:'turn_on',created_at:row.created_at,due_at:row.created_at,started_at:null,finished_at:null,event_id:null,cancellable:true};
+assert(knownRunPage({status:'ready',runs:[run]}));
+assert(!knownRunPage({runs:[{...run,state:'unknown',cancellable:true}]}));
+assert(!knownRunPage({runs:[{...run,service:'unlock'}]}));

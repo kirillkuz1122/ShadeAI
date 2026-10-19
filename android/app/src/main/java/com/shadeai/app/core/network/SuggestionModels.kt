@@ -22,6 +22,13 @@ data class CoreRuleEvidence(@SerialName("support_days") val supportDays: Int,
 data class CoreRuleHistory(val id: Long, val decision: String, val version: Int,
     @SerialName("target_entity") val target: String? = null, @SerialName("created_at") val createdAt: String)
 @Serializable
+data class CoreExecutionPolicy(val version:Int,val enabled:Boolean,
+    @SerialName("home_presence_entity") val homeEntity:String?=null,
+    @SerialName("cancel_seconds") val cancelSeconds:Int,
+    @SerialName("cooldown_seconds") val cooldownSeconds:Int,
+    @SerialName("max_event_age_seconds") val maxAge:Int,
+    @SerialName("pair_window_seconds") val pairWindow:Int)
+@Serializable
 data class CoreRule(
     val id: String, @SerialName("source_habit_id") val sourceHabitId: String,
     val name: String, val status: String, val version: Int, val trigger: CoreRuleTrigger,
@@ -31,6 +38,8 @@ data class CoreRule(
     @SerialName("executor_status") val executorStatus: String,
     @SerialName("created_at") val createdAt: String, @SerialName("updated_at") val updatedAt: String,
     val history: List<CoreRuleHistory> = emptyList(),
+    @SerialName("execution_policy") val executionPolicy:CoreExecutionPolicy?=null,
+    @SerialName("approval_scope") val approvalScope:String?=null,
 ) { override fun toString() = "CoreRule(redacted)" }
 @Serializable
 data class CoreRulesPage(val automations: List<CoreRule>, val total: Int,
@@ -39,7 +48,8 @@ data class CoreRulesPage(val automations: List<CoreRule>, val total: Int,
 ) { override fun toString() = "CoreRulesPage(redacted)" }
 @Serializable
 data class RuleDecision(val decision: String, val version: Int,
-    @SerialName("target_entity") val target: String? = null)
+    @SerialName("target_entity") val target: String? = null,
+    @SerialName("approval_scope") val approvalScope:String?=null)
 @Serializable
 data class CoreStatus(val status: String)
 @Serializable

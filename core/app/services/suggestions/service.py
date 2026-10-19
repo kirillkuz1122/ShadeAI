@@ -5,7 +5,7 @@ from contextlib import suppress
 from datetime import timedelta
 from uuid import uuid4
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 
 from app.core import clock
 from app.core.config import settings
@@ -14,6 +14,7 @@ from app.db.models import (
     AnalyticsState,
     AutomationDecision,
     AutomationRule,
+    AutomationRun,
     HabitProfile,
     LocalHint,
     LocalHintState,
@@ -70,13 +71,25 @@ class SuggestionService:
     def __init__(self, analytics, telemetry):
         self.analytics, self.telemetry = analytics, telemetry
         self.allowed = tuple(settings.automation_allowed_lights)
+        self.execution_scope = {
+            "version": 1,
+            "enabled": settings.automation_execution_enabled,
+            "home_presence_entity": settings.automation_home_presence_entity,
+            "cancel_seconds": settings.automation_cancel_seconds,
+            "cooldown_seconds": settings.automation_cooldown_seconds,
+            "max_event_age_seconds": 300,
+            "pair_window_seconds": 90,
+        }
         self.interval = settings.suggestions_interval_seconds
         self.status = "starting"
         self.task: asyncio.Task | None = None
         self.lock = asyncio.Lock()
 
     def approval_key(self, profile_key: str, target: str | None) -> str:
-        return fingerprint([1, profile_key, target, sorted(self.allowed)])
+        return fingerprint([2, profile_key, target, sorted(self.allowed), self.execution_scope])
+
+    def consent_scope(self, profile_key: str) -> str:
+        return fingerprint([1, profile_key, sorted(self.allowed), self.execution_scope])
 
     async def start(self) -> None:
         if self.task is not None:
@@ -116,8 +129,9 @@ class SuggestionService:
             and snapshot is not None
             and snapshot.config_key == self.analytics.config_key
             and self.analytics.status not in {"starting", "calculating", "ANALYTICS_ERROR"}
-            and snapshot.computed_at
-            >= naive(clock.utcnow()) - timedelta(seconds=self.analytics.interval * 2)
+            and naive(clock.utcnow()) - timedelta(seconds=self.analytics.interval * 2)
+            <= snapshot.computed_at
+            <= naive(clock.utcnow()) + timedelta(seconds=5)
         )
         profiles = (
             list(
@@ -371,7 +385,14 @@ class SuggestionService:
                 )
                 return
 
-    async def decide(self, rule_id: str, decision: str, version: int, target: str | None):
+    async def decide(
+        self,
+        rule_id: str,
+        decision: str,
+        version: int,
+        target: str | None,
+        scope: str | None = None,
+    ):
         async with self.lock:
             async with base.async_session() as session, session.begin():
                 # Writer резервируется до чтения, иначе возможен SQLITE_BUSY_SNAPSHOT.
@@ -383,6 +404,10 @@ class SuggestionService:
                     raise SuggestionError("AUTOMATION_CHANGED", 409)
                 _, sources = await self.source_context(session)
                 if decision == "accept":
+                    if (
+                        self.execution_scope["enabled"] or scope is not None
+                    ) and scope != self.consent_scope(rule.profile_key):
+                        raise SuggestionError("AUTOMATION_SCOPE_CHANGED", 409)
                     if not self.valid(rule, sources):
                         raise SuggestionError("AUTOMATION_SOURCE_STALE", 409)
                     if target not in self.allowed:
@@ -393,6 +418,15 @@ class SuggestionService:
                 else:
                     rule.status = "disabled" if decision == "disable" else "rejected"
                     rule.approval_key = None
+                    await session.execute(
+                        update(AutomationRun)
+                        .where(AutomationRun.rule_id == rule.id, AutomationRun.state == "pending")
+                        .values(
+                            state="cancelled",
+                            reason="RULE_DISABLED",
+                            finished_at=naive(clock.utcnow()),
+                        )
+                    )
                 rule.version += 1
                 rule.updated_at = naive(clock.utcnow())
                 self.history(session, rule, decision, rule.updated_at)

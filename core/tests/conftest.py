@@ -23,6 +23,10 @@ TEST_ENV = {
     "ANALYTICS_INTERVAL_SECONDS": "3600",
     "AUTOMATION_ALLOWED_LIGHTS": "[]",
     "SUGGESTIONS_INTERVAL_SECONDS": "30",
+    "AUTOMATION_EXECUTION_ENABLED": "false",
+    "AUTOMATION_HOME_PRESENCE_ENTITY": "",
+    "AUTOMATION_CANCEL_SECONDS": "30",
+    "AUTOMATION_COOLDOWN_SECONDS": "1800",
     "SENSOR_RETENTION_DAYS": "90",
     "SENSOR_HISTORY_MAX_ROWS": "100000",
     "EVENT_RETENTION_DAYS": "90",
@@ -147,7 +151,10 @@ class HAMock:
                 "/api/states",
                 "/api/states/light.test",
             }
-        ) or (request.method == "POST" and request.url.path == "/api/services/light/turn_on")
+        ) or (
+            request.method == "POST"
+            and request.url.path in {"/api/services/light/turn_on", "/api/services/light/turn_off"}
+        )
         if (
             request.url.host != "ha.test"
             or request.headers.get("Authorization") != f"Bearer {TEST_HA_TOKEN}"

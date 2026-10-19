@@ -23,6 +23,7 @@ from app.core.logging import local_logging
 from app.db import base
 from app.db.base import init_db
 from app.services.analytics.service import AnalyticsService
+from app.services.automation.executor import AutomationExecutor
 from app.services.ha_bridge.audit import maintain_events
 from app.services.ha_bridge.client import HAClient
 from app.services.llm.engine import LocalLLMEngine
@@ -47,6 +48,8 @@ async def lifespan(app: FastAPI):
         app.state.telemetry = collector
         suggestions = SuggestionService(analytics, collector)
         app.state.suggestions = suggestions
+        executor = AutomationExecutor(suggestions, collector, client)
+        app.state.automation_executor = executor
         llm = LocalLLMEngine()
         app.state.llm = llm
         worker = NotificationWorker(llm=llm)
@@ -55,9 +58,11 @@ async def lifespan(app: FastAPI):
             await collector.start()
             await analytics.start()
             await suggestions.start()
+            await executor.start()
             llm.start()
             await worker.start()
         except BaseException:
+            await executor.stop()
             await worker.stop()
             await llm.close()
             await suggestions.stop()
@@ -71,6 +76,7 @@ async def lifespan(app: FastAPI):
         try:
             yield
         finally:
+            await executor.stop()
             await worker.stop()
             await llm.close()
             await suggestions.stop()

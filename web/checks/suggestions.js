@@ -8,6 +8,7 @@ async (page) => {
   const feed='11111111-1111-4111-8111-111111111111', target='light.synthetic_entry';
   const history=[{id:1,decision:'suggested',version:1,target_entity:null,created_at:row.created_at}];
   let conflict=false,denied=false;
+
   await page.route('**/api/v1/**',async route=>{
     const request=route.request(),path=new URL(request.url()).pathname;
     if(path.endsWith('/health'))return route.fulfill({json:{status:'degraded',uptime:10,db_connected:true,db_size:'1MB',db_size_bytes:1024,ha_connected:false,ha_status:'not_configured',llm_status:'not_loaded',services:{analytics:'ready',suggestions:'ready'}}});
@@ -25,6 +26,7 @@ async (page) => {
       history.unshift({id:history.length+1,decision:body.decision,version:row.version,target_entity:row.action?.entity_id??null,created_at:row.updated_at});
       return route.fulfill({json:row});
     }
+    if(path.endsWith('/automations/runs'))return route.fulfill({json:{status:'disabled',runs:[]}});
     if(path.endsWith('/automations'))return route.fulfill({json:{automations:[row],total:1,allowed_targets:[target],status:'ready',executor_status:'not_implemented'}});
     if(path.endsWith('/'+row.id))return route.fulfill({json:{...row,history}});
     if(path.endsWith('/hints'))return route.fulfill({json:{feed_id:feed,latest_id:1,next_id:1,hints:[{id:1,kind:'arrival_delivery',notification_id:1,created_at:row.created_at}]}});

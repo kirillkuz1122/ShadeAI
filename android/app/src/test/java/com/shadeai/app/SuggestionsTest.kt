@@ -24,6 +24,13 @@ class SuggestionsTest {
     private fun page(row:CoreRule)=CoreRulesPage(listOf(row),1,listOf("light.test"),"ready","not_implemented")
     private fun credentials(revision:String)=ResultsCredentials(revision,"http://127.0.0.1/api/v1/","private-synthetic-key")
     private fun emptyFeed()=CoreHintFeed(feed,0,0,emptyList())
+    @Test fun executionPolicyMustBeKnownAndBoundedBeforeConsent() {
+        val current=com.shadeai.app.core.network.CoreExecutionPolicy(1,true,"binary_sensor.house",30,1800,300,90)
+        assertTrue(knownRule(rule().copy(executorStatus="ready",executionPolicy=current,approvalScope="a".repeat(64))))
+        assertFalse(knownRule(rule().copy(executorStatus="ready")))
+        assertFalse(knownRule(rule().copy(executionPolicy=current.copy(version=2))))
+        assertFalse(knownRule(rule().copy(executionPolicy=current.copy(cancelSeconds=0))))
+    }
     @Test fun onlyKnownConditionsAndActionsCanBeApproved() {
         val row=rule();assertTrue(knownRule(row))
         for(bad in listOf(row.copy(confidence=Double.NaN),row.copy(status="private-status"),

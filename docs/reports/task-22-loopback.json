@@ -1,0 +1,11 @@
+{
+  "synthetic": true,
+  "native_llm": false,
+  "hardware": false,
+  "http_and_ha_rest_ws": "PASS",
+  "manual_cancel": "PASS",
+  "cooldown": "PASS",
+  "audit_link": "PASS",
+  "restart_no_replay": "PASS",
+  "synthetic_ha_commands": 1
+}

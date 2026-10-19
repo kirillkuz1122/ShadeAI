@@ -377,3 +377,13 @@ GET `/api/v1/hints?after_id=0&limit=20`: постоянный feed_id, latest_id
 Короткие пишущие транзакции telemetry/analytics/suggestions резервируют SQLite writer до чтения (`sqlite_immediate`), чтобы избежать WAL BUSY_SNAPSHOT; сеть и вычисления остаются вне транзакций. Один процесс Core на БД.
 
 Из core/: `.venv/bin/python checks/check_suggestions.py --help` — синтетический HTTP/HA WebSocket/перезапуск, собственная временная SQLite, без GGUF/рабочего HA. Результат сохранён в docs/reports/task-21-loopback.json. Обычные pytest по-прежнему не открывают TCP.
+
+## Исполнитель прихода/ухода (программная TASK-22)
+
+По умолчанию **выключен**. Новые настройки в .env.example: AUTOMATION_EXECUTION_ENABLED=false, AUTOMATION_HOME_PRESENCE_ENTITY пустой, CANCEL_SECONDS=30 и COOLDOWN_SECONDS=1800 (имена с префиксом AUTOMATION_). Для включения нужны выбранный личный датчик, **другой** выбранный binary_sensor общего присутствия всех жильцов и явный список света. Общее присутствие не должно быть копией личного; реальное покрытие/другой человек проверяются отдельно. Рабочая конфигурация агентом не изменялась.
+
+После смены режима/источников/политики требуется новое принятие. Клиент должен показать policy version1 и передать approval_scope из карточки вместе с decision/version/target_entity. При включённом режиме старый клиент без scope получает409; повторять accept автоматически нельзя. Уведомления LLM не создают команды.
+
+Два свежих live-перехода/90с, возраст≤300с, окно/дни, checkpoint/connected/no-gap → pending на30с → повторная проверка → dispatching → общий execute_command/audit → итог. Нет повторов при timeout/unknown/перезапуске/сбое записи результата. До dispatching можно отменить GET/POST-путём из [API](../docs/api-spec.md) или Web; после отправки отмена409, отключение блокирует будущие действия. Cooldown общий для светильника. Журнал bounded1000/90дней, под давлением прунятся только terminal старше суток; иначе capacity и новых действий нет.
+
+Из core/: `.venv/bin/python checks/check_automation.py --output <новый JSON>` — только синтетические HTTP/HA REST+WS на loopback, отдельная временная SQLite/ключи, без реального дома/моделей. Отчёт [TASK-22](../docs/reports/task-22.md); Pi/датчики/свет/длительная эксплуатация ещё не приняты.
