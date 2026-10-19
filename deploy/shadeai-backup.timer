@@ -1,0 +1,11 @@
+[Unit]
+Description=Shade AI — ежедневная локальная резервная копия
+
+[Timer]
+OnCalendar=*-*-* 04:00:00
+RandomizedDelaySec=15m
+Persistent=true
+Unit=shadeai-backup.service
+
+[Install]
+WantedBy=timers.target

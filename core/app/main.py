@@ -24,6 +24,7 @@ from app.api.v1 import (
 )
 from app.core.config import settings
 from app.core.logging import local_logging
+from app.core.web import LocalDashboard
 from app.db import base
 from app.db.base import init_db
 from app.services.access.service import AccessService
@@ -123,6 +124,8 @@ def create_app() -> FastAPI:
         title=settings.app_name,
         version="0.1.0",
         lifespan=lifespan,
+        docs_url=None if settings.web_dist_path else "/docs",
+        redoc_url=None if settings.web_dist_path else "/redoc",
     )
 
     app.add_middleware(NotificationBodyLimit)
@@ -193,6 +196,9 @@ def create_app() -> FastAPI:
     app.include_router(meeting.router, prefix="/api/v1")
     app.include_router(voice.router, prefix="/api/v1")
     app.include_router(access.router, prefix="/api/v1")
+
+    if settings.web_dist_path:
+        app.mount("/", LocalDashboard(settings.web_dist_path), name="dashboard")
 
     return app
 

@@ -128,3 +128,13 @@ checks/playwright.config.json — воспроизводимый тестовы�
 В календаре «Режим дома для встречи» читает условия только после открытия карточки. Сначала выберите разрешённый switch.*, затем подтвердите: POST привязан к revision/policy_scope. Неизвестная версия политики блокируется. 409 не повторяется; stale запрещает новое включение, позволяет отключить событие. Журнал показывает общие leases пересекающихся встреч, наблюдение восстановления и unknown; checkbox ручной проверки обязателен для ack, который не отправляет HA-команду. Название календаря/HA context/raw errors не попадают в журнал. Браузер не доставляет системные напоминания — это отдельное включение Android.
 
 Проверки: `npm run build`, `node checks/meeting.mjs`, затем CLI Playwright из имеющегося системного Chromium с `checks/meeting.js` (Vite127.0.0.1:5187). Сценарий синтетический: явные цели/scope/409/stale disable/unknown ack/401/320px, не управление физическими устройствами. Доказательства и ограничения — [TASK-24](../docs/reports/task-24.md).
+
+
+## Production из Core — TASK-08
+
+После `npm run build` задайте Core `WEB_DIST_PATH` на отдельный read-only dist.
+Dashboard и `/api/v1` работают с одного адреса, Vite/Node/proxy в runtime не нужны.
+CSP без CDN, прежняя авторизация по ключу. Не размещать рядом.env/БД/исходники.
+[Установка/backup/systemd](../deploy/README.md), [проверка](../docs/reports/task-08.md).
+`checks/deployment.js` проверяет реальный production Core+assets/API в Chromium
+через `core/checks/check_deployment.py --browser`; данные синтетические, загрузок нет.

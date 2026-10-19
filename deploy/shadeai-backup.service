@@ -1,0 +1,22 @@
+[Unit]
+Description=Shade AI — локальная проверенная копия SQLite
+
+[Service]
+Type=oneshot
+User=shadeai
+Group=shadeai
+StateDirectory=shadeai shadeai-backups
+StateDirectoryMode=0700
+UMask=0077
+ExecStart=/usr/bin/python3 /opt/shadeai/scripts/sqlite_backup.py backup --source /var/lib/shadeai/shade.db --directory /var/lib/shadeai-backups --keep 7
+TimeoutStartSec=180
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+RestrictAddressFamilies=AF_UNIX
+IPAddressDeny=any
+MemoryMax=128M
+TasksMax=16
+LogNamespace=shadeai

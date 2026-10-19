@@ -14,6 +14,7 @@ TEST_ENV = {
     "APP_NAME": "Shade Core tests",
     "SHADE_API_KEY": TEST_KEY,
     "DB_URL": "sqlite+aiosqlite:///./bootstrap.db",
+    "WEB_DIST_PATH": "",
     "HA_BASE_URL": "http://ha.test:8123",
     "HA_TOKEN": TEST_HA_TOKEN,
     "HA_TIMEOUT_SECONDS": "5",

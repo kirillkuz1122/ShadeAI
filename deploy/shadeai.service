@@ -1,0 +1,42 @@
+[Unit]
+Description=Shade AI — локальный Core и dashboard
+After=network.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=shadeai
+Group=shadeai
+WorkingDirectory=/var/lib/shadeai
+StateDirectory=shadeai
+StateDirectoryMode=0700
+LogsDirectory=shadeai
+LogsDirectoryMode=0700
+Environment=WEB_DIST_PATH=/opt/shadeai/web/dist
+Environment=LOG_DIR=/var/log/shadeai
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/shadeai/core/.venv/bin/python -m uvicorn app.main:app --app-dir /opt/shadeai/core --host 0.0.0.0 --port 8000 --workers 1 --no-access-log --log-level warning
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=60
+KillMode=control-group
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+IPAddressDeny=any
+IPAddressAllow=localhost
+IPAddressAllow=10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+IPAddressAllow=169.254.0.0/16 fc00::/7 fe80::/10
+MemoryHigh=2560M
+MemoryMax=3072M
+TasksMax=128
+LogNamespace=shadeai
+
+[Install]
+WantedBy=multi-user.target

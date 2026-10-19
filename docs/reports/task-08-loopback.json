@@ -1,0 +1,51 @@
+{
+  "hardware": false,
+  "native_model": false,
+  "real_systemd": false,
+  "backup": {
+    "result": "PASS",
+    "bytes": 237568,
+    "sha256": "df986e75e04164fd34383c299337515aef1e98075b54386dfe04ff2a0c13b69f",
+    "revision": "0013_access_grants"
+  },
+  "browser": "PASS",
+  "initial": "PASS",
+  "restart": "PASS",
+  "restore_copy": {
+    "result": "PASS",
+    "bytes": 237568,
+    "sha256": "a0dff7883c0c213cd6917f94e4ca58d761879b84ce6049b14e239e663c3d3627",
+    "revision": "0013_access_grants"
+  },
+  "restore": "PASS",
+  "result": "PASS",
+  "final_repeat": {
+    "hardware": false,
+    "native_model": false,
+    "real_systemd": false,
+    "backup": {
+      "result": "PASS",
+      "bytes": 237568,
+      "sha256": "a96de1de2bee2a312b74f2e7d6ec54da9e74b6b5d53bdfe8cb6baeae81ed4894",
+      "revision": "0013_access_grants"
+    },
+    "browser": "PASS",
+    "initial": "PASS",
+    "restart": "PASS",
+    "restore_copy": {
+      "result": "PASS",
+      "bytes": 237568,
+      "sha256": "4041dd99334b4215f52f8171025edd90d7b22cd6f1d3cbf6de3cb1089868d9f5",
+      "revision": "0013_access_grants"
+    },
+    "restore": "PASS",
+    "result": "PASS"
+  },
+  "python314_full_tests": 480,
+  "python311_network_none_full_tests": 480,
+  "new_tests": 17,
+  "focused_final": 52,
+  "python311_final_backup_tests": 8,
+  "csp_violations": 0,
+  "systemd": "syntax-only; test-copy ExecStart binary /usr/bin/python3; original /opt path absent"
+}

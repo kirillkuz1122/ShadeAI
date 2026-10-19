@@ -22,6 +22,12 @@ class Settings(BaseSettings):
     api_key: str = Field(validation_alias="SHADE_API_KEY", repr=False)
 
     db_url: str = "sqlite+aiosqlite:///./shade.db"
+    web_dist_path: str | None = None
+
+    @field_validator("web_dist_path", mode="before")
+    @classmethod
+    def empty_web_path(cls, value):
+        return None if value == "" else value
 
     ha_base_url: str = "http://127.0.0.1:8123"
     ha_token: str = Field(default="", repr=False)

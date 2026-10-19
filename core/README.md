@@ -449,3 +449,24 @@ TCP. Отдельный синтетический HTTP-стенд: из `core/`
 `.venv/bin/python checks/keypad_client.py --entity lock.<выбранный_замок>`.
 PIN вводится скрыто. Не передавайте секреты аргументами CLI; эмулятор может послать
 настоящий unlock указанному Core, поэтому используйте его сначала только на стенде.
+
+
+## Развёртывание и backup — программная TASK-08
+
+`WEB_DIST_PATH=/абсолютный/путь/web/dist` включает раздачу production dashboard
+из того же Core. API/Bearer прежние, неизвестные пути404; CDN Swagger/ReDoc отключены,
+OpenAPI JSON доступен. По умолчанию режим выключен. Нужен отдельный read-only dist
+без исходников/секретов/symlink,512объектов/32MiB; index no-cache/assets immutable/CSP.
+
+[Шаблоны systemd, закрытые.env/state/logs, WAL backup/restore](../deploy/README.md).
+Службы на этом компьютере не устанавливались, Pi/boot/свет/RAM не проверены.
+Для воспроизведения программного стенда из корня (после Web build):
+
+```bash
+core/.venv/bin/python core/checks/check_deployment.py --browser --output core/.pytest_cache/deployment-repeat.json
+```
+
+Только уже установленный Chromium/закэшированный Playwright CLI, npx offline;
+Core/БД/данные синтетические, процессы останавливаются. Результат не заменяет Pi.
+Обычный pytest остаётся без TCP, disk-budget unit-тестов синтетический (CI tmpfs),
+реальный резерв4GiB используется отдельным loopback/CLI.
