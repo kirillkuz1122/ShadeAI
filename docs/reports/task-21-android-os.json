@@ -1,0 +1,30 @@
+{
+  "result": "PASS",
+  "apk_sha256": "8df0ac55f51cfbde21bdf7f1289aca6e041168a5d547d20214ff8fdbdcdf9f16",
+  "api_level": 35,
+  "read_only_avd": true,
+  "actual_core": true,
+  "actual_workmanager": true,
+  "actual_notificationmanager": true,
+  "synthetic_hint_feed": true,
+  "native_llm": false,
+  "physical_phone": false,
+  "doze": false,
+  "periodic_15min": false,
+  "ha_commands": 0,
+  "checks": [
+    "default-off",
+    "POST_NOTIFICATIONS deny",
+    "explicit opt-in/baseline",
+    "background notification/generic text",
+    "repeat",
+    "restart cursor",
+    "feed reset",
+    "unknown kind",
+    "401 pause/explicit resume",
+    "disable cancels",
+    "revision opt-in",
+    "prefs no source/key",
+    "no app crash"
+  ]
+}

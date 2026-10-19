@@ -1,5 +1,7 @@
 """Настоящий изолированный Core19 с синтетическими переходами результата, без LLM/HA."""
 
+import argparse
+import asyncio
 import json
 import os
 import sys
@@ -20,6 +22,9 @@ PRIVATE = "synthetic-raw-error-never-display"
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--hints", action="store_true", help="Синтетическая лента для OS21")
+    args = parser.parse_args()
     previous = Path.cwd()
     with tempfile.TemporaryDirectory(
         prefix="results-android-", dir=ROOT / "core/.pytest_cache"
@@ -40,7 +45,7 @@ def main():
 
         from app.core import clock
         from app.db import base
-        from app.db.models import NotificationRaw
+        from app.db.models import LocalHint, LocalHintState, NotificationRaw
         from app.main import create_app
         from app.schemas import NotificationIn
         from app.services.notification.extraction import (
@@ -53,6 +58,7 @@ def main():
         app = create_app()
         original = app.router.lifespan_context
         control = dict(identity=None, reads=0, mode="normal", commands=0)
+        control.update(hint_id=0, hint_reads=0, hint_mode="normal", hint_delay=0, feed_id=None)
 
         @asynccontextmanager
         async def lifespan(value):
@@ -71,6 +77,9 @@ def main():
                             ),
                         )
                     control["identity"] = identity
+                if args.hints:
+                    await mode("processed")
+                    await add_hint()
                 yield
 
         app.router.lifespan_context = lifespan
@@ -78,6 +87,11 @@ def main():
         @app.middleware("http")
         async def observe(request: Request, next):
             path = request.url.path
+            if path == "/api/v1/hints":
+                control["hint_reads"] += 1
+                await asyncio.sleep(control["hint_delay"])
+                if control["hint_mode"] == "denied":
+                    return JSONResponse({"detail": PRIVATE}, status_code=401)
             if path.startswith("/api/v1/notifications"):
                 control["reads"] += 1
                 if control["mode"] == "denied":
@@ -152,6 +166,47 @@ def main():
                     data = None
                 values["extracted_data_json"] = json.dumps(data) if data else None
                 await session.execute(update(NotificationRaw).where(condition).values(**values))
+            return {"ok": True}
+
+        @app.post("/checks/hints/add")
+        async def add_hint(kind: str = "arrival_delivery"):
+            assert args.hints and kind in {"arrival_delivery", "new_kind"}
+            control["hint_id"] += 1
+            async with base.async_session() as session, session.begin():
+                await session.connection(execution_options={"sqlite_immediate": True})
+                identity = await session.get(LocalHintState, 1)
+                control["feed_id"] = identity.feed_id
+                session.add(
+                    LocalHint(
+                        config_key=app.state.analytics.config_key,
+                        presence_event_id=control["hint_id"],
+                        notification_id=control["identity"],
+                        kind=kind,
+                        created_at=clock.utcnow().replace(tzinfo=None),
+                    )
+                )
+            return {"id": control["hint_id"]}
+
+        @app.post("/checks/hints/mode/{hint_mode}")
+        async def hint_mode(hint_mode: str):
+            assert args.hints and hint_mode in {"normal", "denied"}
+            control["hint_mode"] = hint_mode
+            return {"ok": True}
+
+        @app.post("/checks/hints/delay/{seconds}")
+        async def delay(seconds: int):
+            assert args.hints and 0 <= seconds <= 5
+            control["hint_delay"] = seconds
+            return {"ok": True}
+
+        @app.post("/checks/hints/rotate")
+        async def rotate():
+            assert args.hints
+            async with base.async_session() as session, session.begin():
+                await session.connection(execution_options={"sqlite_immediate": True})
+                identity = await session.get(LocalHintState, 1)
+                identity.feed_id = str(uuid4())
+                control["feed_id"] = identity.feed_id
             return {"ok": True}
 
         try:

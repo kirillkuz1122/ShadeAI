@@ -14,7 +14,9 @@
 
 **OS TASK-19 допроверен:** сохранённый APK8df0ac55… без Gradle, AOSP35/read-only trueCore/synthetic extraction: polling/fields/timezone/unknown/diagnostic/failed/404/20+4pages/STOP/resume/401/prefs PASS,HA0. [Отчёт19](reports/task-19.md), [JSON](reports/task-19-android-os.json). Финальный crash-buffer чистый; прежняя UiAutomator-ошибка была вызвана параллельной диагностикой, не приложением. Свои сервер/AVD остановлены.
 
-**Следующий шаг:** TASK-21 системная доставка подсказки/opt-in/WorkManager/повтор/пауза/настройки на read-only AVD с тем же APK, синтетический настоящийCore, без новой Gradle/моделей. NativeAndroid→GGUF→оба клиента/телефон/Pi/14дней остаются;17задач открыты, этапы не приняты;18:70%/max4.137с. После07:10сводки ждать Кирилла.
+**OS TASK-21 допроверен:** APK8df0ac55…/AOSP35/read-only, trueCore/synthetic feed/настоящие WorkManager+NotificationManager: permissiondeny/opt-in/baseline/фон/repeat/restart/feed/unknown/401pause/resume/disable/revision/privacy PASS,HA0. [Отчёт21](reports/task-21.md), [JSON](reports/task-21-android-os.json). Свои сервер/AVD остановлены, reverse/XML/temporaryDB удалены. Новых Gradle/скачиваний0.
+
+**Следующий шаг:** сверить git/push21. Возможная доступная допроверка — OS boot/forced-idle24 на AOSP сохранённым APK (не аппаратная приёмка Doze/OEM). При нехватке обычной квоты продолжить по подтверждённому будильнику02:00 после01:51, без reset/кредитов; не считать отсутствие квоты закрытием задач. NativeAndroid→GGUF→оба клиента/телефон/Pi/14дней остаются;17задач открыты, этапы не приняты;18:70%/max4.137с. После07:10сводки ждать Кирилла.
 
 Изоляция аналитического seed исправлена отдельно3e74556: исходный Python3.11 462/1FAIL, после остановки collector до seed полный463PASS. [Отчёт](reports/analytics-test-isolation-2026-10-19.md).
 
