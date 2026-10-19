@@ -1,0 +1,24 @@
+{
+  "result": "PASS",
+  "apk_sha256": "8df0ac55f51cfbde21bdf7f1289aca6e041168a5d547d20214ff8fdbdcdf9f16",
+  "api_level": 35,
+  "read_only_avd": true,
+  "synthetic_api": true,
+  "actual_core": false,
+  "physical_phone": false,
+  "pi": false,
+  "native_model": false,
+  "forced_doze": false,
+  "activity_opened_for_recovery": false,
+  "offline_seconds": 48,
+  "observation_elapsed_seconds": 67.456,
+  "checks": [
+    "no unvalidated notification offline",
+    "no receipt offline",
+    "WorkManager scheduled job",
+    "automatic recovery within grace",
+    "one validation and notification",
+    "prefs privacy",
+    "no app crash"
+  ]
+}

@@ -333,6 +333,9 @@ python android/checks/check_results_jvm.py --compile-app
 Отдельный `core/.venv/bin/python android/checks/check_reminder_recovery.py` на свежем fixture проверяет настоящий reboot и первый exact alarm в forced deep IDLE. Он использует сохранённый APK и host alias10.0.2.2, не требует adb reverse. Doze на этом AVD изначально выключен: QA явно включает deep idle, проверяет IDLE и восстанавливает настройку в finally. Постоянный whitelist не добавляется. Activity после boot не открывается; разблокирование без PIN выполняется adb. Итоговый [JSON](../docs/reports/task-24-recovery-os.json) нельзя перезаписывать. Это синтетический API/настоящая Android ОС, не проверка телефона, естественного Doze, частых alarms, Core или HA.
 
 
+Отдельный `core/.venv/bin/python android/checks/check_reminder_offline.py` на новом fixture/одноразовом AVD проверяет alarm при выключенных Wi-Fi/data: без неподтверждённого показа и receipt; после восстановления сети — автоматический retry в grace без открытия Activity. Этот сценарий не включает Doze и не подтверждает телефон/OEM; [OS JSON](../docs/reports/task-24-offline-os.json). Существующий итоговый JSON не перезаписывается.
+
+
 ## Голосовая команда — TASK-25
 
 Экран «Голосовая команда» отдельно запрашивает RECORD_AUDIO; никакого SpeechRecognizer/облачного fallback. Кнопка записи доступна только при включённом/подготовленном Core. AudioRecord записывает до10сек PCM16/16kHz/mono и формирует WAV в RAM; кнопка «Готово» завершает запись, отмена/PAUSE/выход/смена Core останавливают захват и очищают UI. Audio, transcript и ключ не пишутся в SavedState/WorkManager/файлы; ключ по-прежнему только Keystore. Разрешение микрофона не переносит незавершённое согласие на другой Core.

@@ -26,6 +26,14 @@
 
 Ниже сохранена хронология реализации и промежуточных проверок; итог выше имеет приоритет.
 
+## Допроверка 20 октября: сеть отсутствует в момент alarm
+
+Отдельный [OS-протокол offline](task-24-offline-os.json) прошёл на том же готовом APK и новом read-only AVD35/синтетическом API. Перед due выключены Wi-Fi и data; Activity скрыта. За48сек отсутствия сети ни уведомление, ни receipt не появились, API не получил запрос валидации. Android содержит запланированную WorkManager job. После включения Wi-Fi приложение без открытия Activity провело одну валидацию, показало одно уведомление и сохранило receipt, в пределах5-минутного grace. От начала отключения до обнаружения показа — **67.456с**, один прогон, не SLA. Ключ/URL/текст не попали в reminder-prefs, crash-buffer чистый.
+
+Скрипт `android/checks/check_reminder_offline.py` требует свежий `reminder_server.py`, существующий `run_emulator_guarded.py`, emulator-5554/qemu/read-only и отсутствующий итоговый JSON. Сбрасывает только debug Shade, восстанавливает сети/останавливает приложение в finally. Дополнительно ruff PASS; продуктовый код не менялся, повторные Core/Web/Gradle/native-прогоны для QA-only скрипта не запускались. Свои API/AVD остановлены.
+
+Это проверяет краткий offline/recovery при активной ОС. Она **не проверяет** совместный offline+Doze, превышение grace, OEM/телефон, настоящий Core/CalDAV/HA или длительную стабильность. Полная TASK-24 открыта.
+
 ## Принятый программный дизайн
 
 - Календарные напоминания отдельны от delivery hints TASK-21: прежний opt-in не расширять. CALENDAR_REMINDERS_ENABLED=false/lead10мин, только confirmed+busy/non-all-day и свежий snapshot. GET deterministic schedule/validate по ID, без title/location; scope+eventID/revision+lead дают устойчивый ID после рестарта. Окно24ч/grace5мин/до50предстоящих; при переполнении явно не считать выборку полной.
