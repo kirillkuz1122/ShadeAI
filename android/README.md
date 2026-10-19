@@ -340,14 +340,43 @@ python android/checks/check_results_jvm.py --compile-app
 Голос использует отдельный транспортный бюджет45сек/call и40сек/read; остальные API сохраняют10сек. Новые Android-зависимости не добавлялись. Лёгкая проверка `python android/checks/check_results_jvm.py --compile-app`, полный offline guard — `python android/checks/check_gradle_offline.py`. Для OS-проверки после сборки отдельные процессы `core/.venv/bin/python android/checks/voice_server.py`, `python android/checks/run_emulator_guarded.py`, затем `core/.venv/bin/python android/checks/check_voice.py`. Только read-only emulator-5554/qemu, debug Shade очищается в одноразовом слое; Core использует отдельную временную БД и синтетические STT/HA, реальная речь не распознаётся. Host audio выключено. После проверки остановить собственный AVD/сервер. [Отчёт25](../docs/reports/task-25.md).
 
 
-## Временный доступ — подготовка TASK-26
+## Временный доступ — TASK-26
 
-Сетевой owner-контракт/DTO/валидация и4новыхJVMтеста реализованы.54focused JVM и все
-Kotlin/Compose компилируются offline из существующего кэша. Экран выдачи/отзыва,
-controller/lifecycle и FLAG_SECURE ещё не реализованы; кнопки выдачи PIN в APK нет.
-Не использовать DTO сами по себе для сохранения PIN: будущий UI должен держать его
-только в RAM, очищать при PAUSE/выходе/смене Core и блокировать снимки/recents, без
-Room/prefs/SavedState/WorkManager/Clipboard/OS-уведомлений. GET/история не должны
-принимать PIN. [Контракт](../docs/api-spec.md#48-временный-доступ-shade-keypad--core-основа-task-26),
-[проверки/границы](../docs/reports/task-26.md). Ограниченный keypad-токен на телефоне
-владельца не хранится, keypad API в ShadeApi не добавлен.
+Экран «Доступ для доставки» показывает подходящие delivery-результаты Core и
+отдельно загружает исходную карточку. Категория модели не подтверждает доставку:
+владелец проверяет текст, выбирает конкретный замок/окно1–15минут и отмечает два
+согласия. Смена источника/цели/окна/scope сбрасывает решение. Перед create источник
+и политика сверяются заново. Это локальный Shade Keypad→Core→HA unlock, не
+программирование встроенных кодов замка, без внешней рассылки.
+
+PIN выводится один раз только из create-ответа, только в RAM. GET/история PIN не
+принимают; после скрытия он не восстанавливается. Скрыть/выйти/PAUSE/потерять фокус
+окна/сменить Core — очистить PIN и контекст, **не отозвать серверный доступ**.
+Для отзыва есть отдельная кнопка. Отзыв не запирает открытую дверь; dispatching
+нельзя отозвать задним числом. unknown требует ручного осмотра и checked=true.
+Код не идёт в Room/prefs/SavedState/WorkManager/Clipboard/уведомления/логи.
+
+FLAG_SECURE включается до сети на всём маршруте; без protected window выдача
+недоступна. При потере фокуса (в том числе Overview, когда Activity ещё RESUMED)
+контроллер закрывается. При возврате загружается история без PIN. Старые flags
+окна восстанавливаются при выходе. Потерянный POST не повторяется автоматически:
+обновить список и отозвать доступ при необходимости. Ограниченный keypad-токен
+телефон владельца не использует и не хранит.
+
+Проверены64focused JVM и все Kotlin/Compose, финальная offlineAPK/KSP/82JVM/
+lint0errors3warnings3info. Полный AOSP35/read-only сценарий с настоящим Core/fakeHA
+PASS: две фиктивные команды, one-use/отзыв/unknown/focus/401/privacy/screenshot/recents.
+Тесты не заменяют телефон/клавиатуру/замок/Pi.
+[Контракт](../docs/api-spec.md#48-временный-доступ-shade-keypad--core-основа-task-26),
+[отчёт и текущие результаты](../docs/reports/task-26.md).
+
+OS-стенд только на одноразовом read-only AOSP35: сначала
+`python checks/check_gradle_offline.py`, затем guarded AVD
+`python checks/run_emulator_guarded.py`; из корня проекта запустить отдельно
+`core/.venv/bin/python android/checks/access_server.py`, затем
+`core/.venv/bin/python android/checks/check_access.py`. Используются только уже
+имеющиеся SDK/JDK/AVD/кэш и Pillow системного Python для анализа PNG через stdin.
+Стенд очищает debug-приложение только emulator-5554 и работает с временным Core,
+синтетическими доставками/результатом извлечения/fakeHA; не запускать на телефоне
+или против рабочего Core. По завершении остановить свои сервер/AVD. PIN/скриншоты
+не попадают в JSON-отчёт; существующий OS-отчёт не перезаписывается.

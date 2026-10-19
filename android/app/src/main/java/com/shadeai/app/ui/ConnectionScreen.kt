@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
 fun ConnectionScreen(
     state: ConnectionUiState, onUrl: (String) -> Unit, onKey: (String) -> Unit,
     onCheck: () -> Unit, onClear: () -> Unit, onTest: () -> Unit,
-    onSources: () -> Unit, onJournal: () -> Unit, onResults: () -> Unit = {}, onSuggestions: () -> Unit = {}, onCalendar:()->Unit={}, onVoice:()->Unit={},
+    onSources: () -> Unit, onJournal: () -> Unit, onResults: () -> Unit = {}, onSuggestions: () -> Unit = {}, onCalendar:()->Unit={}, onVoice:()->Unit={}, onAccess:()->Unit={},
 ) {
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
@@ -48,6 +48,7 @@ fun ConnectionScreen(
             Text("Подключение к домашнему Core", style = MaterialTheme.typography.titleMedium)
             OutlinedButton(onClick=onCalendar,colors=ButtonDefaults.outlinedButtonColors(contentColor=MaterialTheme.colorScheme.onSurface)){Text("Локальный календарь")}
             OutlinedButton(onClick=onVoice,colors=ButtonDefaults.outlinedButtonColors(contentColor=MaterialTheme.colorScheme.onSurface)){Text("Голосовая команда")}
+            OutlinedButton(onClick=onAccess,colors=ButtonDefaults.outlinedButtonColors(contentColor=MaterialTheme.colorScheme.onSurface)){Text("Доступ для доставки")}
             Text("Zero Cloud · данные остаются в локальной сети", style = MaterialTheme.typography.bodySmall)
             OutlinedButton(onClick = onSources, modifier = Modifier.fillMaxWidth()) {
                 Text("Уведомления и источники")

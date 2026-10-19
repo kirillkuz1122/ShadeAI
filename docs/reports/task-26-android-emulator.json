@@ -1,0 +1,27 @@
+{
+  "result": "PASS",
+  "apk_sha256": "edf8d0126e2cc35425540e36cb1ea9d9d069e73e5eedc8236a14970623bb049e",
+  "api_level": 35,
+  "read_only_avd": true,
+  "actual_core": true,
+  "synthetic_llm_result": true,
+  "synthetic_ha": true,
+  "hardware": false,
+  "ha_unlocks": 2,
+  "screen_body_black_ratio": 1.0,
+  "recents_center_black_ratio": 1.0,
+  "recents_placeholder_similarity": 1.0,
+  "checks": [
+    "explicit owner source/target/two consents",
+    "create does not unlock",
+    "PIN once",
+    "focus/recents clears PIN/source",
+    "FLAG_SECURE screenshot",
+    "recents placeholder unchanged with PIN",
+    "limited keypad one use",
+    "revoke",
+    "unknown manual checked=true",
+    "401 clears",
+    "prefs no PIN/source/plain keys"
+  ]
+}

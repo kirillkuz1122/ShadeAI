@@ -68,6 +68,7 @@ sources = [
     main / "ui/MeetingController.kt",
     main / "ui/VoiceController.kt",
     main / "ui/AccessPresentation.kt",
+    main / "ui/AccessController.kt",
     main / "voice/Wav.kt",
     main / "ui/SuggestionsPresentation.kt",
     main / "hints/HintPlan.kt",
@@ -124,6 +125,7 @@ with tempfile.TemporaryDirectory(prefix="task19-jvm-", dir=ANDROID / ".gradle") 
             "com.shadeai.app.MeetingTest",
             "com.shadeai.app.VoiceTest",
             "com.shadeai.app.AccessTest",
+            "com.shadeai.app.AccessControllerTest",
         ],
         timeout=60,
     )

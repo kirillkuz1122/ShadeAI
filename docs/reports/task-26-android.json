@@ -1,0 +1,31 @@
+{
+  "task": "TASK-26",
+  "offline_guarded": true,
+  "apk_bytes": 10630011,
+  "apk_sha256": "edf8d0126e2cc35425540e36cb1ea9d9d069e73e5eedc8236a14970623bb049e",
+  "jvm": {
+    "tests": 82,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "lint": {
+    "Error": 0,
+    "Warning": 3,
+    "Information": 3
+  },
+  "focused_jvm_tests": 64,
+  "kotlin_compose": "PASS",
+  "ksp_manifest": "PASS",
+  "downloads": false,
+  "hardware": false,
+  "os_acceptance": "PASS",
+  "previous_unaccepted_apk_sha256": [
+    "a09e76b26673a9612339c052b6ebfdc7da435b83d34e134580d2d92c6fa6a39a",
+    "d576f799ec4c44b41a7b0b3bea875fa32940fa9920148e5a5be487fcbf65fe3c"
+  ],
+  "window_focus_loss_fix": true,
+  "result_card_scroll_fix": true,
+  "os_report": "task-26-android-emulator.json",
+  "signature_v2": true
+}

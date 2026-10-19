@@ -1,5 +1,6 @@
 """Одноразовый read-only AVD из существующего SDK, с резервом общего диска/RAM."""
 
+import json
 import os
 import shutil
 import signal
@@ -63,12 +64,23 @@ def main():
         deadline = time.monotonic() + 900
         try:
             while child.poll() is None:
-                if (
-                    shutil.disk_usage(ANDROID).free < 4 * 1024**3
-                    or ram() < 1024**3
-                    or time.monotonic() > deadline
-                ):
-                    print("Стенд останавливается: резерв ресурсов/15 минут", flush=True)
+                free, available = shutil.disk_usage(ANDROID).free, ram()
+                reason = (
+                    "DISK_RESERVE"
+                    if free < 4 * 1024**3
+                    else "RAM_RESERVE"
+                    if available < 1024**3
+                    else "TIME_BUDGET"
+                    if time.monotonic() > deadline
+                    else None
+                )
+                if reason:
+                    print(
+                        json.dumps(
+                            dict(stopped_for=reason, free_bytes=free, available_ram_bytes=available)
+                        ),
+                        flush=True,
+                    )
                     break
                 time.sleep(1)
         except KeyboardInterrupt:
