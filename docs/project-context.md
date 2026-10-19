@@ -8,9 +8,11 @@
 
 **Дополнение TASK-25:** VoiceRoute закрывается также при window-focus loss. Новый APK8df0ac55…:82JVM/APK/lint PASS, AOSP35 настоящий AudioRecord/Core: Overview прекращает запись до STT, возврат не включает микрофон, явная запись работает, текст очищается; STT/HA синтетические, команд0. [JSON](reports/voice-focus-2026-10-19.json). Сервер/AVD остановлены.
 
-**TASK-08 программно проверен, сохраняется отдельным коммитом:** Core production Web dist/default-off/same-origin/CSP/noCDNdocs, systemd/backup timer/journald namespace шаблоны (без установки), WAL backup/новыйrestore/retention/600/700/резерв4GiB.480Core/Python3.14 и480/Python3.11networknone,17новыхтестов/52focused,ruff/Webbuild PASS; настоящий Chromium/Core/restart/restore PASS. Systemd verify только синтаксис в тестовых копиях с существующим Python; /opt target отсутствует, boot/BPF/Pi/RAM не проверены. [Отчёт08](reports/task-08.md), [deploy](../deploy/README.md), [JSON](reports/task-08-loopback.json).
+**TASK-08 отправлен main/origin186fcdf:** production Web/CSP/default-off, systemd/backup/journald шаблоны (без установки), WALbackup/newrestore/retention/600/700/4GiB.480Core/Python3.14 и3.11networknone,ruff/Webbuild/Chromium/Core/restart/restore PASS. [Отчёт08](reports/task-08.md), [deploy](../deploy/README.md).
 
-**Следующий шаг:** TASK-27: ограниченный read-only сбор health/ресурсов и runbook аппаратной/14дневной приёмки.17задач открыты, этапы не приняты;18:70%/max4.137с. Pi/телефон/HA/нативная речь/CalDAV/датчики/длительность остаются. Новых моделей/пакетов нет.
+**TASK-27 программно подготовлен:** [протокол](acceptance.md), stdlib read-only bounded `scripts/acceptance_probe.py`,18новыхтестов на3.14/3.11networknone,полный498Core3.14/ruff PASS. Два реальных GEThealth/proc на компьютере: development_host/2degraded (HAнет)/hardwarefalse/nativefalse/cgroupfalse, maxRSSfamily117MiB **без моделей**, не Pi-budget и не14дней. [Отчёт27](reports/task-27.md), [JSON](reports/task-27-probe.json). Свои процессы/temporaryDB/JSONL удалены.
+
+**Следующий шаг:** при сверке всех открытых критериев обнаружены доступные отдельные OS-проверки19 (экран результата) и21 (системная подсказка). Общие APK/lint82JVM уже проверены26/voice-focus, APK сохранён; использовать его/read-only AVD/синтетический Core без повторной Gradle/загрузок. NativeAndroid→GGUF→оба клиента/реальный телефон/Pi/14дней остаются.17задач открыты, ни один этап не принят;18:70%/max4.137с. После07:10сводки ждать Кирилла.
 
 Изоляция аналитического seed исправлена отдельно3e74556: исходный Python3.11 462/1FAIL, после остановки collector до seed полный463PASS. [Отчёт](reports/analytics-test-isolation-2026-10-19.md).
 

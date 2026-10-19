@@ -19,7 +19,7 @@ KEY = "task08-synthetic-local-owner-key-00001"
 TEXT = "Синтетическая посылка для проверки развёртывания"
 
 
-async def scenario(folder, browser):
+async def scenario(folder, browser, probe=False):
     spec = importlib.util.spec_from_file_location("backup", ROOT / "scripts/sqlite_backup.py")
     backup = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(backup)
@@ -124,6 +124,38 @@ async def scenario(folder, browser):
                     backup.backup, database, folder / "backups"
                 )
                 result["backup"] = metadata
+                if probe:
+                    probe_spec = importlib.util.spec_from_file_location(
+                        "acceptance_probe", ROOT / "scripts/acceptance_probe.py"
+                    )
+                    monitor = importlib.util.module_from_spec(probe_spec)
+                    probe_spec.loader.exec_module(monitor)
+                    output = folder / "metrics/samples.jsonl"
+                    summary = await asyncio.to_thread(
+                        monitor.run,
+                        str(http.base_url) + "/api/v1/health",
+                        output,
+                        samples=2,
+                        interval=1,
+                        pid=child.pid,
+                    )
+                    assert summary["samples"] == 2 and summary["errors"] == 0
+                    assert not summary["hardware_acceptance"]
+                    records = [json.loads(line) for line in output.read_text().splitlines()]
+                    samples = [r for r in records if r["type"] == "sample"]
+                    assert len(samples) == 2 and all(r["family"]["processes"] >= 1 for r in samples)
+                    assert KEY not in output.read_text() and TEXT not in output.read_text()
+                    result["probe"] = {
+                        **summary,
+                        "real_proc": True,
+                        "real_core": True,
+                        "cgroup": False,
+                        "native_model": False,
+                        "max_family_rss_bytes": max(r["family"]["rss_sum_bytes"] for r in samples),
+                        "max_record_bytes": max(
+                            len(line) for line in output.read_bytes().splitlines()
+                        ),
+                    }
                 if browser:
                     cli = [
                         "npx",
@@ -178,11 +210,14 @@ def main():
         "--browser", action="store_true", help="Только уже закэшированный CLI/Chromium"
     )
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--probe", action="store_true", help="Два реальных read-only замера на этом хосте"
+    )
     args = parser.parse_args()
     if args.output.exists():
         parser.error("Отчёт уже существует")
     with tempfile.TemporaryDirectory(prefix="deployment-", dir=ROOT / "core/.pytest_cache") as tmp:
-        result = asyncio.run(scenario(Path(tmp), args.browser))
+        result = asyncio.run(scenario(Path(tmp), args.browser, args.probe))
     args.output.write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps(result))
 

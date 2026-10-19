@@ -1,0 +1,38 @@
+{
+  "hardware": false,
+  "native_model": false,
+  "real_systemd": false,
+  "backup": {
+    "result": "PASS",
+    "bytes": 237568,
+    "sha256": "dae935c529562c6b6ac1a6027d2f87341467d1b9a2d448365d5d5ad1abe367ee",
+    "revision": "0013_access_grants"
+  },
+  "probe": {
+    "samples": 2,
+    "health_ok": 0,
+    "health_degraded": 2,
+    "errors": 0,
+    "discontinuities": 0,
+    "hardware_acceptance": false,
+    "platform": "development_host",
+    "stopped_for": "sample_budget",
+    "elapsed_seconds": 1.0,
+    "real_proc": true,
+    "real_core": true,
+    "cgroup": false,
+    "native_model": false,
+    "max_family_rss_bytes": 122580992,
+    "max_record_bytes": 816
+  },
+  "initial": "PASS",
+  "restart": "PASS",
+  "restore_copy": {
+    "result": "PASS",
+    "bytes": 237568,
+    "sha256": "132404824c02ef443d8f28260290663b1d78c38b2bc80a37cb26d405dfd220d0",
+    "revision": "0013_access_grants"
+  },
+  "restore": "PASS",
+  "result": "PASS"
+}
