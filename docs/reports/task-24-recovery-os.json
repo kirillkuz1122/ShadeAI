@@ -1,0 +1,30 @@
+{
+  "result": "PASS",
+  "apk_sha256": "8df0ac55f51cfbde21bdf7f1289aca6e041168a5d547d20214ff8fdbdcdf9f16",
+  "api_level": 35,
+  "read_only_avd": true,
+  "actual_reboot": true,
+  "actual_alarmmanager": true,
+  "activity_not_opened_for_boot_recovery": true,
+  "forced_doze": true,
+  "deep_idle_initially_enabled": false,
+  "deep_idle_enabled_by_test": true,
+  "permanent_whitelist": false,
+  "synthetic_api": true,
+  "actual_core": false,
+  "physical_phone": false,
+  "pi": false,
+  "native_model": false,
+  "reboot_delay_ms": 1819,
+  "forced_idle_delay_ms": 3103,
+  "checks": [
+    "boot id changed",
+    "recovery GET before Activity",
+    "alarm restored after reboot",
+    "validated background show",
+    "receipt suppresses repeat",
+    "forced deep idle delivery",
+    "prefs privacy",
+    "no app crash"
+  ]
+}

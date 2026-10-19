@@ -13,6 +13,7 @@ state = {
     "due": datetime.now(UTC) + timedelta(hours=1),
     "cancelled": False,
     "validation": 0,
+    "schedule_reads": 0,
     "acks": 0,
     "decisions": 0,
     "approved": False,
@@ -115,9 +116,8 @@ async def status():
 
 @app.get("/api/v1/calendar/reminders")
 async def schedule():
-    return page() | dict(
-        overflow=False, reminders=[] if state["cancelled"] else [item()]
-    )
+    state["schedule_reads"] += 1
+    return page() | dict(overflow=False, reminders=[] if state["cancelled"] else [item()])
 
 
 @app.get("/api/v1/calendar/reminders/{identity}")

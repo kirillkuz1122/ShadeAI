@@ -330,6 +330,8 @@ python android/checks/check_results_jvm.py --compile-app
 
 Проверки без загрузок: `python android/checks/check_results_jvm.py --compile-app`, затем при измеренном запасе `python android/checks/check_gradle_offline.py` (6GiB/2GiB для старта, stop4GiB/768MiB). Для OS-стенда после сборки отдельно запускаются `core/.venv/bin/python android/checks/reminder_server.py`, `python android/checks/run_emulator_guarded.py` и `core/.venv/bin/python android/checks/check_reminders.py`. Последний работает только с emulator-5554/qemu/read-only, очищает лишь debug Shade в одноразовом слое AVD и использует синтетический API8002. Не применять к телефону или эмулятору с нужными данными. По окончании остановить стенд/AVD; guard сам ограничивает сеанс15минутами и резервом4GiB диска/1GiB RAM. Это не проверка настоящего Core/HA/CalDAV/Doze — Core проверяется отдельно в [отчёте24](../docs/reports/task-24.md).
 
+Отдельный `core/.venv/bin/python android/checks/check_reminder_recovery.py` на свежем fixture проверяет настоящий reboot и первый exact alarm в forced deep IDLE. Он использует сохранённый APK и host alias10.0.2.2, не требует adb reverse. Doze на этом AVD изначально выключен: QA явно включает deep idle, проверяет IDLE и восстанавливает настройку в finally. Постоянный whitelist не добавляется. Activity после boot не открывается; разблокирование без PIN выполняется adb. Итоговый [JSON](../docs/reports/task-24-recovery-os.json) нельзя перезаписывать. Это синтетический API/настоящая Android ОС, не проверка телефона, естественного Doze, частых alarms, Core или HA.
+
 
 ## Голосовая команда — TASK-25
 

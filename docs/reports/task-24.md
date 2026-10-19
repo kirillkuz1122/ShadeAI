@@ -1,8 +1,28 @@
 # TASK-24 — напоминания и режим встречи
 
-**Статус:** программный срез реализован и проверен; полная TASK-24 остаётся открытой по телефону/Doze/Pi/реальным HA/CalDAV. Core checkpoint729dd69 и cancellation fix8d34a70 отправлены, эта запись сопровождает клиентский коммит. Следующая доступная программная задача — TASK-25.
+**Статус:** программный срез реализован и проверен; полная TASK-24 остаётся открытой по физическому телефону/OEM/Pi/реальным HA/CalDAV. Core checkpoint729dd69 и cancellation fix8d34a70 отправлены, эта запись сопровождает клиентский коммит. Программные TASK-25–27 уже описаны в отдельных отчётах.
 
-**Итоговые проверки:**397 Core/Python3.14 и3.11 network none,ruff;58 Android JVM/40focused/Kotlin+Compose/offline APK/KSP/manifest/lint0errors3warnings3info; Web build/Node/Chromium320px. Настоящий AOSP35/read-only: фон/receipt/отмена/force-stop→явный запуск/meeting UI/checked ack/privacy PASS, обычное напоминание обнаружено через1870мс после due (один синтетический прогон, не SLA). [OS JSON](task-24-android-emulator.json), [APK SHA-256](task-24-android.json), [Web JSON](task-24-web.json). APK в OS-проверке совпадает с итоговым SHA-256390061d70d451da47cc01326c0335795a696cb0239681bbc3c8802814a362648. Разрешения выданы через adb, не доказательство пользовательского системного диалога. Boot-recovery/Doze/OEM/реальный телефон не проверены. Настоящий Core↔синтетические CalDAV/HA проверен отдельно:2фиктивные HA-команды, [JSON](task-24-core-loopback.json). Нативной модели/реальных календарных данных в этих стендах нет.
+**Итоговые проверки:**397 Core/Python3.14 и3.11 network none,ruff;58 Android JVM/40focused/Kotlin+Compose/offline APK/KSP/manifest/lint0errors3warnings3info; Web build/Node/Chromium320px. Настоящий AOSP35/read-only: фон/receipt/отмена/force-stop→явный запуск/meeting UI/checked ack/privacy PASS, обычное напоминание обнаружено через1870мс после due (один синтетический прогон, не SLA). [OS JSON](task-24-android-emulator.json), [APK SHA-256](task-24-android.json), [Web JSON](task-24-web.json). APK в OS-проверке совпадает с итоговым SHA-256390061d70d451da47cc01326c0335795a696cb0239681bbc3c8802814a362648. Разрешения выданы через adb, не доказательство пользовательского системного диалога. Первоначальный прогон не проверял boot/Doze; отдельная допроверка 20 октября приведена ниже. OEM/реальный телефон не проверены. Настоящий Core↔синтетические CalDAV/HA проверен отдельно:2фиктивные HA-команды, [JSON](task-24-core-loopback.json). Нативной модели/реальных календарных данных в этих стендах нет.
+
+## Допроверка 20 октября: reboot и forced deep idle
+
+На сохранённом APK `8df0ac55…` прошёл отдельный [OS-протокол](task-24-recovery-os.json):
+
+- Первый exact alarm доставлен в принудительном **deep IDLE**, без постоянного добавления Shade в whitelist. NotificationManager и сохранение receipt проверены; после возврата/сверки повтор не появился.
+- Выполнен настоящий `adb reboot`, подтверждён сменой kernel boot-id. После загрузки API получил автоматический запрос расписания, AlarmManager восстановил alarm, уведомление появилось **без открытия Activity**. Сохранились две квитанции.
+- В reminder-prefs не обнаружены ключ, URL и текст встречи; crash-buffer приложения чистый.
+
+Обнаружение уведомления относительно due: **3103 мс** в forced idle и **1819 мс** после reboot. Это два единичных наблюдения с опросом, не точность ОС, гарантия срока или длительная статистика. При reboot экран разблокирован без PIN; сценарий до первого разблокирования не проверен.
+
+В AVD Doze изначально отключён. Первый запуск остановился на предусловии `Unable to go deep idle; not enabled`, не на ошибке приложения. QA теперь явно включает deep idle, проверяет состояние IDLE и восстанавливает исходную настройку в finally. Перезапуск fixture и полный повтор прошли. Нельзя представлять это как естественное наступление Doze на телефоне.
+
+Стенд: AOSP35, read-only AVD, **синтетический FastAPI**, настоящий Android AlarmManager/WorkManager/NotificationManager. Это не настоящий Core/CalDAV/HA, не native-модель и не аппаратная приёмка. HTTP идёт через `10.0.2.2:8002`, поэтому восстановление сети не зависит от `adb reverse`. Разрешения выданы adb. Повторные allow-while-idle alarms в частом Doze, OEM, отключённая сеть при due и длительная эксплуатация остаются непроверенными.
+
+Воспроизведение: отдельные процессы `core/.venv/bin/python android/checks/reminder_server.py` и `python android/checks/run_emulator_guarded.py`, затем `core/.venv/bin/python android/checks/check_reminder_recovery.py`. Требуются чистые счётчики fixture и отсутствующий итоговый JSON; существующий отчёт не перезаписывать. Стенд очищает только debug Shade в одноразовом AVD. Использован готовый APK, Gradle/загрузки не запускались. После прогона собственные API/AVD остановлены.
+
+Повторно прошли **498 Core/Python3.14**, ruff Core/миграций/двух QA-скриптов и production Web build. Эти проверки не означают повторных 82 JVM или нового native-замера.
+
+Основания протокола: [официальная проверка Doze](https://developer.android.com/training/monitoring-device-state/doze-standby), [восстановление alarms после boot](https://developer.android.com/develop/background-work/services/alarms), [адрес host loopback эмулятора](https://developer.android.com/studio/run/emulator-networking). Android ограничивает частоту allow-while-idle; успех первого alarm не подтверждает доставку следующих с той же задержкой.
 
 Ниже сохранена хронология реализации и промежуточных проверок; итог выше имеет приоритет.
 
