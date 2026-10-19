@@ -19,6 +19,7 @@ from app.api.v1 import (
     meeting,
     notifications,
     telemetry,
+    voice,
 )
 from app.core.config import settings
 from app.core.logging import local_logging
@@ -35,6 +36,7 @@ from app.services.notification.maintenance import cleanup, cleanup_loop
 from app.services.notification.worker import NotificationWorker
 from app.services.suggestions.service import SuggestionService
 from app.services.telemetry.collector import TelemetryCollector
+from app.services.voice.service import VoiceService
 
 
 @asynccontextmanager
@@ -60,9 +62,12 @@ async def lifespan(app: FastAPI):
         app.state.meeting = meeting_service
         llm = LocalLLMEngine()
         app.state.llm = llm
+        voice_service = VoiceService(client)
+        app.state.voice = voice_service
         worker = NotificationWorker(llm=llm)
         app.state.notification_worker = worker
         try:
+            await voice_service.start()
             await calendar_service.start()
             await meeting_service.start()
             await collector.start()
@@ -72,6 +77,7 @@ async def lifespan(app: FastAPI):
             llm.start()
             await worker.start()
         except BaseException:
+            await voice_service.close()
             await executor.stop()
             await meeting_service.close()
             await calendar_service.close()
@@ -88,6 +94,7 @@ async def lifespan(app: FastAPI):
         try:
             yield
         finally:
+            await voice_service.close()
             await executor.stop()
             await meeting_service.close()
             await calendar_service.close()
@@ -177,6 +184,7 @@ def create_app() -> FastAPI:
     app.include_router(hints.router, prefix="/api/v1")
     app.include_router(calendar.router, prefix="/api/v1")
     app.include_router(meeting.router, prefix="/api/v1")
+    app.include_router(voice.router, prefix="/api/v1")
 
     return app
 

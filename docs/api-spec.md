@@ -66,7 +66,7 @@ Authorization: Bearer <SHADE_API_KEY>
 | `GET /devices`, `GET /devices/{entity_id}/state`, `POST /devices/{entity_id}/command` | ✅ реализованы (TASK-06) | `core/app/api/v1/devices.py` |
 | `GET /events` | ✅ журнал команд HA (TASK-06) | `core/app/api/v1/events.py` |
 | `GET /telemetry`, `/telemetry/history`, `/telemetry/gaps` | ✅ выбранные датчики HA (TASK-14) | `core/app/api/v1/telemetry.py` |
-| `GET /habits`, `/automations`, `GET/PUT /config`, `POST /voice` | ⏳ запланированы (v0.2–v0.5) | `docs/mvp.md` |
+| `GET /habits`, `/automations`, `GET/PUT /config` | ⏳ запланированы (v0.2–v0.5) | `docs/mvp.md` |
 
 Отличия текущего скелета от целевого контракта:
 
@@ -764,88 +764,35 @@ curl -X PUT "http://<raspberry-pi-ip>:8000/api/v1/config" \
 
 ---
 
-### 4.6. Голосовой ввод и команды (Voice)
+### 4.6. Голос — программный срез TASK-25
 
-Прием голосовых данных со смартфона или микрофонных станций. Поддерживает два формата передачи:
-1. **Бинарный аудиофайл** (`multipart/form-data`) для последующей локальной транскрибации (STT).
-2. **Текстовая команда** (`application/json`), предварительно расшифрованная системным `SpeechRecognizer` на Android-устройстве.
+VOICE_ENABLED=false по умолчанию, VOICE_TARGETS={} — отдельный явный JSON-словарь русских alias→light.*. Например {"свет на кухне":"light.kitchen"}. Это разрешает только turn_on/turn_off после отдельного подтверждения. Фразы «включи/включить/выключи/выключить <точный alias>», нормализация регистра/ё/пробелов; составные/отрицательные/неразрешённые не угадываются. Локальная LLM для этого узкого распознавателя намерения не вызывается; широкий LLM/NLU из целевой архитектуры ещё не реализован.
 
-#### 4.6.1. `POST /voice` — Отправить голосовой ввод
+Все маршруты Bearer. Прежний JSON/multipart/автоматическое выполнение в этом разделе были планом, а не работавшим API. Реализуемый контракт:
 
-##### Вариант А: JSON с готовым текстом команды
+| Метод | Маршрут | Поведение |
+| --- | --- | --- |
+| GET | /voice | version=1,enabled,policy_scope,stt_available,stt_status,requires_confirmation=true,max_audio_seconds=10,targets[{alias,entity_id}],requests[20последних] |
+| POST | /voice | Распознать/подготовить preview; HA не вызывается |
+| GET | /voice/{UUID} | Состояние/история конкретного запроса без транскрипта |
+| POST | /voice/{UUID}/confirm | Strict {policy_scope:64hex,confirmed:true}; pending→dispatching до сети, одна HA-попытка через общий аудит |
+| POST | /voice/{UUID}/cancel | Отменить pending; dispatching→409 VOICE_IN_FLIGHT, нельзя отозвать уже отправленное |
 
-###### Заголовки (Headers)
-| Заголовок | Тип | Обязательный | Описание |
-| :--- | :--- | :--- | :--- |
-| `Authorization` | `string` | Да | `Bearer <SHADE_API_KEY>` |
-| `Content-Type` | `string` | Да | `application/json` |
+Основной POST: Content-Type:audio/wav, X-Request-ID:UUIDv4, raw WAV PCM16/16kHz/mono,0.25–10сек, не более320044байт. RIFF length/формат/реальные frames проверяются, OGG/M4A/FFmpeg/multipart не поддерживаются. Авторизация и single-flight gate выполняются до чтения audio; тело ограничено во время stream, на загрузку5сек. Optional Vosk с заранее подготовленным локальным model_path+SHA-256manifest, без runtime-скачивания/внешней STT. Конфигурация/наличие binding не равны успешному inference; stt_status=configured не является заявлением ready.
 
-###### Тело запроса (Request Body)
-| Поле | Тип | Обязательное | Описание |
-| :--- | :--- | :--- | :--- |
-| `text` | `string` | Да | Расшифрованный текст голосовой команды |
+Вспомогательный диагностический/ручной POST: application/json {request_id:UUIDv4,text:string≤512}, тело≤8192байт. Android SpeechRecognizer для этого не используется, такой ввод не доказывает STT. Максимум один preview/STT одновременно, второй409 VOICE_BUSY. Дубликат того же request_id+hash возвращает имеющийся запрос без нового STT; другой payload409 VOICE_ID_CONFLICT. Scope включает разрешения/модель/политику; изменения409 VOICE_POLICY_CHANGED. Успех200:
 
-###### Пример cURL-запроса
-```bash
-curl -X POST "http://<raspberry-pi-ip>:8000/api/v1/voice" \
-  -H "Authorization: Bearer <SHADE_API_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "text": "Включи подсветку на кухне и сделай теплый свет"
-  }'
-```
-
----
-
-##### Вариант Б: multipart/form-data с аудиофайлом
-
-###### Заголовки (Headers)
-| Заголовок | Тип | Обязательный | Описание |
-| :--- | :--- | :--- | :--- |
-| `Authorization` | `string` | Да | `Bearer <SHADE_API_KEY>` |
-| `Content-Type` | `string` | Да | `multipart/form-data` |
-
-###### Форма данных (Form Data)
-| Поле | Тип | Обязательное | Описание |
-| :--- | :--- | :--- | :--- |
-| `audio` | `file` (binary) | Да | Аудиофайл с записью голоса (`audio/wav`, `audio/ogg`, `audio/m4a`) |
-| `language` | `string` | Нет | Код языка распознавания (по умолчанию `"ru"`) |
-
-###### Пример cURL-запроса
-```bash
-curl -X POST "http://<raspberry-pi-ip>:8000/api/v1/voice" \
-  -H "Authorization: Bearer <SHADE_API_KEY>" \
-  -F "audio=@/path/to/voice_sample.wav;type=audio/wav" \
-  -F "language=ru"
-```
-
----
-
-##### Поля успешного ответа (200 OK)
-| Поле | Тип | Описание |
-| :--- | :--- | :--- |
-| `transcription` | `string` | Распознанный текст голосового ввода |
-| `intent` | `string` | Определенное намерение пользователя (`device_control`, `query_state`, `conversation`) |
-| `action_executed` | `boolean` | Признак успешного автоматического выполнения команды |
-| `execution_result` | `object` | Результат взаимодействия с исполнительным устройством |
-| `response_text` | `string` | Ответный текст ассистента для озвучивания (TTS) или показа в UI |
-
-##### Пример ответа (HTTP 200)
 ```json
-{
-  "transcription": "Включи подсветку на кухне и сделай теплый свет",
-  "intent": "device_control",
-  "action_executed": true,
-  "execution_result": {
-    "entity_id": "light.kitchen_under_cabinet",
-    "state": "on",
-    "color_temp": 3000
-  },
-  "response_text": "Подсветка на кухне включена в теплом спектре"
-}
+{"id":"3c4adcd1-e926-4a61-b9b1-1502b2d36aca","policy_scope":"<64hex>","entity_id":"light.kitchen","action":"turn_on","alias":"свет на кухне","state":"pending","error_code":null,"event_id":null,"new_state":null,"state_observed":false,"created_at":"2026-10-19T12:00:00Z","expires_at":"2026-10-19T12:01:00Z","updated_at":"2026-10-19T12:00:00Z","transcription":"включи свет на кухне"}
 ```
 
----
+Транскрипт только в первом preview-ответе, в GET/дубликатах null. Аудио/распознанный текст не сохраняются на диск/в БД/логи; сохраняются request UUID/hash/настройка цели/действие/состояние/аудит, максимум1000строк/7дней. При полном лимите409 VOICE_CAPACITY, раннее удаление ради обхода дедупликации не выполняется. Дедупликация ограничена этим сроком хранения.
+
+Preview живёт60сек, подтверждение обязательно true bool (не1/строка). States: pending,dispatching,accepted,failed,unknown,cancelled,expired. accepted означает принятие HA, state_observed/new_state — отдельное наблюдение, не гарантия желаемого физического результата. Повтор confirm терминального запроса не вызывает HA. Timeout/неподтверждённая фиксация/рестарт dispatching→unknown, автоповтора нет; pending при рестарте отменяется. Сеть/CPU вне DB-транзакции. После неизвестного результата проверить устройство/журнал, не создавать скрытый повтор.
+
+Ошибки только фиксированные коды:401;408 VOICE_UPLOAD_TIMEOUT/INTERRUPTED;413 VOICE_BODY_TOO_LARGE;415 VOICE_UNSUPPORTED_MEDIA;422 VOICE_BAD_AUDIO/BAD_INPUT/BAD_REQUEST_ID/UNSUPPORTED/UNRECOGNIZED;409 BUSY/ID_CONFLICT/POLICY_CHANGED/EXPIRED/IN_FLIGHT/CAPACITY;503 VOICE_DISABLED/UNAVAILABLE/CLOSED/RESULT_UNCONFIRMED или STT_NOT_CONFIGURED/RESOURCE_LIMIT/FAILED/BAD_RESPONSE/CLOSED;504 STT_TIMEOUT. Prefix VOICE_ либо STT_ как показано; raw input/native error не выдаются.
+
+STT child≤1 одновременно, default RLIMIT_AS768MiB (256..1024), timeout30сек (5..45), CPU cap; родитель проверяет Linux/cgroup доступную память до старта (лимит+256MiB) и во время (резерв256MiB), завершает/reap при timeout/cancel/дефиците. Это не доказательство общего RSS-бюджета Pi4GB или распознавания настоящей речи: binding/model отсутствуют на текущем стенде, нативные метрики/телефон/HA остаются открытыми. [Отчёт25](reports/task-25.md).
 
 ### 4.7. Локальный календарь — программная TASK-23
 

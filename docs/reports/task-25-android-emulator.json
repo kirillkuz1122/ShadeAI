@@ -1,0 +1,27 @@
+{
+  "result": "PASS",
+  "apk_sha256": "f3d8f14971862d2141680ea91bc109216263d8f30fb7b8381b8a45410cdbfb84",
+  "api_level": 35,
+  "read_only_avd": true,
+  "actual_core": true,
+  "native_stt": false,
+  "synthetic_ha": true,
+  "physical_phone": false,
+  "stt_calls": 2,
+  "pcm_frames": [
+    89344,
+    89088
+  ],
+  "ha_commands": 2,
+  "checks": [
+    "permission gate",
+    "AudioRecord WAV bounds",
+    "preview does not execute",
+    "explicit confirmed=true",
+    "GET does not replay",
+    "unknown",
+    "Pause stops capture/clears speech",
+    "401 clears",
+    "prefs no speech/key"
+  ]
+}

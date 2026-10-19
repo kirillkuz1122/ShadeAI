@@ -1,0 +1,13 @@
+{
+  "synthetic": true,
+  "native_stt": false,
+  "native_llm": false,
+  "hardware": false,
+  "raw_wav_and_explicit_confirmation": "PASS",
+  "uuid_dedupe": "PASS",
+  "timeout_unknown_no_retry": "PASS",
+  "durable_without_audio_or_transcript": "PASS",
+  "authentication": "PASS",
+  "restart_no_replay": "PASS",
+  "synthetic_ha_commands": 2
+}

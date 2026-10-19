@@ -1,0 +1,21 @@
+{
+  "offline": true,
+  "apk_sha256": "f3d8f14971862d2141680ea91bc109216263d8f30fb7b8381b8a45410cdbfb84",
+  "apk_bytes": 10587192,
+  "junit": {
+    "tests": 68,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "focused_jvm": 50,
+  "lint": {
+    "Error": 0,
+    "Warning": 3,
+    "Information": 3
+  },
+  "physical_phone": false,
+  "emulator_checked": true,
+  "native_stt": false,
+  "apk_signature_v2": true
+}

@@ -59,6 +59,7 @@ class MainActivity : ComponentActivity() {
         sources = ViewModelProvider(this)[NotificationSourcesViewModel::class.java]
         val journal = ViewModelProvider(this)[JournalViewModel::class.java]
         val results = ViewModelProvider(this)[CoreResultsViewModel::class.java]
+        val voice = ViewModelProvider(this)[com.shadeai.app.ui.VoiceViewModel::class.java]
         val calendar = ViewModelProvider(this)[CalendarViewModel::class.java]
         val suggestions = ViewModelProvider(this)[SuggestionsViewModel::class.java]
         setContent {
@@ -70,6 +71,7 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(hintNavigation){if(hintNavigation>0)screen="suggestions"}
                 BackHandler(screen != "connection") { screen = "connection" }
                 when (screen) {
+                    "voice" -> com.shadeai.app.ui.VoiceRoute(voice){screen="connection"}
                     "calendar" -> CalendarRoute(calendar){screen="connection"}
                     "suggestions" -> SuggestionsRoute(suggestions,{screen="connection"},{id->results.select(id);screen="results"})
                     "results" -> CoreResultsRoute(results) { screen = "connection" }
@@ -80,7 +82,7 @@ class MainActivity : ComponentActivity() {
                     else -> ConnectionScreen(state, model::editUrl, model::editKey,
                         model::saveAndCheck, model::clearKey, model::sendTest,
                         onSources = { sources.refresh(); screen = "sources" }, onJournal = { screen = "journal" },
-                        onResults = { screen = "results" }, onSuggestions = {screen="suggestions"},onCalendar={screen="calendar"})
+                        onResults = { screen = "results" }, onSuggestions = {screen="suggestions"},onCalendar={screen="calendar"},onVoice={screen="voice"})
                 }
             }
         }

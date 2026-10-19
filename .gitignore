@@ -47,3 +47,11 @@ android/.kotlin/
 *.swp
 .DS_Store
 Thumbs.db
+
+# Локальные STT bundles, включая manifest (не скачиваются рантаймом)
+core/models/vosk*/
+core/models/stt/
+
+# Все форматы локальных моделей и их распакованные каталоги
+core/models/*
+!core/models/.gitkeep

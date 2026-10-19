@@ -13,6 +13,8 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.Header
+import okhttp3.RequestBody
 import java.io.IOException
 import java.net.Proxy
 import java.util.concurrent.TimeUnit
@@ -20,6 +22,17 @@ import java.util.concurrent.TimeUnit
 class MissingCredentialsException : IOException("Не задан ключ Core")
 
 interface ShadeApi {
+    @GET("voice")
+    suspend fun voice():CoreVoice
+    @POST("voice")
+    suspend fun prepareVoice(@Header("X-Request-ID")id:String,@Body wav:RequestBody):CoreVoiceRequest
+    @GET("voice/{id}")
+    suspend fun voiceState(@Path("id")id:String):CoreVoiceRequest
+    @POST("voice/{id}/confirm")
+    suspend fun confirmVoice(@Path("id")id:String,@Body body:VoiceConfirmation):CoreVoiceRequest
+    @POST("voice/{id}/cancel")
+    suspend fun cancelVoice(@Path("id")id:String):CoreVoiceRequest
+
     @GET("calendar/meeting")
     suspend fun meetingState():CoreMeetingPage
     @GET("calendar/events/{id}/meeting")
@@ -84,10 +97,12 @@ interface ShadeApi {
             .connectionPool(ConnectionPool(0, 1, TimeUnit.MINUTES))
             .build()
 
-        fun create(baseUrl: String, apiKey: String): ShadeApi {
+        fun create(baseUrl: String, apiKey: String, voice:Boolean=false): ShadeApi {
             require(apiKey.isEmpty() || ServerAddress.validKey(apiKey)) { "Некорректный ключ Core" }
             val url = ServerAddress.normalize(baseUrl).toHttpUrl()
-            val client = transport.newBuilder().addInterceptor { chain ->
+            val builder = transport.newBuilder()
+            if(voice)builder.callTimeout(45,TimeUnit.SECONDS).readTimeout(40,TimeUnit.SECONDS)
+            val client = builder.addInterceptor { chain ->
                 val request = chain.request()
                 if (request.url.scheme != url.scheme || request.url.host != url.host || request.url.port != url.port) {
                     throw IOException("Адрес запроса отличается от настроенного Core")

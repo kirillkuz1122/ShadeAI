@@ -275,3 +275,22 @@ class MeetingLog(Base):
     reason: Mapped[str] = mapped_column(Text, nullable=False)
     event_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
+class VoiceRequest(Base):
+    __tablename__ = "voice_requests"
+    __table_args__ = (Index("ix_voice_requests_created_at", "created_at"),)
+    id: Mapped[str] = mapped_column(Text, primary_key=True)
+    payload_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    policy_scope: Mapped[str] = mapped_column(Text, nullable=False)
+    entity_id: Mapped[str] = mapped_column(Text, nullable=False)
+    action: Mapped[str] = mapped_column(Text, nullable=False)
+    alias: Mapped[str] = mapped_column(Text, nullable=False)
+    state: Mapped[str] = mapped_column(Text, nullable=False)
+    error_code: Mapped[str | None] = mapped_column(Text, nullable=True)
+    event_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    new_state: Mapped[str | None] = mapped_column(Text, nullable=True)
+    state_observed: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)

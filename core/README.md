@@ -409,3 +409,21 @@ MEETING_MODE_ENABLED=false,MEETING_MODE_ALLOWED_SWITCHES=[]: до5 выделе�
 ### Отмена записи телеметрии
 
 `TelemetryStore.gap/checkpoint/write` завершают уже начатую короткую DB-транзакцию перед передачей отмены владельцу. Это предотвращает осиротевший SQLite writer при остановке во время native BEGIN. `collector.stop()` нужно дождаться до `engine.dispose()`; защита не распространяется на сеть или HA-команды. Подробности и воспроизведение — [отчёт](../docs/reports/sqlite-cancellation-2026-10-19.md).
+
+
+## Локальный голос — программный срез TASK-25
+
+По умолчанию VOICE_ENABLED=false, VOICE_TARGETS={}. Отдельное разрешение целей: например `VOICE_TARGETS={"свет на кухне":"light.kitchen"}`. Реализованы только «включи/выключи <точный alias>» и отдельное подтверждение результата на экране; сложные фразы/LLM-NLU/ворота/wake word не реализованы. До подтверждения HA не вызывается. UUID и policy_scope защищают повтор, timeout/in-flight остаётся unknown без новой отправки. Состояние и последние20запросов доступны в Android; в БД/логах нет аудио/транскрипта.
+
+STT optional: [requirements-voice.txt](requirements-voice.txt), Vosk0.3.45 и заранее подготовленная локальная small ru модель. В этой сессии **ничего не установлено/не скачано**, модели нет, настоящий STT не проверен. При текущем дефиците диска не устанавливать автоматически. После появления измеренного запаса оператор отдельно подготавливает модель из [официального списка](https://alphacephei.com/vosk/models), проверяет происхождение/лицензию и делает manifest:
+
+```bash
+cd core
+.venv/bin/python -m app.services.voice.model_manifest models/vosk-small-ru
+```
+
+Команда не скачивает ничего; сохраняет `shade-model.json` и печатает егоSHA256. Затем явно задаются VOICE_MODEL_PATH, VOICE_MODEL_MANIFEST_SHA256 и VOICE_ENABLED=true. Все форматы моделей/каталоги под core/models игнорируются, .gitkeep сохранён. Model вызывается только с local path, без выбора language/model_name и download API. Child проверяет состав/хеши bundle,≤256файлов/192MiB; файл manifest≤64KiB. Наличие binding/path даёт configured, не доказательство native-ready.
+
+Linux child одноразовый, stdio bounded, 1параллельный STT, default virtual-memory cap768MiB/CPU/timeout30сек, не наследует секреты/proxy; Python-сеть отключена. До запуска нужен доступный RAM≥cap+256MiB, во время сохраняется резерв256MiB с учётом cgroup. CPU/декодирование/хеширование вне HTTP event loop. Timeout/cancel/resource-limit завершают и reap child. RLIMIT_AS и MemAvailable не заменяют измерение совместного RSS/температуры Pi4GB с LLM/HA; оно открыто. Общая LLM/notification queue не выгружается и не переигрывается голосом.
+
+Проверки: `.venv/bin/python -m pytest -q tests/test_voice.py tests/test_voice_engine.py`; настоящий HTTP WAV/Core↔фиктивныйHA/restart с **синтетическим STT** — `.venv/bin/python checks/check_voice.py --output ../docs/reports/<новый-файл>.json`. Существующий отчёт не перезаписывается. [Контракт](../docs/api-spec.md#46-голос--программный-срез-task-25), [отчёт25](../docs/reports/task-25.md), [loopback](../docs/reports/task-25-loopback.json). Ручной JSON-ввод в API является диагностическим; это не проверка микрофона или STT.

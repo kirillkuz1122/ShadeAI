@@ -48,10 +48,50 @@ class Settings(BaseSettings):
     calendar_reminders_enabled: bool = False
     calendar_reminder_lead_minutes: int = Field(default=10, ge=1, le=120)
     calendar_timeout_seconds: int = Field(default=10, ge=1, le=30)
+    voice_enabled: bool = False
+    voice_targets: dict[str, str] = Field(default_factory=dict, max_length=20)
+    voice_model_path: str | None = Field(default=None, repr=False)
+    voice_model_manifest_sha256: str | None = None
+    voice_memory_limit_mb: int = Field(default=768, ge=256, le=1024)
+    voice_timeout_seconds: int = Field(default=30, ge=5, le=45)
     event_retention_days: int = Field(default=90, ge=1, le=365)
     log_dir: str = "./logs"
     log_max_bytes: int = Field(default=1_048_576, ge=1024, le=10_485_760)
     log_backup_count: int = Field(default=3, ge=1, le=10)
+
+    @field_validator("voice_model_path", "voice_model_manifest_sha256", mode="before")
+    @classmethod
+    def empty_voice_model(cls, value):
+        return None if value == "" else value
+
+    @field_validator("voice_targets")
+    @classmethod
+    def voice_aliases(cls, value):
+        from app.services.voice.intent import normalize
+
+        result = {}
+        for alias, entity in value.items():
+            if not re.fullmatch(r"[а-яёА-ЯЁ][а-яёА-ЯЁ -]{0,63}", alias) or not re.fullmatch(
+                r"light\.[a-z0-9_]{1,249}", entity
+            ):
+                raise ValueError("Нужны русские alias и конкретные light entity_id")
+            normalized = normalize(alias)
+            if normalized in result:
+                raise ValueError("Alias после нормализации должны различаться")
+            result[normalized] = entity
+        return result
+
+    @model_validator(mode="after")
+    def voice_configuration(self):
+        if self.voice_enabled and not self.voice_targets:
+            raise ValueError("Голосу нужны явно разрешённые цели")
+        if bool(self.voice_model_path) != bool(self.voice_model_manifest_sha256):
+            raise ValueError("Нужны локальный путь и SHA-256 manifest вместе")
+        if self.voice_model_manifest_sha256 and not re.fullmatch(
+            r"[0-9a-f]{64}", self.voice_model_manifest_sha256
+        ):
+            raise ValueError("Неверный SHA-256 manifest")
+        return self
 
     @field_validator("ha_telemetry_entities")
     @classmethod
