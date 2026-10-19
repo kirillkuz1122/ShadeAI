@@ -25,6 +25,8 @@ NOW = datetime(2026, 11, 12, 0, tzinfo=UTC)
 
 
 def configure(client, monkeypatch):
+    # Синтетическая история не должна пересекаться с фоновым writer gap.
+    client.portal.call(client.app.state.telemetry.stop)
     monkeypatch.setattr(settings, "ha_telemetry_entities", [ENTITY])
     monkeypatch.setattr(settings, "analytics_presence_entity", ENTITY)
     monkeypatch.setattr(settings, "analytics_timezone", "UTC")
