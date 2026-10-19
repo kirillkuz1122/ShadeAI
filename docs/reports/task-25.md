@@ -34,3 +34,19 @@ Preview подтверждается только с текущим policy_scope
 Core428/Python3.14 иruff PASS.31новых voice/engine тестов: WAV bounds, строгие фразы/согласие/ID/policy/expiry/cancel/restart/timeout/audit/result-write и конкурентный confirm без DB-lock во время HA; синтетический stdio child проверяет закрытое окружение, busy/cancel/reap/timeout/RAM/manifest. Настоящего Vosk inference не было. Python3.11 network none перепроверяется.
 
 Android AudioRecord/PCM/WAV/controller/экран/RECORD_AUDIO/отдельный STT-timeout написаны.50focused JVM и все Kotlin/Compose PASS: raw WAV/Bearer/UUID/confirmed=true, STOP/сменаCore/отмена до микрофона/401/unknown без повтора. Микрофон работает только пока экран RESUMED, данные не идут в SavedState/WorkManager/файлы. Штатные APK/KSP/manifest/JVM/lint проверяются; OS-микрофон/доставкаWAV/реальныйSTT ещё не приняты. Кэш временно нужен; новых загрузок нет, диск~6.5GiB.
+
+
+## Уточнение приватности 19 октября: потеря фокуса
+
+По результату TASK-26 обнаружен риск: Overview может оставлять Activity RESUMED,
+поэтому одного ON_PAUSE недостаточно. VoiceRoute теперь закрывает recorder/job и
+очищает текст также при потере фокуса окна; возврат открывает только экран, запись
+требует нового явного нажатия. Старое поведение микрофона отдельно не воспроизводилось.
+
+Новый APK 8df0ac55…: offline Kotlin/Compose/APK/82JVM/lint PASS. На read-only AOSP35
+проверен настоящий AudioRecord: через1с после Overview app-op не running, спустя10с
+STT вызовов0; возврат не записывает, новая явная запись даёт1синтетический STT-вызов,
+HA-команд0. Второй Overview очищает транскрипт. Core настоящий, STT/HA синтетические,
+нативная речь/телефон/Pi не проверены. [JSON](voice-focus-2026-10-19.json),
+воспроизведение: voice_server.py + check_voice_focus.py через Corevenv, только
+одноразовый read-only AVD. Свои сервер/AVD остановлены.

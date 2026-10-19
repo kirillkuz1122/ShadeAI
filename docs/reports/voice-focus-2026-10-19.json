@@ -1,0 +1,25 @@
+{
+  "result": "PASS",
+  "apk_sha256": "8df0ac55f51cfbde21bdf7f1289aca6e041168a5d547d20214ff8fdbdcdf9f16",
+  "api_level": 35,
+  "read_only_avd": true,
+  "actual_audio_record": true,
+  "actual_core": true,
+  "native_stt": false,
+  "synthetic_stt": true,
+  "synthetic_ha": true,
+  "hardware": false,
+  "stt_calls": 1,
+  "ha_commands": 0,
+  "checks": [
+    "Overview cancels recording before STT",
+    "audio app-op not running after1s",
+    "resume does not record",
+    "new explicit recording works",
+    "Overview clears transcript"
+  ],
+  "jvm_tests": 82,
+  "jvm_failures": 0,
+  "offline_apk_lint": "PASS",
+  "apk_bytes": 10630887
+}

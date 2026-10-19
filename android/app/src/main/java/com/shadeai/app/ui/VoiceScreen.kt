@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -23,17 +24,23 @@ fun VoiceRoute(model:VoiceViewModel,onBack:()->Unit){
     val state by model.state.collectAsStateWithLifecycle()
     val context=LocalContext.current
     val lifecycle=LocalLifecycleOwner.current.lifecycle
+    val focused=LocalWindowInfo.current.isWindowFocused
+    val currentFocused by rememberUpdatedState(focused)
     var micGranted by remember{mutableStateOf(ContextCompat.checkSelfPermission(context,Manifest.permission.RECORD_AUDIO)==PackageManager.PERMISSION_GRANTED)}
     val permission=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()){granted->micGranted=granted;if(!granted)model.denied()}
     DisposableEffect(model,lifecycle){
         val observer=LifecycleEventObserver{_,event->when(event){
-            Lifecycle.Event.ON_RESUME->{micGranted=ContextCompat.checkSelfPermission(context,Manifest.permission.RECORD_AUDIO)==PackageManager.PERMISSION_GRANTED;model.start()}
+            Lifecycle.Event.ON_RESUME->{micGranted=ContextCompat.checkSelfPermission(context,Manifest.permission.RECORD_AUDIO)==PackageManager.PERMISSION_GRANTED;if(currentFocused)model.start()}
             Lifecycle.Event.ON_PAUSE->model.close()
             else->Unit
         }}
         lifecycle.addObserver(observer)
-        if(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))model.start()
+        if(currentFocused && lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))model.start()
         onDispose{lifecycle.removeObserver(observer);model.close()}
+    }
+    LaunchedEffect(model,focused,lifecycle){
+        if(!focused)model.close()
+        else if(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))model.start()
     }
     val buttons=ButtonDefaults.outlinedButtonColors(contentColor=MaterialTheme.colorScheme.onSurface)
     val busy=state.phase in setOf("loading","preparing","recording","recognizing","executing")
