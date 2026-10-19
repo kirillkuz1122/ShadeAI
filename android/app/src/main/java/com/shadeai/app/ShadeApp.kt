@@ -43,10 +43,18 @@ class ShadeApp : Application() {
             private set
     }
 
+    private val reminderSettings = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if(key=="delivery_revision")com.shadeai.app.reminders.ReminderDelivery.checkNow(this)
+    }
+
     override fun onCreate() {
         super.onCreate()
         instance = this
         delivery.start()
+        getSharedPreferences("shade_prefs",MODE_PRIVATE).registerOnSharedPreferenceChangeListener(reminderSettings)
+        com.shadeai.app.reminders.ReminderDelivery.start(this)
+        if(com.shadeai.app.reminders.ReminderPrefs.items(this).isNotEmpty())
+            com.shadeai.app.reminders.ReminderDelivery.checkNow(this)
         getSystemService(ConnectivityManager::class.java).registerNetworkCallback(
             NetworkRequest.Builder().build(), object : ConnectivityManager.NetworkCallback() {
                 override fun onAvailable(network: Network) { delivery.networkAvailable() }

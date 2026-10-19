@@ -1,0 +1,27 @@
+{
+  "result": "PASS",
+  "apk_sha256": "390061d70d451da47cc01326c0335795a696cb0239681bbc3c8802814a362648",
+  "normal_delay_ms": 1870,
+  "api_level": 35,
+  "read_only_avd": true,
+  "permissions_granted_by_adb": true,
+  "boot_recovery_checked": false,
+  "synthetic_api": true,
+  "physical_phone": false,
+  "pi": false,
+  "doze_checked": false,
+  "checks": [
+    "exact permission gate",
+    "explicit opt-in",
+    "AlarmManager background delivery",
+    "validate before show",
+    "same-time receipt suppresses repeat",
+    "cancelled event skipped",
+    "force-stop then explicit launch recovers",
+    "meeting explicit targets",
+    "checked ack serialized",
+    "prefs no key or calendar text"
+  ],
+  "validations": 3,
+  "notifications": 1
+}

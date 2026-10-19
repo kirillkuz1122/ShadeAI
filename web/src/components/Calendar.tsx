@@ -1,3 +1,4 @@
+import {MeetingControl,MeetingJournal} from "./Meeting";
 import {useCallback,useEffect,useRef,useState} from "react";
 import {api,ProtocolError} from "../api/client";
 import {calendarStatus,calendarTime,knownCalendarPage} from "../api/calendar";
@@ -41,10 +42,12 @@ export function Calendar({apiKey}:{apiKey:string}) {
         <p className="help">Последняя синхронизация: {state.data.last_success ? new Intl.DateTimeFormat("ru-RU",{timeZone:state.data.timezone,dateStyle:"short",timeStyle:"short"}).format(new Date(state.data.last_success)) : "ещё не выполнялась"}. Часовой пояс: {state.data.timezone}. Режим встречи и доставка напоминаний включаются отдельно.</p>
         {state.data.events.length ? <ul className="record-list">{state.data.events.map(event=><li className="record-copy" key={event.id}>
           <strong>{event.summary || "Событие без названия"}</strong><p>{calendarTime(event,state.data!.timezone)}</p>
+          <MeetingControl apiKey={apiKey} event={event} stale={!!state.error || state.data!.stale}/>
           {event.location && <p>{event.location}</p>}<small>{calendarStatus[event.status]}{event.busy?" · Время занято":""}</small>
         </li>)}</ul> : <p className="empty">В этом окне событий нет.</p>}
         <Pager offset={offset} total={state.data.total} loading={state.loading} onChange={setOffset} pageSize={50}/>
       </>}
     </>}
+    <MeetingJournal apiKey={apiKey}/>
   </section>;
 }

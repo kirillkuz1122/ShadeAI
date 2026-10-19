@@ -1,0 +1,15 @@
+{
+  "result": "PASS",
+  "checks": [
+    "explicit targets",
+    "scope pinned",
+    "409 not retried",
+    "stale disables approval, allows disable",
+    "unknown checked ack",
+    "320px",
+    "401 clears"
+  ],
+  "posts": 4,
+  "errors": [],
+  "external": []
+}

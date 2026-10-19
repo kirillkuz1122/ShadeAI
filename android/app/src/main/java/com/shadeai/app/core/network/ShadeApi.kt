@@ -20,6 +20,20 @@ import java.util.concurrent.TimeUnit
 class MissingCredentialsException : IOException("Не задан ключ Core")
 
 interface ShadeApi {
+    @GET("calendar/meeting")
+    suspend fun meetingState():CoreMeetingPage
+    @GET("calendar/events/{id}/meeting")
+    suspend fun meeting(@Path("id")id:String):CoreMeeting
+    @POST("calendar/events/{id}/meeting")
+    suspend fun decideMeeting(@Path("id")id:String,@Body body:MeetingDecision):CoreStatus
+    @POST("calendar/meeting/leases/{entity}/ack")
+    suspend fun acknowledgeMeeting(@Path("entity")entity:String,@Body body:MeetingAck):CoreStatus
+
+    @GET("calendar/reminders")
+    suspend fun reminders():CoreReminderPage
+    @GET("calendar/reminders/{id}")
+    suspend fun reminder(@Path("id")id:String):CoreReminderPage
+
 
     @GET("calendar/events")
     suspend fun calendar(@Query("offset")offset:Int,@Query("include_inactive")inactive:Boolean,@Query("limit")limit:Int=50):CoreCalendarPage

@@ -297,7 +297,7 @@ flowchart LR
 
 #### TASK-24 — Напоминания и режим встречи
 
-- **Уже есть:** durable календарь23. Core-основа24: deterministic reminders/validate, явные планы/общие DND-leases/restore/unknown, миграция0011/API.394 Core на двух Python, loopback2команды вымышленномуHA. [Промежуточный отчёт](reports/task-24.md). Android exactAlarm/opt-in и клиентский UI режима ещё не написаны, TASK-24 в работе.
+- **Уже есть:** durable календарь23. Core24: deterministic reminders/validate, явные планы/общие DND-leases/restore/unknown, миграция0011/API; Android отдельный opt-in/exactAlarm/валидация/recovery/receipt, Android/Web UI явных целей/disable/unknown ack.397 Core на двух Python, loopback2команды вымышленномуHA;58 JVM/APK/lint,40focused,Web/Chromium. AOSP35/read-only фон/отмена/restart/meeting UI PASS (синтетический API); телефон/Doze/boot/Pi/реальные HA/CalDAV открыты. [Отчёт](reports/task-24.md). Полная TASK-24 не принята по железу.
 - [ ] **Сделать:** реализовать планирование напоминаний и локальную доставку на Android; восстановление после перезапуска и обработку недоступного телефона; подтверждаемый режим «Не беспокоить» для выбранных устройств на время встречи, с последующим восстановлением состояния.
 - **Готово, когда:** напоминание приходит в заданное время без облака, отменённое событие не напоминается, повтор не дублируется; выбранный режим дома корректно включается и снимается.
 - **Зависимости:** TASK-21–23. **Область:** core, android, docs.

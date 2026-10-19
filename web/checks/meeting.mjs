@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import ts from 'typescript';
+const code=ts.transpileModule(readFileSync(new URL('../src/api/meeting.ts',import.meta.url),'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText;
+const {knownMeetingView,knownMeetingPage}=await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
+const policy={version:1,enabled:true,allowed_targets:['switch.dnd'],max_duration_seconds:28800};
+const view={policy,event_id:'cal_'+'a'.repeat(32),event_revision:1,policy_scope:'b'.repeat(64),eligible:true,stale:false,starts_at:'2026-10-19T04:00:00Z',ends_at:'2026-10-19T05:00:00Z',status:'not_approved',targets:[],approval_valid:false,started_targets:[]};
+const lease={entity_id:'switch.dnd',generation:'11111111-1111-1111-1111-111111111111',state:'unknown',reason:null,members:[],event_id:null,updated_at:'2026-10-19T04:00:00Z'};
+const page={status:'ready',policy,plans:[],leases:[lease],history:[]};
+assert(knownMeetingView(view));assert(knownMeetingPage(page));
+for(const bad of [{...view,policy:{...policy,version:2}},{...view,event_id:'bad'},{...view,policy_scope:'bad'},{...view,started_targets:['light.unsafe']},{...view,eligible:1}])assert(!knownMeetingView(bad));
+for(const bad of [{...page,leases:[null]},{...page,leases:[{...lease,generation:'bad'}]},{...page,leases:[{...lease,state:'private-future'}]},{...page,history:[{id:1,entity_id:'switch.dnd',state:'unknown',created_at:'bad'}]}])assert(!knownMeetingPage(bad));
+console.log('PASS: meeting policy/scope/targets/unknown/lease/clock guards');

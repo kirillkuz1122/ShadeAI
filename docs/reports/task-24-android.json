@@ -1,0 +1,25 @@
+{
+  "offline": true,
+  "gradle": "8.10.2",
+  "jdk": 17,
+  "max_workers": 1,
+  "heap_mib": 768,
+  "apk_bytes": 10556304,
+  "apk_sha256": "390061d70d451da47cc01326c0335795a696cb0239681bbc3c8802814a362648",
+  "junit": {
+    "tests": 58,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "lint": {
+    "Error": 0,
+    "Warning": 3,
+    "Information": 3
+  },
+  "apk_path": "android/app/build/outputs/apk/debug/app-debug.apk",
+  "device_checked": false,
+  "apk_signature_v2": true,
+  "emulator_checked": true,
+  "physical_phone_checked": false
+}

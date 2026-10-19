@@ -1,3 +1,4 @@
+import type { MeetingView, MeetingPage } from "./meeting";
 import type { CalendarPage } from "./calendar";
 import type { AutomationPage, AutomationRule, AutomationDetail, HintPage, RunPage } from "./automation";
 const API_KEY_STORAGE = "shade_api_key";
@@ -135,6 +136,10 @@ async function request<T>(
 }
 
 export const api = {
+  meeting:(options:RequestOptions,id:string)=>request<MeetingView>(`/api/v1/calendar/events/${encodeURIComponent(id)}/meeting`,options),
+  meetingState:(options:RequestOptions)=>request<MeetingPage>("/api/v1/calendar/meeting",options),
+  decideMeeting:(options:RequestOptions,id:string,body:{decision:"approve"|"disable";event_revision:number;policy_scope?:string;targets?:string[]})=>request<{status:string}>(`/api/v1/calendar/events/${encodeURIComponent(id)}/meeting`,options,{method:"POST",body:JSON.stringify(body)}),
+  acknowledgeMeeting:(options:RequestOptions,entity:string,generation:string)=>request<{status:string}>(`/api/v1/calendar/meeting/leases/${encodeURIComponent(entity)}/ack`,options,{method:"POST",body:JSON.stringify({generation,checked:true})}),
   calendar:(options:RequestOptions,offset=0,includeInactive=false)=>request<CalendarPage>(`/api/v1/calendar/events?limit=50&offset=${offset}&include_inactive=${includeInactive}`,options),
   syncCalendar:(options:RequestOptions)=>request<{status:string}>("/api/v1/calendar/sync",options,{method:"POST"}),
   automations: (options: RequestOptions, offset = 0) =>

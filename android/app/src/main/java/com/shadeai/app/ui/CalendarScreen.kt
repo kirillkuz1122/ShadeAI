@@ -14,6 +14,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun CalendarRoute(model:CalendarViewModel,onBack:()->Unit){
+    var meeting by remember {mutableStateOf(false)}
     val state by model.state.collectAsStateWithLifecycle()
     val lifecycle=LocalLifecycleOwner.current.lifecycle
     DisposableEffect(model,lifecycle){
@@ -22,11 +23,18 @@ fun CalendarRoute(model:CalendarViewModel,onBack:()->Unit){
         if(lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))model.start()
         onDispose{lifecycle.removeObserver(observer);model.close()}
     }
+    if(meeting){
+        androidx.activity.compose.BackHandler{meeting=false}
+        MeetingScreen(model.meetings){meeting=false}
+        return
+    }
     val buttons=ButtonDefaults.outlinedButtonColors(contentColor=MaterialTheme.colorScheme.onSurface)
     Surface(Modifier.fillMaxSize(),color=MaterialTheme.colorScheme.background){
         LazyColumn(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(24.dp),verticalArrangement=Arrangement.spacedBy(16.dp)){
             item{Text("Локальный календарь",style=MaterialTheme.typography.headlineMedium)}
             item{OutlinedButton(onClick=onBack,colors=buttons){Text("Назад к подключению")}}
+            item{ReminderSettings()}
+            item{OutlinedButton(onClick={model.meetings.select(null);meeting=true},colors=buttons){Text("Журнал режима встреч")}}
             item{Text("События из Core. Режим встречи и доставка напоминаний включаются отдельно.")}
             item{Row{Checkbox(checked=state.inactive,onCheckedChange=model::filter);Text("Показывать отменённые и исчезнувшие")}}
             item{Column(verticalArrangement=Arrangement.spacedBy(8.dp)){
@@ -47,6 +55,7 @@ fun CalendarRoute(model:CalendarViewModel,onBack:()->Unit){
                         HorizontalDivider()
                         Text(event.summary.ifBlank{"Событие без названия"},style=MaterialTheme.typography.titleMedium)
                         Text(calendarTime(event,page.timezone))
+                        OutlinedButton(onClick={model.meetings.select(event.id);meeting=true},colors=buttons){Text("Режим дома для встречи")}
                         event.location?.let{Text(it)}
                         Text(calendarStatus(event.status)+(if(event.busy)" · Время занято" else ""))
                     }

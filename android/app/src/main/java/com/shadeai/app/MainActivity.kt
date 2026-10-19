@@ -30,12 +30,14 @@ import com.shadeai.app.ui.CoreResultsViewModel
 import com.shadeai.app.ui.JournalViewModel
 
 class MainActivity : ComponentActivity() {
+    private var calendarNavigation by mutableStateOf(0)
     private var hintNavigation by mutableStateOf(0)
     private lateinit var sources: NotificationSourcesViewModel
 
     override fun onNewIntent(intent:Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        if(intent.action==com.shadeai.app.reminders.ReminderDelivery.OPEN_ACTION){calendarNavigation++;intent.action=null}
         if(intent.action==HintDelivery.OPEN_ACTION){hintNavigation++;intent.action=null}
     }
 
@@ -46,6 +48,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if(intent.action==com.shadeai.app.reminders.ReminderDelivery.OPEN_ACTION){calendarNavigation++;intent.action=null}
         if(intent.action==HintDelivery.OPEN_ACTION){hintNavigation++;intent.action=null}
         val light = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK != Configuration.UI_MODE_NIGHT_YES
         WindowCompat.getInsetsController(window, window.decorView).apply {
@@ -63,6 +66,7 @@ class MainActivity : ComponentActivity() {
                 val state by model.state.collectAsStateWithLifecycle()
                 val sourcesState by sources.state.collectAsStateWithLifecycle()
                 var screen by rememberSaveable { mutableStateOf("connection") }
+                LaunchedEffect(calendarNavigation){if(calendarNavigation>0)screen="calendar"}
                 LaunchedEffect(hintNavigation){if(hintNavigation>0)screen="suggestions"}
                 BackHandler(screen != "connection") { screen = "connection" }
                 when (screen) {
