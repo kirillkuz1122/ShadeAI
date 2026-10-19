@@ -845,7 +845,7 @@ Default MEETING_MODE_ENABLED=false, MEETING_MODE_ALLOWED_SWITCHES=[] (до5 ко
 слоты PIN замка не программируются. Требуется совместимая локальная клавиатура,
 передающая PIN в Core; выключенный Core не принимает код. Lock-интеграция должна
 поддерживать unlock без дополнительного постоянного кода. Рабочие устройства в
-проверках не использовались. Android-клиент пока отсутствует.
+проверках не использовались. Android DTO/Retrofit/валидация подготовлены; owner UI/controller пока отсутствуют.
 
 `ACCESS_ENABLED=false`, `ACCESS_ALLOWED_LOCKS=[]` (до пяти точных `lock.*`),
 `ACCESS_KEYPAD_TOKEN=` — отдельный случайный ASCII-токен ≥32 знаков, отличающийся

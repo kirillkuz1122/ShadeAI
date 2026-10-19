@@ -22,6 +22,15 @@ import java.util.concurrent.TimeUnit
 class MissingCredentialsException : IOException("Не задан ключ Core")
 
 interface ShadeApi {
+    @GET("access")
+    suspend fun access(): CoreAccess
+    @POST("access/grants")
+    suspend fun createAccess(@Body body: AccessCreation): CoreAccessGrant
+    @GET("access/grants/{id}")
+    suspend fun accessState(@Path("id") id: String): CoreAccessGrant
+    @POST("access/grants/{id}/revoke")
+    suspend fun revokeAccess(@Path("id") id: String, @Body body: AccessRevocation): CoreAccessGrant
+
     @GET("voice")
     suspend fun voice():CoreVoice
     @POST("voice")

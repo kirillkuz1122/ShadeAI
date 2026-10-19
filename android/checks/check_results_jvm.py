@@ -67,6 +67,7 @@ sources = [
     main / "ui/CalendarController.kt",
     main / "ui/MeetingController.kt",
     main / "ui/VoiceController.kt",
+    main / "ui/AccessPresentation.kt",
     main / "voice/Wav.kt",
     main / "ui/SuggestionsPresentation.kt",
     main / "hints/HintPlan.kt",
@@ -76,6 +77,7 @@ sources = [
     *list(tests.glob("Calendar*Test.kt")),
     *list(tests.glob("Meeting*Test.kt")),
     *list(tests.glob("Voice*Test.kt")),
+    *list(tests.glob("Access*Test.kt")),
 ]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument(
@@ -121,6 +123,7 @@ with tempfile.TemporaryDirectory(prefix="task19-jvm-", dir=ANDROID / ".gradle") 
             "com.shadeai.app.CalendarReminderTest",
             "com.shadeai.app.MeetingTest",
             "com.shadeai.app.VoiceTest",
+            "com.shadeai.app.AccessTest",
         ],
         timeout=60,
     )

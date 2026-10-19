@@ -338,3 +338,16 @@ python android/checks/check_results_jvm.py --compile-app
 После STT показываются распознанный текст, конкретная цель и включение/выключение. «Подтверждаю действие» — отдельный запрос с текущим scope/UUID и обязательным confirmed=true. Повтора POST нет; при неизвестном итоге доступна проверка состояния, а не скрытое новое выполнение. Accepted означает принятие HA, наблюдаемое on/off показывается отдельно. Core хранит только metadata запросов до7дней/1000строк; текст в истории отсутствует. Системный фон/непрерывное прослушивание/TTS не реализованы.
 
 Голос использует отдельный транспортный бюджет45сек/call и40сек/read; остальные API сохраняют10сек. Новые Android-зависимости не добавлялись. Лёгкая проверка `python android/checks/check_results_jvm.py --compile-app`, полный offline guard — `python android/checks/check_gradle_offline.py`. Для OS-проверки после сборки отдельные процессы `core/.venv/bin/python android/checks/voice_server.py`, `python android/checks/run_emulator_guarded.py`, затем `core/.venv/bin/python android/checks/check_voice.py`. Только read-only emulator-5554/qemu, debug Shade очищается в одноразовом слое; Core использует отдельную временную БД и синтетические STT/HA, реальная речь не распознаётся. Host audio выключено. После проверки остановить собственный AVD/сервер. [Отчёт25](../docs/reports/task-25.md).
+
+
+## Временный доступ — подготовка TASK-26
+
+Сетевой owner-контракт/DTO/валидация и4новыхJVMтеста реализованы.54focused JVM и все
+Kotlin/Compose компилируются offline из существующего кэша. Экран выдачи/отзыва,
+controller/lifecycle и FLAG_SECURE ещё не реализованы; кнопки выдачи PIN в APK нет.
+Не использовать DTO сами по себе для сохранения PIN: будущий UI должен держать его
+только в RAM, очищать при PAUSE/выходе/смене Core и блокировать снимки/recents, без
+Room/prefs/SavedState/WorkManager/Clipboard/OS-уведомлений. GET/история не должны
+принимать PIN. [Контракт](../docs/api-spec.md#48-временный-доступ-shade-keypad--core-основа-task-26),
+[проверки/границы](../docs/reports/task-26.md). Ограниченный keypad-токен на телефоне
+владельца не хранится, keypad API в ShadeApi не добавлен.

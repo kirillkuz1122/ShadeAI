@@ -63,3 +63,16 @@ seed аналитики ([отдельный отчёт](analytics-test-isolatio
 полный463PASS/Python3.11. Обе версии Python/ruff/Webbuild и локальные ссылки проверены.
 Серверная часть сохраняется отдельным коммитом; это **не закрытие всей TASK-26**.
 Следующий доступный шаг — Android owner UI. Общий диск~7.3GiB, моделей/загрузок нет.
+
+
+## Android: подготовка сетевого контракта
+
+После отправленной Core-основы d64dca4 добавлены AccessModels/Retrofit owner-маршруты,
+строгая валидация версии/adapter/целей/окна/состояний и четыре JVM-теста. PIN допускается
+только в первом create-ответе active, не в GET/истории; toString redacted. confirmed,
+delivery_checked и checked — обязательные сериализуемые Boolean без default=true.
+Настоящий Retrofit/MockWebServer проверяет Bearer/пути/тело; restricted keypad API
+в owner-клиент не добавлен.54focused JVM и все Kotlin/Compose PASS из старого кэша,
+временные20,693,179байт AAR-классов удалены. APK/KSP/lint/AVD этого изменения ещё
+не проверены. **Controller/экран/FLAG_SECURE ещё отсутствуют**, это промежуточная
+подготовка, не работающая кнопка выдачи кода. Следующий шаг — эти части и их проверки.
