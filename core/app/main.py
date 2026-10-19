@@ -7,7 +7,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.notification_body import NotificationBodyLimit
-from app.api.v1 import devices, events, ha, habits, health, notifications, telemetry
+from app.api.v1 import (
+    automations,
+    devices,
+    events,
+    ha,
+    habits,
+    health,
+    hints,
+    notifications,
+    telemetry,
+)
 from app.core.config import settings
 from app.core.logging import local_logging
 from app.db import base
@@ -18,6 +28,7 @@ from app.services.ha_bridge.client import HAClient
 from app.services.llm.engine import LocalLLMEngine
 from app.services.notification.maintenance import cleanup, cleanup_loop
 from app.services.notification.worker import NotificationWorker
+from app.services.suggestions.service import SuggestionService
 from app.services.telemetry.collector import TelemetryCollector
 
 
@@ -34,6 +45,8 @@ async def lifespan(app: FastAPI):
         app.state.analytics = analytics
         collector = TelemetryCollector()
         app.state.telemetry = collector
+        suggestions = SuggestionService(analytics, collector)
+        app.state.suggestions = suggestions
         llm = LocalLLMEngine()
         app.state.llm = llm
         worker = NotificationWorker(llm=llm)
@@ -41,11 +54,13 @@ async def lifespan(app: FastAPI):
         try:
             await collector.start()
             await analytics.start()
+            await suggestions.start()
             llm.start()
             await worker.start()
         except BaseException:
             await worker.stop()
             await llm.close()
+            await suggestions.stop()
             await analytics.stop()
             await collector.stop()
             await client.close()
@@ -58,6 +73,7 @@ async def lifespan(app: FastAPI):
         finally:
             await worker.stop()
             await llm.close()
+            await suggestions.stop()
             await analytics.stop()
             await collector.stop()
             maintenance.cancel()
@@ -137,6 +153,8 @@ def create_app() -> FastAPI:
     app.include_router(events.router, prefix="/api/v1")
     app.include_router(telemetry.router, prefix="/api/v1")
     app.include_router(habits.router, prefix="/api/v1")
+    app.include_router(automations.router, prefix="/api/v1")
+    app.include_router(hints.router, prefix="/api/v1")
 
     return app
 

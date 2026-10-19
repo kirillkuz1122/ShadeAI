@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
 fun ConnectionScreen(
     state: ConnectionUiState, onUrl: (String) -> Unit, onKey: (String) -> Unit,
     onCheck: () -> Unit, onClear: () -> Unit, onTest: () -> Unit,
-    onSources: () -> Unit, onJournal: () -> Unit, onResults: () -> Unit = {},
+    onSources: () -> Unit, onJournal: () -> Unit, onResults: () -> Unit = {}, onSuggestions: () -> Unit = {},
 ) {
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
@@ -57,6 +57,10 @@ fun ConnectionScreen(
             OutlinedButton(onClick = onResults, modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)) {
                 Text("Результаты Core")
+            }
+            OutlinedButton(onClick=onSuggestions,modifier=Modifier.fillMaxWidth(),
+                colors=ButtonDefaults.outlinedButtonColors(contentColor=MaterialTheme.colorScheme.onSurface)){
+                Text("Сценарии и подсказки")
             }
             HorizontalDivider()
             OutlinedTextField(

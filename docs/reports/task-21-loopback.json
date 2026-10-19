@@ -1,0 +1,26 @@
+{
+  "synthetic": true,
+  "context": "seeded-valid-LLM-schema-not-native-inference",
+  "runs": [
+    {
+      "rules": 4,
+      "arrival_status": "accepted",
+      "hints": 1,
+      "feed_stable": true,
+      "telemetry_state": "on",
+      "native_llm": false
+    },
+    {
+      "rules": 4,
+      "arrival_status": "accepted",
+      "hints": 1,
+      "feed_stable": true,
+      "telemetry_state": "on",
+      "native_llm": false
+    }
+  ],
+  "http_and_real_ha_websocket": "PASS",
+  "restart_and_sticky_decisions": "PASS",
+  "arrival_context_no_repeat": "PASS",
+  "ha_commands": 0
+}

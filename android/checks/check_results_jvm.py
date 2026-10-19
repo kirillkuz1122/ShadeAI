@@ -60,12 +60,14 @@ main = ANDROID / "app/src/main/java/com/shadeai/app"
 tests = ANDROID / "app/src/test/java/com/shadeai/app"
 sources = [
     main / "core/config/ServerAddress.kt",
-    main / "core/network/Models.kt",
-    main / "core/network/ShadeApi.kt",
-    main / "core/network/CoreResults.kt",
+    *[p for p in (main / "core/network").glob("*.kt") if p.name != "NotificationDelivery.kt"],
     main / "ui/CoreResultsController.kt",
     main / "ui/CoreResultsPresentation.kt",
+    main / "ui/SuggestionsController.kt",
+    main / "ui/SuggestionsPresentation.kt",
+    main / "hints/HintPlan.kt",
     *list(tests.glob("CoreResults*Test.kt")),
+    *list(tests.glob("Suggestions*Test.kt")),
 ]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument(
@@ -106,6 +108,7 @@ with tempfile.TemporaryDirectory(prefix="task19-jvm-", dir=ANDROID / ".gradle") 
             "com.shadeai.app.CoreResultsPresentationTest",
             "com.shadeai.app.CoreResultsControllerTest",
             "com.shadeai.app.CoreResultsNetworkTest",
+            "com.shadeai.app.SuggestionsTest",
         ],
         timeout=60,
     )

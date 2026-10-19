@@ -70,5 +70,6 @@ async def health(
             "llm": request.app.state.llm.status,
             "notification_worker": request.app.state.notification_worker.status,
             "analytics": request.app.state.analytics.status,
+            "suggestions": request.app.state.suggestions.status,
         },
     )

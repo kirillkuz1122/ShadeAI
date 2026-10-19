@@ -59,6 +59,7 @@ class TelemetryStore:
 
     async def gap(self, reason: str) -> None:
         async with base.async_session() as session, session.begin():
+            await session.connection(execution_options={"sqlite_immediate": True})
             opened = await session.scalar(
                 select(TelemetryGap).where(TelemetryGap.ended_at.is_(None))
             )
@@ -75,6 +76,7 @@ class TelemetryStore:
 
     async def checkpoint(self) -> None:
         async with base.async_session() as session, session.begin():
+            await session.connection(execution_options={"sqlite_immediate": True})
             await session.merge(TelemetryCheckpoint(id=1, last_seen=naive(clock.utcnow())))
             await self.prune(session)
 
@@ -87,6 +89,7 @@ class TelemetryStore:
     ) -> None:
         now = naive(clock.utcnow())
         async with base.async_session() as session, session.begin():
+            await session.connection(execution_options={"sqlite_immediate": True})
             for entity, state in states.items():
                 if entity not in self.entities:
                     continue

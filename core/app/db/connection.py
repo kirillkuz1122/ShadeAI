@@ -16,7 +16,8 @@ def _set_sqlite_pragma(dbapi_connection, connection_record) -> None:
 
 
 def _begin_sqlite(connection: Connection) -> None:
-    connection.exec_driver_sql("BEGIN")
+    immediate = connection.get_execution_options().get("sqlite_immediate") is True
+    connection.exec_driver_sql("BEGIN IMMEDIATE" if immediate else "BEGIN")
 
 
 def create_db_engine(db_url: str) -> AsyncEngine:

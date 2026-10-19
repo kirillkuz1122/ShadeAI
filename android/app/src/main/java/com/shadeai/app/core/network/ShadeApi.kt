@@ -36,6 +36,21 @@ interface ShadeApi {
     @GET("notifications/{id}")
     suspend fun notification(@Path("id") id: Long): CoreNotification
 
+    @GET("automations")
+    suspend fun automations(@Query("offset") offset: Int, @Query("limit") limit: Int = 20): CoreRulesPage
+
+    @GET("automations/{id}")
+    suspend fun automation(@Path("id") id: String): CoreRule
+
+    @POST("automations/{id}/decision")
+    suspend fun decideAutomation(@Path("id") id: String, @Body body: RuleDecision): CoreRule
+
+    @POST("automations/refresh")
+    suspend fun refreshAutomations(): CoreStatus
+
+    @GET("hints")
+    suspend fun hints(@Query("after_id") afterId: Long = 0, @Query("limit") limit: Int = 20): CoreHintFeed
+
     companion object {
         private val transport = OkHttpClient.Builder()
             .connectTimeout(3, TimeUnit.SECONDS)

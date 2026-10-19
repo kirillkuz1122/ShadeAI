@@ -490,264 +490,62 @@ curl http://<core>:8000/api/v1/habits -H "Authorization: Bearer <SHADE_API_KEY>"
 
 ---
 
-### 4.4. Автоматизации (Automations)
+### 4.4. Предложения сценариев и локальные подсказки — программная TASK-21
 
-Управление сценариями локальной автоматизации Shade AI: создание, просмотр, обновление и удаление правил реагирования на события.
+Предыдущее расширенное [ТЗ CRUD автоматизаций](automation-target-spec.md) сохранено отдельно; его маршруты пока не реализованы.
 
-#### 4.4.1. `GET /automations` — Список автоматизаций
+Только Bearer, без облачного push. Исполнитель TASK-22 **пока отсутствует**: ни одно принятие/обновление здесь не отправляет команду HA. Произвольные POST /automations и PUT/DELETE CRUD из целевого ТЗ ещё не реализованы; текущие предложения создаются только из профилей TASK-20. Допуск целей — `AUTOMATION_ALLOWED_LIGHTS` (JSON-массив до20 уникальных light.*, default[]), период `SUGGESTIONS_INTERVAL_SECONDS` 5..3600, default30. Настройки требуют перезапуска.
 
-Возвращает список всех зарегистрированных автоматизаций.
+#### 4.4.1. `GET /automations`
 
-##### Заголовки (Headers)
-| Заголовок | Тип | Обязательный | Описание |
-| :--- | :--- | :--- | :--- |
-| `Authorization` | `string` | Да | `Bearer <SHADE_API_KEY>` |
+Параметры: status (pending/accepted/rejected/disabled/needs_review, optional), limit1..20 (default20), offset0..200. Ответ200: automations[], total, allowed_targets[], status и executor_status=not_implemented. До200 предложений, до4 новых по текущему источнику, генерация при свежем профиле со score≥0.75.
 
-##### Query-параметры
-| Параметр | Тип | По умолчанию | Описание |
-| :--- | :--- | :--- | :--- |
-| `enabled` | `boolean` | `null` | Фильтр по статусу активности (`true` или `false`) |
+Объект предложения:
 
-##### Поля успешного ответа (200 OK)
-| Поле | Тип | Описание |
-| :--- | :--- | :--- |
-| `automations` | `array` | Массив объектов автоматизаций |
-| `automations[].id` | `string` | Идентификатор автоматизации |
-| `automations[].name` | `string` | Название сценария |
-| `automations[].trigger` | `object` | Событие-триггер (устройство, время, входящее уведомление) |
-| `automations[].condition` | `object` | Дополнительные условия срабатывания |
-| `automations[].action` | `object` | Выполняемое действие (вызов сервиса, отправка пуша) |
-| `automations[].enabled` | `boolean` | Флаг активности сценария |
-| `automations[].created_at` | `string` | Дата создания |
-| `automations[].updated_at` | `string` | Дата обновления |
+- id=aut_+32hex, source_habit_id, name, status, version (целая положительная ревизия), created_at/updated_at UTC.
+- trigger: type=presence_transition, kind=arrival_home/departure_home, entity_id выбранного binary_sensor, from_state/to_state off→on или on→off, day_group weekdays/weekends, timezone, window_start/window_end HH:MM, wraps_midnight.
+- evidence: support_days/eligible_days/dispersion_minutes, confidence — эвристическая регулярность, не вероятность.
+- action=null до выбора цели; после принятия {entity_id:light.*,service:turn_on|turn_off,params:{}}. Приход — только turn_on, уход — turn_off. Произвольные params/сервисы не принимаются.
+- source_current — совпадают свежий профиль, конфигурация и условия. approval_valid/enabled — сохраняется явное решение для **этой** цели/условий/политики. Это не подтверждение работы исполнителя: executable=false, executor_status=not_implemented.
 
-##### Пример cURL-запроса
-```bash
-curl -X GET "http://<raspberry-pi-ip>:8000/api/v1/automations" \
-  -H "Authorization: Bearer <SHADE_API_KEY>"
-```
+Rejected/disabled не возвращаются в pending при обычном пересчёте. У принятых изменение условий/потеря достаточного источника или разрешений переводит в needs_review и снимает одобрение; обновление одной статистики не меняет действие. При временно устаревшем расчёте одобрение не выполняется. Все проверки свежести/хеша повторяются на решении, нельзя одобрить устаревшие параметры по старой карточке.
 
-##### Пример ответа (HTTP 200)
+#### 4.4.2. `GET /automations/{rule_id}`
+
+Тот же объект + history (до20 последних): id, decision, version, target_entity, created_at. История содержит только метаданные, без исходных сообщений/params. Решения accept/reject/disable и служебные suggested/source_changed/evidence_updated/source_unavailable/approval_invalidated. Общая история ограничена1000 записями/90днями. Неизвестный id404 (AUTOMATION_NOT_FOUND); формат id aut_+32hex.
+
+#### 4.4.3. `POST /automations/{rule_id}/decision`
+
+Строгий JSON, лишние поля запрещены. Все POST /automations/* ограничены65536байт (413 при превышении).
+
 ```json
-{
-  "automations": [
-    {
-      "id": "aut_4f92a11b",
-      "name": "Встреча курьера",
-      "trigger": {
-        "type": "notification",
-        "category": "delivery",
-        "keywords": ["курьер", "код"]
-      },
-      "condition": {
-        "type": "time_range",
-        "after": "10:00",
-        "before": "22:00"
-      },
-      "action": {
-        "type": "device_command",
-        "entity_id": "light.hallway_entry",
-        "command": "turn_on",
-        "params": { "brightness": 255 }
-      },
-      "enabled": true,
-      "created_at": "2026-09-10T14:20:00Z",
-      "updated_at": "2026-09-15T09:12:00Z"
-    }
-  ]
-}
+{"decision":"accept","version":1,"target_entity":"light.entry"}
 ```
 
----
+Accept требует явной разрешённой цели, свежего профиля и совпадающей версии. Reject/disable передаются без target_entity. Disable принимается и с устаревшей версией, чтобы новое состояние не мешало выключению. Ответ200 — актуальный объект; создание записи/новая версия/история атомарны. Гонки/неподтверждённые ошибки не следует автоматически переигрывать как новое решение.
 
-#### 4.4.2. `POST /automations` — Создать автоматизацию
+Коды: 404 AUTOMATION_NOT_FOUND; 409 AUTOMATION_CHANGED/AUTOMATION_SOURCE_STALE; 422 AUTOMATION_TARGET_NOT_ALLOWED либо безопасная ошибка валидации; 503 SUGGESTIONS_UNAVAILABLE. Ошибка не возвращает raw input, тело/исключения/SQL-параметры не логируются. Одновременные accept с одной версией дают одно принятие и409; не две записи истории.
 
-Регистрирует новый сценарий автоматизации.
+#### 4.4.4. `POST /automations/refresh`
 
-##### Заголовки (Headers)
-| Заголовок | Тип | Обязательный | Описание |
-| :--- | :--- | :--- | :--- |
-| `Authorization` | `string` | Да | `Bearer <SHADE_API_KEY>` |
-| `Content-Type` | `string` | Да | `application/json` |
+Без тела, только синхронизация предложений/подсказок, не одобрение и не исполнение. Ответ {status}; при сбое503 SUGGESTIONS_UNAVAILABLE. Фон делает то же с заданным интервалом. SQLite writer для короткой read/write транзакции резервируется до чтения (BEGIN IMMEDIATE); сети/LLM ожиданий внутри нет. Та же оговорка применяется к связанным write-транзакциям телеметрии/профилей: обычные read/DDL транзакции сохраняют прежнее поведение.
 
-##### Тело запроса (Request Body)
-| Поле | Тип | Обязательное | Описание |
-| :--- | :--- | :--- | :--- |
-| `name` | `string` | Нет | Название сценария |
-| `trigger` | `object` | Да | Описание триггера (тип, источник, параметры) |
-| `condition` | `object` | Нет | Условия проверки перед выполнением (может быть пустым `{}`) |
-| `action` | `object` | Да | Исполняемое действие |
-| `enabled` | `boolean` | Нет | Флаг активности (по умолчанию `true`) |
+#### 4.4.5. `GET /hints`
 
-##### Поля успешного ответа (201 Created)
-| Поле | Тип | Описание |
-| :--- | :--- | :--- |
-| `id` | `string` | Назначенный идентификатор созданной автоматизации |
-| `name` | `string` | Название сценария |
-| `trigger` | `object` | Сохраненная конфигурация триггера |
-| `condition` | `object` | Сохраненная конфигурация условий |
-| `action` | `object` | Сохраненная конфигурация действия |
-| `enabled` | `boolean` | Текущий статус |
-| `created_at` | `string` | Время создания (ISO 8601) |
+Локальная лента, отдельный cursor каждого клиента: after_id≥0 (до int64max, default0), limit1..20 (default20). Ответ:
 
-##### Пример cURL-запроса
-```bash
-curl -X POST "http://<raspberry-pi-ip>:8000/api/v1/automations" \
-  -H "Authorization: Bearer <SHADE_API_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Ночной режим света",
-    "trigger": {
-      "type": "time",
-      "at": "23:00"
-    },
-    "condition": {
-      "type": "device_state",
-      "entity_id": "binary_sensor.someone_at_home",
-      "state": "on"
-    },
-    "action": {
-      "type": "device_command",
-      "entity_id": "light.living_room_ceiling",
-      "command": "turn_off",
-      "params": {}
-    },
-    "enabled": true
-  }'
-```
-
-##### Пример ответа (HTTP 201)
 ```json
-{
-  "id": "aut_78c2e99a",
-  "name": "Ночной режим света",
-  "trigger": {
-    "type": "time",
-    "at": "23:00"
-  },
-  "condition": {
-    "type": "device_state",
-    "entity_id": "binary_sensor.someone_at_home",
-    "state": "on"
-  },
-  "action": {
-    "type": "device_command",
-    "entity_id": "light.living_room_ceiling",
-    "command": "turn_off",
-    "params": {}
-  },
-  "enabled": true,
-  "created_at": "2026-09-17T11:10:00Z"
-}
+{"feed_id":"11111111-1111-4111-8111-111111111111","latest_id":5,"next_id":5,
+ "hints":[{"id":5,"kind":"arrival_delivery","notification_id":42,"created_at":"2026-10-19T01:00:00Z"}]}
 ```
 
----
+latest_id — текущий максимум ленты, next_id — последняя возвращённая запись (при пустом результате after_id). Монотонный AUTOINCREMENT не переиспользует удалённые ID; feed_id сохраняется между перезапусками и меняется при новой БД. После новой ленты/отката курсора клиент начинает с latest_id, не уведомляет о старом. Один клиент не подтверждает подсказки за другой; GET не изменяет ленту. Хранение7дней/до1000 записей; старый config_key не выдаётся.
 
-#### 4.4.3. `PUT /automations/{id}` — Обновить автоматизацию
+Подсказка только при свежем live off→on явно выбранного присутствия, connected сборщике/checkpoint≤90с, последовательных согласованных временах и без gap. Snapshot/такси/LLM сами по себе не доказывают приход. Требуется существующий канонически принятый processed delivery с валидной schema1/action_authorized=false из разрешённого приложения, полученный Core за последние сутки. В ленте **нет** текста/сущностей/адреса из уведомления — только вид и ID контекста. Текст клиента фиксирован: «Вы дома. В Core есть событие доставки». До одной подсказки/час; один контекст не повторяется сутки; повтор события не создаёт новую запись.
 
-Выполняет обновление параметров существующей автоматизации.
+Android использует только opt-in системные уведомления, разрешение Android13+, локальный WorkManager15мин + ручную проверку, без FCM. По умолчанию выключен. Смена ServerPrefs revision снимает прежний opt-in; API-ключ берётся из Keystore, не передаётся в WorkManager Data. Курсор содержит только feed_id/ID и привязан к revision. После401/403/404 фоновая проверка на паузе до явного повтора/настройки. Отсутствие INTERNET/VALIDATED не запрещает LAN, полностью без сетей HTTP не запускается. Doze/OEM/force-stop могут задержать работу; реальный срок и системная доставка ещё требуют проверки APK/телефона. Повтор использует стабильный notification tag/onlyAlertOnce; атомарности с Android NotificationManager нет — строгая exactly-once доставка не заявлена.
 
-##### Заголовки (Headers)
-| Заголовок | Тип | Обязательный | Описание |
-| :--- | :--- | :--- | :--- |
-| `Authorization` | `string` | Да | `Bearer <SHADE_API_KEY>` |
-| `Content-Type` | `string` | Да | `application/json` |
-
-##### Path-параметры
-| Параметр | Тип | Описание |
-| :--- | :--- | :--- |
-| `id` | `string` | Идентификатор автоматизации |
-
-##### Тело запроса (Request Body)
-| Поле | Тип | Обязательное | Описание |
-| :--- | :--- | :--- | :--- |
-| `name` | `string` | Нет | Новое имя сценария |
-| `trigger` | `object` | Нет | Обновленный триггер |
-| `condition` | `object` | Нет | Обновленные условия |
-| `action` | `object` | Нет | Обновленное действие |
-| `enabled` | `boolean` | Нет | Включение / отключение правила |
-
-##### Поля успешного ответа (200 OK)
-| Поле | Тип | Описание |
-| :--- | :--- | :--- |
-| `id` | `string` | Идентификатор автоматизации |
-| `name` | `string` | Обновленное имя |
-| `trigger` | `object` | Актуальный триггер |
-| `condition` | `object` | Актуальные условия |
-| `action` | `object` | Актуальное действие |
-| `enabled` | `boolean` | Актуальный статус |
-| `updated_at` | `string` | Время обновления (ISO 8601) |
-
-##### Пример cURL-запроса
-```bash
-curl -X PUT "http://<raspberry-pi-ip>:8000/api/v1/automations/aut_78c2e99a" \
-  -H "Authorization: Bearer <SHADE_API_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "enabled": false
-  }'
-```
-
-##### Пример ответа (HTTP 200)
-```json
-{
-  "id": "aut_78c2e99a",
-  "name": "Ночной режим света",
-  "trigger": {
-    "type": "time",
-    "at": "23:00"
-  },
-  "condition": {
-    "type": "device_state",
-    "entity_id": "binary_sensor.someone_at_home",
-    "state": "on"
-  },
-  "action": {
-    "type": "device_command",
-    "entity_id": "light.living_room_ceiling",
-    "command": "turn_off",
-    "params": {}
-  },
-  "enabled": false,
-  "updated_at": "2026-09-17T11:15:45Z"
-}
-```
-
----
-
-#### 4.4.4. `DELETE /automations/{id}` — Удалить автоматизацию
-
-Удаляет сценарий автоматизации по указанному ID.
-
-##### Заголовки (Headers)
-| Заголовок | Тип | Обязательный | Описание |
-| :--- | :--- | :--- | :--- |
-| `Authorization` | `string` | Да | `Bearer <SHADE_API_KEY>` |
-
-##### Path-параметры
-| Параметр | Тип | Описание |
-| :--- | :--- | :--- |
-| `id` | `string` | Идентификатор удаляемой автоматизации |
-
-##### Поля успешного ответа (200 OK или 204 No Content)
-| Поле | Тип | Описание |
-| :--- | :--- | :--- |
-| `status` | `string` | Статус операции (`deleted`) |
-| `id` | `string` | Идентификатор удаленного сценария |
-
-##### Пример cURL-запроса
-```bash
-curl -X DELETE "http://<raspberry-pi-ip>:8000/api/v1/automations/aut_78c2e99a" \
-  -H "Authorization: Bearer <SHADE_API_KEY>"
-```
-
-##### Пример ответа (HTTP 200)
-```json
-{
-  "status": "deleted",
-  "id": "aut_78c2e99a"
-}
-```
+Миграция0008_suggestions_hints добавляет automation_rules/automation_decisions/local_hints/local_hint_state. [Реализация, проверки и ограничения](reports/task-21.md).
 
 ---
 

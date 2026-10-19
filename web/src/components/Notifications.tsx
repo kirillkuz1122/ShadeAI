@@ -49,7 +49,7 @@ function processingLabel(n: NotificationItem, compact = false) {
 }
 
 
-function NotificationDetail({
+export function NotificationDetail({
   id,
   apiKey,
   close,

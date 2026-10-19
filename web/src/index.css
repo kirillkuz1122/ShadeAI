@@ -911,3 +911,13 @@ pre {
     scroll-behavior: auto !important;
   }
 }
+
+.rule-card { border-top: 1px solid var(--line); padding: 24px 0; overflow-wrap: anywhere; }
+.rule-card h3 { margin: 8px 0; }
+.rule-card form { display: grid; gap: 12px; margin: 16px 0; }
+.rule-card label { display: grid; gap: 8px; }
+.rule-card select { width: 100%; min-width: 0; }
+.rule-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.rule-actions button { white-space: normal; overflow-wrap: anywhere; }
+.hint-panel { border-top: 1px solid var(--line); margin-top: 24px; padding-top: 16px; }
+.hint-panel li { padding: 8px 0; }

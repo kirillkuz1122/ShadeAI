@@ -86,7 +86,7 @@ export function HealthPanel({
           </small>
         </div>
         <div>
-          <span>AI и привычки</span>
+          <span>Локальная модель</span>
           <strong>
             {h?.llm_status === "ready"
               ? "Локальная модель готова"
@@ -94,13 +94,19 @@ export function HealthPanel({
                 ? "Загрузка модели"
                 : h && h.llm_status !== "not_loaded"
                   ? "Модель недоступна"
-                  : "Ещё не подключены"}
+                  : "Не загружена"}
           </strong>
           <small>
             {h?.llm_status === "ready"
-              ? "Модель загружена; привычки ещё не настроены"
+              ? "Движок загружен; качество разбора проверяется отдельно"
               : "Анализ уведомлений не выполняется"}
           </small>
+          <small>{h?.services?.analytics === "ready" ? "Профили присутствия найдены"
+            : h?.services?.analytics === "disabled" ? "Профили присутствия выключены"
+            : h?.services?.analytics === "insufficient_data" ? "Для профилей пока мало данных"
+            : h?.services?.analytics === "no_pattern" ? "Устойчивый распорядок не найден"
+            : h?.services?.analytics === "calculating" || h?.services?.analytics === "starting" ? "Пересчёт профилей"
+            : "Профили присутствия недоступны"}</small>
         </div>
       </div>
       <Freshness

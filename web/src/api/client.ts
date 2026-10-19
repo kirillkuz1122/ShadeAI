@@ -1,3 +1,4 @@
+import type { AutomationPage, AutomationRule, AutomationDetail, HintPage } from "./automation";
 const API_KEY_STORAGE = "shade_api_key";
 
 export interface Health {
@@ -81,6 +82,8 @@ export function setApiKey(key: string): boolean {
   }
 }
 
+export class ProtocolError extends Error {}
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -131,6 +134,18 @@ async function request<T>(
 }
 
 export const api = {
+  automations: (options: RequestOptions, offset = 0) =>
+    request<AutomationPage>(`/api/v1/automations?limit=20&offset=${offset}`, options),
+  automation: (options: RequestOptions, id: string) =>
+    request<AutomationDetail>(`/api/v1/automations/${encodeURIComponent(id)}`, options),
+  decideAutomation: (options: RequestOptions, id: string,
+    body: {decision: "accept" | "reject" | "disable"; version: number; target_entity?: string}) =>
+    request<AutomationRule>(`/api/v1/automations/${encodeURIComponent(id)}/decision`, options,
+      {method:"POST",body:JSON.stringify(body)}),
+  refreshAutomations: (options: RequestOptions) =>
+    request<{status:string}>("/api/v1/automations/refresh", options, {method:"POST"}),
+  hints: (options: RequestOptions, afterId = 0) =>
+    request<HintPage>(`/api/v1/hints?after_id=${afterId}&limit=20`, options),
   health: (signal?: AbortSignal) =>
     request<Health>("/api/v1/health", { signal }, undefined, 503),
   notifications: (options: RequestOptions, limit = 20, offset = 0) => {

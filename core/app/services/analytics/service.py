@@ -129,6 +129,7 @@ class AnalyticsService:
             )
             stored = naive(now)
             async with base.async_session() as session, session.begin():
+                await session.connection(execution_options={"sqlite_immediate": True})
                 ids = []
                 for profile in report["profiles"]:
                     identity = json.dumps(

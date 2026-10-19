@@ -3,6 +3,7 @@ import { api, getApiKey, setApiKey } from "./api/client";
 import { useResource } from "./hooks/useResource";
 import { HealthPanel } from "./components/HealthPanel";
 import { Notifications } from "./components/Notifications";
+import { Automations } from "./components/Automations";
 import { Journal } from "./components/Journal";
 
 export default function App() {
@@ -13,7 +14,7 @@ export default function App() {
   const [draft, setDraft] = useState(credential.key);
   const [saved, setSaved] = useState("");
   const [connectionOpen, setConnectionOpen] = useState(!credential.key);
-  const [section, setSection] = useState<"notifications" | "journal">(
+  const [section, setSection] = useState<"notifications" | "journal" | "automations">(
     "notifications",
   );
   const loadHealth = useCallback(
@@ -65,6 +66,9 @@ export default function App() {
             onClick={() => setSection("journal")}
           >
             <span aria-hidden="true">02</span> Журнал команд
+          </button>
+          <button aria-current={section === "automations" ? "page" : undefined} onClick={()=>setSection("automations")}>
+            <span aria-hidden="true">03</span> Сценарии и подсказки
           </button>
         </nav>
         <div className="local-note">
@@ -177,6 +181,8 @@ export default function App() {
           <div key={credential.version}>
             {section === "notifications" ? (
               <Notifications apiKey={credential.key} />
+            ) : section === "automations" ? (
+              <Automations apiKey={credential.key} />
             ) : (
               <Journal apiKey={credential.key} />
             )}

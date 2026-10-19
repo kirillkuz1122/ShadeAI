@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, Index, Integer, Text
+from sqlalchemy import DateTime, Float, Index, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -124,3 +124,56 @@ class AnalyticsState(Base):
     config_key: Mapped[str] = mapped_column(Text, nullable=False)
     snapshot_json: Mapped[str] = mapped_column(Text, nullable=False)
     computed_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
+class AutomationRule(Base):
+    __tablename__ = "automation_rules"
+
+    id: Mapped[str] = mapped_column(Text, primary_key=True)
+    source_habit_id: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    profile_key: Mapped[str] = mapped_column(Text, nullable=False)
+    config_key: Mapped[str] = mapped_column(Text, nullable=False)
+    trigger_json: Mapped[str] = mapped_column(Text, nullable=False)
+    evidence_json: Mapped[str] = mapped_column(Text, nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    status: Mapped[str] = mapped_column(Text, nullable=False, default="pending")
+    source_stale: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    target_entity: Mapped[str | None] = mapped_column(Text, nullable=True)
+    approval_key: Mapped[str | None] = mapped_column(Text, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
+class AutomationDecision(Base):
+    __tablename__ = "automation_decisions"
+    __table_args__ = (
+        Index("ix_automation_decisions_rule", "rule_id", "id"),
+        {"sqlite_autoincrement": True},
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    rule_id: Mapped[str] = mapped_column(Text, nullable=False)
+    decision: Mapped[str] = mapped_column(Text, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    target_entity: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
+class LocalHint(Base):
+    __tablename__ = "local_hints"
+    __table_args__ = ({"sqlite_autoincrement": True},)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    config_key: Mapped[str] = mapped_column(Text, nullable=False)
+    presence_event_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
+    notification_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    kind: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
+class LocalHintState(Base):
+    __tablename__ = "local_hint_state"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    feed_id: Mapped[str] = mapped_column(Text, nullable=False)

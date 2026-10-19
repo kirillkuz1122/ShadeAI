@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     analytics_presence_entity: str | None = None
     analytics_timezone: str = "Asia/Yekaterinburg"
     analytics_interval_seconds: int = Field(default=3600, ge=60, le=86400)
+    automation_allowed_lights: list[str] = Field(default_factory=list, max_length=20)
+    suggestions_interval_seconds: int = Field(default=30, ge=5, le=3600)
     event_retention_days: int = Field(default=90, ge=1, le=365)
     log_dir: str = "./logs"
     log_max_bytes: int = Field(default=1_048_576, ge=1024, le=10_485_760)
@@ -59,6 +61,15 @@ class Settings(BaseSettings):
         ):
             raise ValueError("ANALYTICS_PRESENCE_ENTITY должен быть уже выбранным binary_sensor")
         return self
+
+    @field_validator("automation_allowed_lights")
+    @classmethod
+    def check_automation_lights(cls, value: list[str]) -> list[str]:
+        if any(
+            len(entity) > 255 or not re.fullmatch(r"light\.[a-z0-9_]+", entity) for entity in value
+        ):
+            raise ValueError("AUTOMATION_ALLOWED_LIGHTS должен содержать только entity_id light")
+        return list(dict.fromkeys(value))
 
     @field_validator("ha_token")
     @classmethod

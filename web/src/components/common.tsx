@@ -1,4 +1,4 @@
-import { ApiError } from "../api/client";
+import { ApiError, ProtocolError } from "../api/client";
 
 export const PAGE_SIZE = 20;
 export function time(value: string | Date) {
@@ -14,6 +14,7 @@ export function time(value: string | Date) {
       });
 }
 export function errorMessage(error: unknown): string {
+  if (error instanceof ProtocolError) return "Формат ответа Core не поддерживается. Обновите клиент.";
   if (error instanceof ApiError) {
     if (error.status === 401)
       return "Ключ не принят. Проверьте его в настройках подключения.";

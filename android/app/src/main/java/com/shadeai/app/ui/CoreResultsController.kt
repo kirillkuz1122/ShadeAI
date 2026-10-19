@@ -40,6 +40,7 @@ class CoreResultsController(
     private var request: Job? = null
     private var generation = 0
     private var active = false
+    private var sessionRevision: String? = null
 
     fun start() { active = true; refresh() }
     fun close() {
@@ -49,6 +50,7 @@ class CoreResultsController(
         mutable.value = mutable.value.copy(page = null, detail = null, loading = true, error = null)
     }
     fun settingsChanged() {
+        sessionRevision = null
         mutable.value = CoreResultsState()
         if (active) refresh()
     }
@@ -79,6 +81,13 @@ class CoreResultsController(
             try {
                 val snapshot = credentials()
                 if (!valid(token, snapshot.revision)) return@launch
+                if (sessionRevision != null && sessionRevision != snapshot.revision) {
+                    sessionRevision = snapshot.revision
+                    mutable.value = CoreResultsState()
+                    refresh()
+                    return@launch
+                }
+                sessionRevision = snapshot.revision
                 require(snapshot.apiKey.isNotBlank())
                 val api = createClient(snapshot)
                 while (isActive && valid(token, snapshot.revision)) {

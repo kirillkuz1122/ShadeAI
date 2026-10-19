@@ -1,6 +1,11 @@
 package com.shadeai.app
 
 import android.os.Bundle
+import android.content.Intent
+import androidx.compose.runtime.LaunchedEffect
+import com.shadeai.app.ui.SuggestionsRoute
+import com.shadeai.app.ui.SuggestionsViewModel
+import com.shadeai.app.hints.HintDelivery
 import android.content.res.Configuration
 import androidx.core.view.WindowCompat
 import androidx.activity.ComponentActivity
@@ -23,7 +28,14 @@ import com.shadeai.app.ui.CoreResultsViewModel
 import com.shadeai.app.ui.JournalViewModel
 
 class MainActivity : ComponentActivity() {
+    private var hintNavigation by mutableStateOf(0)
     private lateinit var sources: NotificationSourcesViewModel
+
+    override fun onNewIntent(intent:Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if(intent.action==HintDelivery.OPEN_ACTION){hintNavigation++;intent.action=null}
+    }
 
     override fun onResume() {
         super.onResume()
@@ -32,6 +44,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if(intent.action==HintDelivery.OPEN_ACTION){hintNavigation++;intent.action=null}
         val light = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK != Configuration.UI_MODE_NIGHT_YES
         WindowCompat.getInsetsController(window, window.decorView).apply {
             isAppearanceLightStatusBars = light
@@ -41,13 +54,16 @@ class MainActivity : ComponentActivity() {
         sources = ViewModelProvider(this)[NotificationSourcesViewModel::class.java]
         val journal = ViewModelProvider(this)[JournalViewModel::class.java]
         val results = ViewModelProvider(this)[CoreResultsViewModel::class.java]
+        val suggestions = ViewModelProvider(this)[SuggestionsViewModel::class.java]
         setContent {
             ShadeAITheme {
                 val state by model.state.collectAsStateWithLifecycle()
                 val sourcesState by sources.state.collectAsStateWithLifecycle()
                 var screen by rememberSaveable { mutableStateOf("connection") }
+                LaunchedEffect(hintNavigation){if(hintNavigation>0)screen="suggestions"}
                 BackHandler(screen != "connection") { screen = "connection" }
                 when (screen) {
+                    "suggestions" -> SuggestionsRoute(suggestions,{screen="connection"},{id->results.select(id);screen="results"})
                     "results" -> CoreResultsRoute(results) { screen = "connection" }
                     "sources" -> NotificationSourcesScreen(sourcesState, sources::toggle,
                         sources::refresh, { screen = "connection" })
@@ -56,7 +72,7 @@ class MainActivity : ComponentActivity() {
                     else -> ConnectionScreen(state, model::editUrl, model::editKey,
                         model::saveAndCheck, model::clearKey, model::sendTest,
                         onSources = { sources.refresh(); screen = "sources" }, onJournal = { screen = "journal" },
-                        onResults = { screen = "results" })
+                        onResults = { screen = "results" }, onSuggestions = {screen="suggestions"})
                 }
             }
         }

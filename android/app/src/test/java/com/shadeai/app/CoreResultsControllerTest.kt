@@ -91,4 +91,19 @@ class CoreResultsControllerTest {
             c.close()
         } finally { scope.cancel() }
     }
+
+    @Test fun changingCoreWhileScreenIsStoppedResetsOldDetailSelection()=runBlocking {
+        val scope=CoroutineScope(SupervisorJob()+Dispatchers.Unconfined)
+        var revision="old";val paths=mutableListOf<String>()
+        val api=object:ResultsClient {
+            override suspend fun list(limit:Int,offset:Int):CoreNotificationsPage {paths.add("$revision:list");return CoreNotificationsPage(listOf(row()),1)}
+            override suspend fun detail(id:Long):CoreNotification {paths.add("$revision:detail");return row(id)}
+        }
+        try {
+            val c=CoreResultsController(scope,{credentials(revision)},{revision},{api},100000)
+            c.start();c.select(77);c.close();revision="new";c.start();yield()
+            assertNull(c.state.value.selectedId)
+            assertNotNull(c.state.value.page);assertFalse(paths.contains("new:detail"));c.close()
+        }finally{scope.cancel()}
+    }
 }
