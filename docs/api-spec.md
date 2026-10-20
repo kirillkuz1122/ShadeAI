@@ -836,6 +836,8 @@ Default CALENDAR_REMINDERS_ENABLED=false, CALENDAR_REMINDER_LEAD_MINUTES=10 (1..
 
 `GET /calendar/reminders/{reminder_id}` — перед показом ещё раз проверяет источник/ревизию/статус/время.200 metadata без общего массива + reminder. Пока due=false показывать нельзя; истёкшее/отменённое/изменённое/disabled —404 CALENDAR_REMINDER_NOT_FOUND, stale —503 CALENDAR_STALE. Старый ID не переигрывается после изменения. При офлайн/Core-unavailable точная доставка не обещается; retry допустим только до expires_at. Получение удалённой отмены ограничено интервалом CalDAV-синхронизации, не является мгновенной подпиской на внешний сервер.
 
+Допроверка настоящего Xandikos0.4.10/Core на синтетической серии: due/validation, изменение revision→старый ID404, DELETE→404, отключение сервера/restart→stale/validation503; [протокол](reports/task-24-xandikos-core.json). Это не OS-доставка Android и не авторизация/TLS пользовательского календаря.
+
 #### 4.7.2. Подтверждённый режим встречи — Core-основа TASK-24
 
 Default MEETING_MODE_ENABLED=false, MEETING_MODE_ALLOWED_SWITCHES=[] (до5 конкретных switch.*). Это пользовательские выделенные DND-переключатели; соответствие реальному устройству требует приёмки. Только confirmed/busy/non-DATE, положительная длительность≤8ч, свежий календарь, отдельное согласие для события/времени/ревизии/политики и целей. Никаких произвольных params/автоматического принятия. В рабочей конфигурации режим не включался.

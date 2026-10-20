@@ -1,0 +1,185 @@
+{
+  "real_caldav_implementation": true,
+  "real_core": true,
+  "xandikos": "0.4.10",
+  "synthetic_calendar": true,
+  "physical_phone": false,
+  "pi": false,
+  "native_llm": false,
+  "actual_ha": false,
+  "authentication_tested": false,
+  "reminder_validation_tested": true,
+  "fixed_core_clock": "2026-10-20T03:00:00.000000Z",
+  "checks": [
+    "PUT and REPORT on real server",
+    "RRULE EXDATE RDATE override DATE floating IANA DST",
+    "real recurring event gives validated due reminder",
+    "real CalDAV edit invalidates old reminder revision",
+    "real CalDAV delete removes pending reminder",
+    "stable revision update cancelled removed",
+    "restart stable IDs and cache",
+    "server down restart keeps stale cache",
+    "real server outage blocks reminder validation"
+  ],
+  "reminder_clock": "2026-10-21T04:52:00Z",
+  "result": "PASS",
+  "fixture_packages": {
+    "idna": "3.20",
+    "pytz": "2026.5",
+    "defusedxml": "0.7.1",
+    "urllib3": "2.8.0",
+    "frozenlist": "1.8.0",
+    "python-dateutil": "2.9.0.post0",
+    "MarkupSafe": "3.0.4",
+    "icalendar": "7.3.0",
+    "six": "1.17.0",
+    "propcache": "0.5.4",
+    "tzdata": "2026.5",
+    "aiohttp": "3.14.5",
+    "yarl": "1.25.1",
+    "vobject": "0.9.9",
+    "xandikos": "0.4.10",
+    "dulwich": "1.2.17",
+    "multidict": "7.1.0",
+    "aiosignal": "1.4.0",
+    "attrs": "26.1.0",
+    "aiohappyeyeballs": "2.7.1",
+    "Jinja2": "3.1.6"
+  },
+  "python": "3.14.8",
+  "machine": "x86_64",
+  "fixture_downloads": {
+    "downloaded_wheel_bytes": 6921897,
+    "expanded_wheel_bytes": 22418068,
+    "packages": [
+      {
+        "name": "xandikos",
+        "version": "0.4.10",
+        "bytes": 226651,
+        "sha256": "caac813eb7848dab25b253088e9e7ce189defee1a169557f94fa23625b5f3146"
+      },
+      {
+        "name": "dulwich",
+        "version": "1.2.17",
+        "bytes": 1586794,
+        "sha256": "a547aba91a9d2be57c2656dac0182e7f504bdaef4b72cbb1630b126c93857b4e"
+      },
+      {
+        "name": "icalendar",
+        "version": "7.3.0",
+        "bytes": 542540,
+        "sha256": "8355acfe17be81b368f0b1e3740817cea9b56ea889931f8f1a87c62f2d28db0b"
+      },
+      {
+        "name": "tzdata",
+        "version": "2026.5",
+        "bytes": 347996,
+        "sha256": "b683bd1b6659ddcd810ff02ad09ba821d4bf1065072805063eb35c49617905ac"
+      },
+      {
+        "name": "urllib3",
+        "version": "2.8.0",
+        "bytes": 135717,
+        "sha256": "0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3"
+      },
+      {
+        "name": "aiohttp",
+        "version": "3.14.5",
+        "bytes": 1888041,
+        "sha256": "94684b879ac1d71e4238850c99b62dc1b28d9086b156a2555f082010b85a865c"
+      },
+      {
+        "name": "multidict",
+        "version": "7.1.0",
+        "bytes": 474883,
+        "sha256": "33389fe084e5426d9fd85d7d9ca91a29cd0d88a83c7c96e411aca49a3f9967bc"
+      },
+      {
+        "name": "yarl",
+        "version": "1.25.1",
+        "bytes": 117199,
+        "sha256": "30eec96e8a91bd588ce897c9543f6d5d8d34b28fbcba28a4dedf20ebeae9fe57"
+      },
+      {
+        "name": "aiohappyeyeballs",
+        "version": "2.7.1",
+        "bytes": 15038,
+        "sha256": "9243213661e29250eb41368e5daa826fc017156c3b8a11440826b2e3ed376472"
+      },
+      {
+        "name": "aiosignal",
+        "version": "1.4.0",
+        "bytes": 7490,
+        "sha256": "053243f8b92b990551949e63930a839ff0cf0b0ebbe0597b0f3fb19e1a0fe82e"
+      },
+      {
+        "name": "attrs",
+        "version": "26.1.0",
+        "bytes": 67548,
+        "sha256": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309"
+      },
+      {
+        "name": "frozenlist",
+        "version": "1.8.0",
+        "bytes": 231298,
+        "sha256": "cba69cb73723c3f329622e34bdbf5ce1f80c21c290ff04256cff1cd3c2036ed2"
+      },
+      {
+        "name": "idna",
+        "version": "3.20",
+        "bytes": 69583,
+        "sha256": "ab7ae7122974553370f0bdb919e1a960b2cd1bc1ef0276416d896db81c14582c"
+      },
+      {
+        "name": "propcache",
+        "version": "0.5.4",
+        "bytes": 232757,
+        "sha256": "cc07876cfb079b6f6f36d21ce75784ad6c2c6b563eeac0ed26c2fa2669b85df9"
+      },
+      {
+        "name": "defusedxml",
+        "version": "0.7.1",
+        "bytes": 25604,
+        "sha256": "a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61"
+      },
+      {
+        "name": "Jinja2",
+        "version": "3.1.6",
+        "bytes": 134899,
+        "sha256": "85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67"
+      },
+      {
+        "name": "MarkupSafe",
+        "version": "3.0.4",
+        "bytes": 23049,
+        "sha256": "a8e9f292fcda89b324f2f5c91d13f1424a153e40fc2756f38ee23b15835ff300"
+      },
+      {
+        "name": "python-dateutil",
+        "version": "2.9.0.post0",
+        "bytes": 229892,
+        "sha256": "a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427"
+      },
+      {
+        "name": "six",
+        "version": "1.17.0",
+        "bytes": 11050,
+        "sha256": "4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274"
+      },
+      {
+        "name": "vobject",
+        "version": "0.9.9",
+        "bytes": 47526,
+        "sha256": "0fbdb982065cf4d1843a5d5950c88510041c6de026bda49c3502721de1c6ac3d"
+      },
+      {
+        "name": "pytz",
+        "version": "2026.5",
+        "bytes": 506342,
+        "sha256": "e658af3757f9e26a9d25dd2aff38335acd92bc9104f890a894b2c1ba28311b03"
+      }
+    ]
+  },
+  "own_fixture_file_bytes_removed": 35915105,
+  "production_dependencies_changed": false
+}

@@ -33,7 +33,7 @@ def ical(*events):
     ).encode()
 
 
-async def scenario(folder, dependencies):
+async def scenario(folder, dependencies, reminders=False):
     assert shutil.disk_usage(CORE).free >= 4 * 1024**3
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
@@ -53,7 +53,7 @@ async def scenario(folder, dependencies):
         CALENDAR_PASSWORD="",
         CALENDAR_TIMEZONE="Asia/Yekaterinburg",
         CALENDAR_INTERVAL_SECONDS="3600",
-        CALENDAR_REMINDERS_ENABLED="false",
+        CALENDAR_REMINDERS_ENABLED=str(reminders).lower(),
         MEETING_ENABLED="false",
         LLM_ENABLED="false",
         VOICE_ENABLED="false",
@@ -77,6 +77,7 @@ async def scenario(folder, dependencies):
         native_llm=False,
         actual_ha=False,
         authentication_tested=False,
+        reminder_validation_tested=reminders,
         fixed_core_clock="2026-10-20T03:00:00.000000Z",
         checks=[],
     )
@@ -220,6 +221,22 @@ async def scenario(folder, dependencies):
                         result["checks"].append(
                             "RRULE EXDATE RDATE override DATE floating IANA DST"
                         )
+                        if reminders:
+                            clock.utcnow = lambda: datetime(2026, 10, 21, 4, 52, tzinfo=UTC)
+                            assert (await core.post("/calendar/sync")).status_code == 200
+                            schedule = (await core.get("/calendar/reminders")).json()
+                            assert schedule["enabled"] and not schedule["stale"]
+                            assert len(schedule["reminders"]) == 1
+                            due = schedule["reminders"][0]
+                            assert due["due"] and due["due_at"] == "2026-10-21T04:50:00.000000Z"
+                            first_reminder = due["id"]
+                            assert (
+                                await core.get("/calendar/reminders/" + first_reminder)
+                            ).status_code == 200
+                            result["checks"].append(
+                                "real recurring event gives validated due reminder"
+                            )
+                            result["reminder_clock"] = "2026-10-21T04:52:00Z"
                         original = {e["id"]: e["revision"] for e in events}
                         assert (await core.post("/calendar/sync")).status_code == 200
                         assert {
@@ -229,7 +246,9 @@ async def scenario(folder, dependencies):
                         response = await dav.put(
                             calendar_url + "series.ics",
                             content=ical(
-                                series,
+                                series.replace("Синтетическая серия", "Изменённая серия")
+                                if reminders
+                                else series,
                                 moved.replace("T073000Z", "T093000Z").replace(
                                     "T083000Z", "T103000Z"
                                 ),
@@ -252,11 +271,39 @@ async def scenario(folder, dependencies):
                                 headers={"Content-Type": "text/calendar"},
                             )
                         ).status_code == 204
+                        if reminders:
+                            assert (
+                                await core.get("/calendar/reminders/" + first_reminder)
+                            ).status_code == 404
+                            schedule = (await core.get("/calendar/reminders")).json()
+                            assert len(schedule["reminders"]) == 1
+                            replacement = schedule["reminders"][0]
+                            assert replacement["event_id"] == due["event_id"]
+                            assert replacement["event_revision"] == due["event_revision"] + 1
+                            assert replacement["id"] != first_reminder
+                            replacement_reminder = replacement["id"]
+                            assert (
+                                await core.get("/calendar/reminders/" + replacement_reminder)
+                            ).status_code == 200
+                            result["checks"].append(
+                                "real CalDAV edit invalidates old reminder revision"
+                            )
                         assert (await dav.delete(calendar_url + "floating.ics")).status_code == 204
                         assert (await core.post("/calendar/sync")).status_code == 200
                         page = (await core.get("/calendar/events?include_inactive=true")).json()
                         assert sum(e["status"] == "cancelled" for e in page["events"]) == 1
                         assert sum(e["status"] == "removed" for e in page["events"]) == 1
+                        if reminders:
+                            assert (
+                                await dav.delete(calendar_url + "series.ics")
+                            ).status_code == 204
+                            assert (await core.post("/calendar/sync")).status_code == 200
+                            assert (
+                                await core.get("/calendar/reminders/" + replacement_reminder)
+                            ).status_code == 404
+                            assert (await core.get("/calendar/reminders")).json()["reminders"] == []
+                            page = (await core.get("/calendar/events?include_inactive=true")).json()
+                            result["checks"].append("real CalDAV delete removes pending reminder")
                         ids = sorted(e["id"] for e in page["events"] if e["status"] == "confirmed")
                         result["checks"].append("stable revision update cancelled removed")
                         assert "synthetic-private-description" not in json.dumps(page)
@@ -283,6 +330,13 @@ async def scenario(folder, dependencies):
                     page = (await core.get("/calendar/events")).json()
                     assert page["stale"] and sorted(e["id"] for e in page["events"]) == ids
                     result["checks"].append("server down restart keeps stale cache")
+                    if reminders:
+                        schedule = (await core.get("/calendar/reminders")).json()
+                        assert schedule["stale"] and schedule["reminders"] == []
+                        assert (
+                            await core.get("/calendar/reminders/" + replacement_reminder)
+                        ).status_code == 503
+                        result["checks"].append("real server outage blocks reminder validation")
             finally:
                 await stop_server(server, task)
         result["result"] = "PASS"
@@ -303,6 +357,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dependencies", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--reminders", action="store_true")
     args = parser.parse_args()
     output = args.output.resolve()
     dependencies = args.dependencies.resolve()
@@ -320,7 +375,7 @@ def main():
     ) as folder:
         os.chdir(folder)
         try:
-            result = asyncio.run(scenario(Path(folder), dependencies))
+            result = asyncio.run(scenario(Path(folder), dependencies, args.reminders))
         finally:
             os.chdir(previous)
     result.update(
