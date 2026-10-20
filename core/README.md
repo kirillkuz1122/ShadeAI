@@ -470,3 +470,8 @@ core/.venv/bin/python core/checks/check_deployment.py --browser --output core/.p
 Core/БД/данные синтетические, процессы останавливаются. Результат не заменяет Pi.
 Обычный pytest остаётся без TCP, disk-budget unit-тестов синтетический (CI tmpfs),
 реальный резерв4GiB используется отдельным loopback/CLI.
+
+
+### Отдельный настоящий CalDAV-стенд TASK-23
+
+`checks/check_calendar_xandikos.py` проверяет Core с Xandikos0.4.10 на loopback, временной коллекцией и синтетическими ICS. Optional `requirements-caldav-check.txt` — только внешний QA-сервер, не зависимость Core/.venv или обычного pytest. Установка в отдельный .pytest_cache target, воспроизведение и границы — [отчёт23](../docs/reports/task-23.md). Модели/HA не нужны. Реальная серверная развёртка повторов не заменяет Pi/телефон и пользовательский календарь.
