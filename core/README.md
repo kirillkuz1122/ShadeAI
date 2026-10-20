@@ -475,3 +475,8 @@ Core/БД/данные синтетические, процессы остана
 ### Отдельный настоящий CalDAV-стенд TASK-23
 
 `checks/check_calendar_xandikos.py` проверяет Core с Xandikos0.4.10 на loopback, временной коллекцией и синтетическими ICS. Optional `requirements-caldav-check.txt` — только внешний QA-сервер, не зависимость Core/.venv или обычного pytest. Установка в отдельный .pytest_cache target, воспроизведение и границы — [отчёт23](../docs/reports/task-23.md). Модели/HA не нужны. Реальная серверная развёртка повторов не заменяет Pi/телефон и пользовательский календарь.
+
+
+### TASK-18: проверка разметки без модели
+
+`.venv/bin/python checks/evaluate_extraction.py --validate-only` проверяет структуру/цитаты/время/дубли без GGUF/ключа/сети. С --stage holdout известные dev-входы отклоняются до модели; нулевое пересечение не подтверждает независимость. После новых dev-прогонов пополнять checks/development-inputs.json отпечатками input_signature. Native-режим требует --model/--output и не перезаписывает отчёт. [Методика18](../docs/reports/task-18.md).

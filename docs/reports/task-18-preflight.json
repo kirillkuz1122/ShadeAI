@@ -1,0 +1,28 @@
+{
+  "result": "PASS",
+  "native_model": false,
+  "hardware": false,
+  "inference_performed": false,
+  "development_preflight": {
+    "dataset_sha256": "fd8764067857aaa219519ec2637a5e323181b7752a737706a149b4c5c3cf897f",
+    "cases": 40,
+    "categories": {
+      "delivery": 10,
+      "transport": 5,
+      "calendar": 10,
+      "reminder": 10,
+      "noise": 5
+    },
+    "known_development_overlap": 40,
+    "stage": "development",
+    "independence": "not established; no known overlap is necessary, not sufficient"
+  },
+  "known_development_signatures": 43,
+  "old_dataset_holdout_exit": 2,
+  "old_native_report_unchanged_sha256": "e1a6c388902214a35bb34aa8b1ea6154e21f3cbc13c2e87331f1c88e8bf88a54",
+  "focused_tests": 25,
+  "quality_improvement_claimed": false,
+  "core_python314_tests": 519,
+  "ruff": "PASS",
+  "web_build": "PASS"
+}

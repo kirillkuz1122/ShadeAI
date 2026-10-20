@@ -17,6 +17,8 @@ CORE = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(CORE), str(CORE / "checks")]
 from extraction_metrics import score, summarize  # noqa: E402
 
+from checks.evaluation_dataset import DatasetError, load_dataset  # noqa: E402
+
 
 async def evaluate(model, dataset, threads):
     from app.schemas import NotificationIn
@@ -126,17 +128,28 @@ async def evaluate(model, dataset, threads):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--model", required=True, type=Path)
-    parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--model", type=Path)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--threads", type=int, choices=(2, 4), default=2)
     parser.add_argument("--dataset", type=Path, default=CORE / "checks/eval-notifications.json")
     parser.add_argument("--stage", choices=("development", "holdout"), default="development")
     args = parser.parse_args()
-    model, output = args.model.resolve(strict=True), args.output.resolve()
+    try:
+        dataset, dataset_info = load_dataset(args.dataset, args.stage)
+    except DatasetError as error:
+        parser.error(str(error))
+    if args.validate_only:
+        if args.model is not None or args.output is not None:
+            parser.error("--validate-only не принимает --model/--output")
+        print(json.dumps(dataset_info, ensure_ascii=False))
+        return
+    if args.model is None or args.output is None:
+        parser.error("Для native-оценки нужны --model и --output")
+    output = args.output.resolve()
     if output.exists():
         parser.error("Файл отчёта уже существует; выберите новый --output")
-    dataset_raw = args.dataset.read_bytes()
-    dataset = json.loads(dataset_raw)
+    model = args.model.resolve(strict=True)
     previous = Path.cwd()
     with tempfile.TemporaryDirectory(prefix="task18-eval-", dir=CORE / ".pytest_cache") as scratch:
         os.chdir(scratch)
@@ -146,7 +159,8 @@ def main():
         finally:
             os.chdir(previous)
     report["stage"] = args.stage
-    report["dataset_sha256"] = hashlib.sha256(dataset_raw).hexdigest()
+    report["dataset_preflight"] = dataset_info
+    report["dataset_sha256"] = dataset_info["dataset_sha256"]
     if Path("/proc/cpuinfo").is_file():
         report["cpu"] = next(
             (
