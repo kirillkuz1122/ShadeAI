@@ -1,5 +1,6 @@
 """Одноразовый read-only AVD из существующего SDK, с резервом общего диска/RAM."""
 
+import argparse
 import json
 import os
 import shutil
@@ -25,6 +26,15 @@ def ram():
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--minutes",
+        type=int,
+        choices=(15, 25),
+        default=15,
+        help="15 обычно; 25 только для проверки настоящего 15-минутного WorkManager",
+    )
+    args = parser.parse_args()
     if shutil.disk_usage(ANDROID).free < 6 * 1024**3 or ram() < 3 * 1024**3:
         raise SystemExit("Для стенда нужны 6 GiB диска и 3 GiB доступной RAM")
     if not os.access("/dev/kvm", os.W_OK):
@@ -61,7 +71,7 @@ def main():
             stderr=subprocess.STDOUT,
             start_new_session=True,
         )
-        deadline = time.monotonic() + 900
+        deadline = time.monotonic() + args.minutes * 60
         try:
             while child.poll() is None:
                 free, available = shutil.disk_usage(ANDROID).free, ram()

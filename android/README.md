@@ -303,7 +303,9 @@ python android/checks/check_results_jvm.py --compile-app
 
 Уведомление и cursor не записываются одной транзакцией: стабильный tag подавляет обычные дубли, но после сбоя/удаления возможен повтор. Отзыв разрешения/смена настроек блокируют последующие уведомления; уже показанные от старой revision могут оставаться до явного выключения. Включение требует сохранённого ключа и актуальной revision. NotificationListener/Room/очередь исходных уведомлений независимы.
 
-Без скачиваний и Gradle: `python android/checks/check_results_jvm.py --compile-app` —21 focused JUnit и компиляция всех Kotlin/Compose исходников. Результат не подтверждает APK/manifest merge/KSP/lint, системное разрешение/канал/доставку/Doze. Эти проверки и телефон остаются открыты; при текущем дефиците диска тяжёлые сборки не запускать. [Отчёт TASK-21](../docs/reports/task-21.md).
+Без скачиваний и Gradle: `python android/checks/check_results_jvm.py --compile-app` —21 focused JUnit и компиляция всех Kotlin/Compose исходников. Сам compile-only результат не подтверждает APK/manifest/KSP/lint или ОС. Позже общий APK/lint и OS21 проверены (см. отчёт); телефон/Doze/OEM остаются открыты; при текущем дефиците диска тяжёлые сборки не запускать. [Отчёт TASK-21](../docs/reports/task-21.md).
+
+Для отдельной проверки естественного15мин периода: после готового APK запустить `core/.venv/bin/python android/checks/results_server.py --hints`, `python android/checks/run_emulator_guarded.py --minutes 25`, затем `core/.venv/bin/python android/checks/check_hints_periodic.py`. Только новый read-only AVD5554, debug Shade очищается. Начальный opt-in/baseline отделён от фонового ожидания; без кнопки/forced job/ускорения часов. Обычный guard15мин и резервы диска/RAM сохранены,25мин — для этого ограниченного теста. Результат/границы — [отчёт21](../docs/reports/task-21.md).
 
 ## Политика исполнения TASK-22
 
