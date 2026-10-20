@@ -1,0 +1,12 @@
+{
+  "result": "PASS",
+  "python_family": "3.11",
+  "focused_tests": 25,
+  "network": "none",
+  "memory_limit_mib": 384,
+  "swap_disabled": true,
+  "cpus": 1,
+  "existing_image_id": "sha256:5509df27829d3fcf923f6f221e87beef83db1aba037bbeceea5beaab22f443dc",
+  "new_images_or_dependencies_downloaded": false,
+  "native_inference": false
+}

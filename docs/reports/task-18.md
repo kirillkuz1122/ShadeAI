@@ -18,7 +18,7 @@ cd core
 .venv/bin/python checks/evaluate_extraction.py --validate-only --stage holdout --dataset checks/new-holdout.json
 ```
 
-Validate-only не принимает --model/--output и печатает только хеш/счётчики/пересечение/ограничение независимости. Native-режим по-прежнему требует обе опции. Eval-v1 даёт40случаев/40пересечений; holdout — exit2. Исходный native-отчёт не перезаписан, SHA-256 в протоколе.25focused preflight/metrics PASS (21новый+4прежних); **519Core/Python3.14**, ruff и Webbuild PASS. TASK-18 открыта.
+Validate-only не принимает --model/--output и печатает только хеш/счётчики/пересечение/ограничение независимости. Native-режим по-прежнему требует обе опции. Eval-v1 даёт40случаев/40пересечений; holdout — exit2. Исходный native-отчёт не перезаписан, SHA-256 в протоколе.25focused preflight/metrics PASS (21новый+4прежних); **519Core/Python3.14**, ruff и Webbuild PASS. TASK-18 открыта. Дополнительно те же25focused прошли наPython3.11 в уже имеющемся Docker-образе: network none/read-only/384MiB безswap/1CPU/tmpfs, без новых образов/зависимостей; [протокол3.11](task-18-python311-preflight.json). Это не полный519Core на3.11 и не native-прогон.
 
 ## Набор и разметка
 
