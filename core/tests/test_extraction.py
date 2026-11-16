@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from app.schemas import NotificationIn
 from app.services.llm.engine import LLMError
 from app.services.notification.extraction import (
+    GENERATION_DRAFT,
     ExtractionDraft,
     LLMNotificationProcessor,
     parse_extraction,
@@ -214,7 +215,7 @@ async def test_processor_sends_only_notification_data_and_constrained_schema():
         "title": notification().title,
         "text": notification().text,
     }
-    assert schema == ExtractionDraft.model_json_schema()
+    assert schema == GENERATION_DRAFT.json_schema()
 
 
 @pytest.mark.parametrize("finish", ["length", "stop"])
@@ -248,3 +249,45 @@ async def test_next_notification_can_explicitly_reload_after_runtime_timeout():
     engine.status = "LLM_TIMEOUT"
     await LLMNotificationProcessor(engine, "UTC")(notification())
     assert engine.calls[0] == "load"
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("priority", "high"),
+        ("subject", "Акция"),
+        ("location", "Пункт 1"),
+        ("service", "Ozon"),
+        ("time_expression", "завтра"),
+    ],
+)
+def test_generation_schema_rejects_inconsistent_noise_before_parser(field, value):
+
+    payload = draft(
+        category="noise",
+        priority="low",
+        subject=None,
+        location=None,
+        service=None,
+        time_expression=None,
+    )
+    assert GENERATION_DRAFT.validate_python(payload).category == "noise"
+    payload[field] = value
+    with pytest.raises(ValidationError):
+        GENERATION_DRAFT.validate_python(payload)
+
+
+@pytest.mark.parametrize("category", ["delivery", "transport", "calendar", "reminder"])
+def test_generation_schema_preserves_event_fields_and_strict_final_parser(category):
+
+    payload = draft(category=category)
+    result = GENERATION_DRAFT.validate_python(payload)
+    assert result.model_dump() == ExtractionDraft.model_validate(payload).model_dump()
+    assert (
+        parse_extraction(json.dumps(payload), notification(), "Asia/Yekaterinburg").category
+        == category
+    )
+    payload["service"] = "НесуществующаяКомпания"
+    GENERATION_DRAFT.validate_python(payload)
+    with pytest.raises(ValueError):
+        parse_extraction(json.dumps(payload), notification(), "Asia/Yekaterinburg")

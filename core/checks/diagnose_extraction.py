@@ -20,6 +20,7 @@ async def diagnose(model, dataset, ids):
     from app.services.llm.engine import EngineConfig, LLMError, LocalLLMEngine
     from app.services.notification.extraction import (
         EXAMPLES,
+        GENERATION_DRAFT,
         PROMPT,
         ExtractionDraft,
         unique_object,
@@ -53,7 +54,7 @@ async def diagnose(model, dataset, ids):
                             ),
                         },
                     ],
-                    schema=ExtractionDraft.model_json_schema(),
+                    schema=GENERATION_DRAFT.json_schema(),
                 )
                 item["finish_reason"] = result.finish_reason
                 draft = ExtractionDraft.model_validate(

@@ -480,3 +480,23 @@ Core/БД/данные синтетические, процессы остана
 ### TASK-18: проверка разметки без модели
 
 `.venv/bin/python checks/evaluate_extraction.py --validate-only` проверяет структуру/цитаты/время/дубли без GGUF/ключа/сети. С --stage holdout известные dev-входы отклоняются до модели; нулевое пересечение не подтверждает независимость. После новых dev-прогонов пополнять checks/development-inputs.json отпечатками input_signature. Native-режим требует --model/--output и не перезаписывает отчёт. [Методика18](../docs/reports/task-18.md).
+
+
+На общем компьютере native-оценку запускайте с ограничением времени и запасом ресурсов,
+используя уже подготовленную модель, без установки зависимостей в ходе проверки. Из `core/`:
+
+```bash
+.venv/bin/python checks/run_native_guarded.py --seconds 420 \
+  --output .pytest_cache/native-guard.json -- \
+  .venv/bin/python checks/evaluate_extraction.py \
+  --model models/qwen2.5-1.5b-instruct-q4_k_m.gguf --stage development \
+  --output .pytest_cache/native-evaluation.json
+```
+
+Стенд использует `unshare -Urn` и отдельную группу процессов; требуется доступный
+Linux user/network namespace. При старте нужны 4 GiB свободного диска и 4 GiB
+`MemAvailable`. При падении ниже 4 GiB диска или 1 GiB доступной RAM, потере чтения
+показателей или истечении срока стенд завершает свою группу. Во время нагрузки
+не запускать AVD. Коды измерителя сохраняются: `1` означает непрохождение порогов,
+`75` — остановку защитой. Существующие JSON не перезаписываются; пустой файл
+означает незавершённую запись и не является результатом. Это стенд компьютера.

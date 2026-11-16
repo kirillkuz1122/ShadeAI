@@ -25,8 +25,8 @@ async def evaluate(model, dataset, threads):
     from app.services.llm.engine import EngineConfig, LLMError, LocalLLMEngine
     from app.services.notification.extraction import (
         EXAMPLES,
+        GENERATION_DRAFT,
         PROMPT,
-        ExtractionDraft,
         LLMNotificationProcessor,
     )
 
@@ -48,7 +48,7 @@ async def evaluate(model, dataset, threads):
         "dataset_version": dataset["version"],
         "schema_sha256": hashlib.sha256(
             json.dumps(
-                ExtractionDraft.model_json_schema(),
+                GENERATION_DRAFT.json_schema(),
                 sort_keys=True,
             ).encode()
         ).hexdigest(),

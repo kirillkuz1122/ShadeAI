@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Literal
 from zoneinfo import ZoneInfo
 
-from pydantic import Field, ValidationError, model_validator
+from pydantic import Field, TypeAdapter, ValidationError, model_validator
 
 from app.schemas import NotificationIn
 from app.services.llm.engine import LLMError, LocalLLMEngine
@@ -127,6 +127,22 @@ class ExtractionDraft(StrictModel):
         ):
             raise ValueError("Неверная структура noise")
         return self
+
+
+class NoiseGenerationDraft(ExtractionDraft):
+    category: Literal["noise"]
+    priority: Literal["low"]
+    subject: None
+    location: None
+    service: None
+    time_expression: None
+
+
+class EventGenerationDraft(ExtractionDraft):
+    category: Literal["delivery", "transport", "calendar", "reminder"]
+
+
+GENERATION_DRAFT = TypeAdapter(NoiseGenerationDraft | EventGenerationDraft)
 
 
 class ExtractedTime(StrictModel):
@@ -320,7 +336,7 @@ class LLMNotificationProcessor:
                     ),
                 },
             ],
-            schema=ExtractionDraft.model_json_schema(),
+            schema=GENERATION_DRAFT.json_schema(),
         )
         if result.finish_reason != "stop":
             raise LLMError("LLM_BAD_RESPONSE")
