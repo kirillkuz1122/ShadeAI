@@ -1,0 +1,19 @@
+{
+  "offline_network_namespace": true,
+  "platform": "development-computer",
+  "hardware_acceptance": false,
+  "native_exit_code": 1,
+  "stopped_for": null,
+  "elapsed_seconds": 20.018,
+  "minimum_free_bytes": 8177414144,
+  "minimum_available_ram_bytes": 7956905984,
+  "start_disk_ram_bytes": [
+    4294967296,
+    4294967296
+  ],
+  "stop_disk_ram_bytes": [
+    4294967296,
+    1073741824
+  ],
+  "time_budget_seconds": 110
+}

@@ -19,6 +19,11 @@ from extraction_metrics import score, summarize  # noqa: E402
 
 from checks.compare_notification_router import predict, restrict_schema, rules_sha256  # noqa: E402
 from checks.evaluation_dataset import DatasetError, load_dataset  # noqa: E402
+from checks.literal_service import (  # noqa: E402
+    literal_service_sha256,
+    literal_services,
+    restrict_service_schema,
+)
 from checks.literal_time import (  # noqa: E402
     literal_time_sha256,
     literal_times,
@@ -26,7 +31,9 @@ from checks.literal_time import (  # noqa: E402
 )
 
 
-async def evaluate(model, dataset, threads, *, router_rules=False, time_literals=False):
+async def evaluate(
+    model, dataset, threads, *, router_rules=False, time_literals=False, service_literals=False
+):
     from app.schemas import NotificationIn
     from app.services.llm.engine import EngineConfig, LLMError, LocalLLMEngine
     from app.services.notification.extraction import (
@@ -71,6 +78,12 @@ async def evaluate(model, dataset, threads, *, router_rules=False, time_literals
     original = engine.generate
     route = None
     candidates = None
+    services = None
+    if service_literals:
+        report["service_literals"] = {
+            "strategy": "named-service-enum",
+            "sha256": literal_service_sha256(),
+        }
     if time_literals:
         report["time_literals"] = {"strategy": "source-span-enum", "sha256": literal_time_sha256()}
     if router_rules:
@@ -81,6 +94,8 @@ async def evaluate(model, dataset, threads, *, router_rules=False, time_literals
             kwargs["schema"] = restrict_schema(kwargs["schema"], route)
         if candidates is not None:
             kwargs["schema"] = restrict_time_schema(kwargs["schema"], candidates)
+        if services is not None:
+            kwargs["schema"] = restrict_service_schema(kwargs["schema"], services)
         result = await original(*args, **kwargs)
         completions.append(result.model_dump(exclude={"content"}))
         return result
@@ -112,6 +127,8 @@ async def evaluate(model, dataset, threads, *, router_rules=False, time_literals
                 route, _ = predict(notification.title, notification.text)
             if time_literals:
                 candidates = literal_times(notification.title, notification.text)
+            if service_literals:
+                services = literal_services(notification.title, notification.text)
             result, error = None, None
             try:
                 result = (await processor(notification)).model_dump()
@@ -131,6 +148,11 @@ async def evaluate(model, dataset, threads, *, router_rules=False, time_literals
                             else None
                         }
                         if time_literals
+                        else {}
+                    ),
+                    **(
+                        {"service_candidate_count": len(services) if services is not None else None}
+                        if service_literals
                         else {}
                     ),
                     "result": result,
@@ -165,6 +187,7 @@ def main():
     parser.add_argument(
         "--time-literals", action="store_true", help="QA: перечислить цитаты времени"
     )
+    parser.add_argument("--service-literals", action="store_true", help="QA: цитаты имён сервисов")
     parser.add_argument("--threads", type=int, choices=(2, 4), default=2)
     parser.add_argument("--dataset", type=Path, default=CORE / "checks/eval-notifications.json")
     parser.add_argument("--stage", choices=("development", "holdout"), default="development")
@@ -173,6 +196,8 @@ def main():
         parser.error("--router-rules доступен только для native development")
     if args.time_literals and (args.validate_only or args.stage != "development"):
         parser.error("--time-literals доступен только для native development")
+    if args.service_literals and (args.validate_only or args.stage != "development"):
+        parser.error("--service-literals доступен только для native development")
     try:
         dataset, dataset_info = load_dataset(args.dataset, args.stage)
     except DatasetError as error:
@@ -181,6 +206,8 @@ def main():
         parser.error("--router-rules требует заранее зарегистрированные dev-входы")
     if args.time_literals and dataset_info["known_development_overlap"] != dataset_info["cases"]:
         parser.error("--time-literals требует заранее зарегистрированные dev-входы")
+    if args.service_literals and dataset_info["known_development_overlap"] != dataset_info["cases"]:
+        parser.error("--service-literals требует заранее зарегистрированные dev-входы")
     if args.validate_only:
         if args.model is not None or args.output is not None:
             parser.error("--validate-only не принимает --model/--output")
@@ -204,6 +231,7 @@ def main():
                     args.threads,
                     router_rules=args.router_rules,
                     time_literals=args.time_literals,
+                    service_literals=args.service_literals,
                 )
             )
         finally:

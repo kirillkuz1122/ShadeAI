@@ -15,6 +15,11 @@ sys.path.insert(0, str(CORE))
 
 from checks.compare_notification_router import predict, restrict_schema, rules_sha256  # noqa: E402
 from checks.evaluation_dataset import load_dataset, unique_object  # noqa: E402
+from checks.literal_service import (  # noqa: E402
+    literal_service_sha256,
+    literal_services,
+    restrict_service_schema,
+)
 from checks.literal_time import (  # noqa: E402
     literal_time_sha256,
     literal_times,
@@ -39,6 +44,12 @@ def select_failed(dataset, info, report):
         "sha256": literal_time_sha256(),
     }:
         raise ValueError("Версия фрагментов времени в отчёте отличается")
+    service_mode = report.get("service_literals")
+    if service_mode is not None and service_mode != {
+        "strategy": "named-service-enum",
+        "sha256": literal_service_sha256(),
+    }:
+        raise ValueError("Версия списка сервисов отличается")
     cases = {item["id"]: item for item in dataset["cases"]}
     rows = report["rows"]
     ids = [row["id"] for row in rows]
@@ -57,11 +68,23 @@ def select_failed(dataset, info, report):
             count = len(candidates) if candidates is not None else None
             if "time_candidate_count" not in row or row["time_candidate_count"] != count:
                 raise ValueError("Кандидаты времени отличаются")
+        if service_mode is not None:
+            services = literal_services(case["title"], case["text"])
+            count = len(services) if services is not None else None
+            if "service_candidate_count" not in row or row["service_candidate_count"] != count:
+                raise ValueError("Кандидаты сервиса отличаются")
     return {row["id"] for row in rows if row.get("error") == "LLM_BAD_RESPONSE"}, bool(route)
 
 
 async def diagnose(
-    model, dataset, ids, *, router_rules=False, time_literals=False, expected_model=None
+    model,
+    dataset,
+    ids,
+    *,
+    router_rules=False,
+    time_literals=False,
+    service_literals=False,
+    expected_model=None,
 ):
     from pydantic import ValidationError
 
@@ -100,6 +123,11 @@ async def diagnose(
                 if candidates is not None:
                     schema = restrict_time_schema(schema, candidates)
                 item["time_candidate_count"] = len(candidates) if candidates is not None else None
+            if service_literals:
+                services = literal_services(notification.title, notification.text)
+                if services is not None:
+                    schema = restrict_service_schema(schema, services)
+                item["service_candidate_count"] = len(services) if services is not None else None
             try:
                 result = await engine.generate(
                     [
@@ -196,6 +224,7 @@ def main():
             raise ValueError("Нет отказов LLM_BAD_RESPONSE для повтора")
         expected_model = evaluation["load"]["sha256"]
         time_literals = evaluation.get("time_literals") is not None
+        service_literals = evaluation.get("service_literals") is not None
     except (ValueError, TypeError, KeyError, AttributeError, RecursionError, OSError):
         parser.error("Несовместимый dev-набор или отчёт с отказами")
     model = args.model.resolve(strict=True)
@@ -211,6 +240,7 @@ def main():
                     ids,
                     router_rules=router_rules,
                     time_literals=time_literals,
+                    service_literals=service_literals,
                     expected_model=expected_model,
                 )
             )
@@ -223,6 +253,7 @@ def main():
         "model_sha256": model_hash,
         "router_rules": router_rules,
         "time_literals": time_literals,
+        "service_literals": service_literals,
         "raw_answers_saved": False,
         "rows": rows,
     }
