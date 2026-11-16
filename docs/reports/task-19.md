@@ -60,3 +60,36 @@ STOP прекращает polling/возврат возобновляет,401 о
 Свои Core/AVD остановлены, временнаяБД/XML/reverse удалены. Загрузок/Gradle не было.
 Это проверка Android UI/HTTP, не нативного качества18/телефона/Pi и не полного
 уведомление→GGUF пути. Следующий доступный OS-срез21 — системная доставка подсказок.
+
+
+## 16 ноября: системный захват, Qwen и показ после рестарта
+
+[Протокол](task-19-native-staged-2026-11-16.json). Один временный SQLite store,
+существующий APK8df0ac55… и QA publisher; AVD и модель работали по очереди.
+
+1. В новом read-only AOSP35 выбран Ozon. Два синтетических системных уведомления
+   прошли listener/WorkManager и обычный HTTP в Core; разные event_id, две строки pending.
+2. AVD/Core остановлены. Core и штатный worker на той же SQLite запущены в `unshare -Urn`
+   с pinned Qwen. Обе строки получили `failed`/`LLM_BAD_RESPONSE` после одной попытки.
+   Отдельно через POST API подан контроль: `processed`, доставка через 8 минут,
+   `action_authorized=false`. Старые отказы не переиграны. Журнал HA пуст.
+3. Core с выключенной моделью снова открыл ту же SQLite. Новый read-only AVD и
+   Chromium показали те же три ID/event_id, две ошибки и локальный разбор с поясом.
+   Браузер читал реальные GET деталей, без подмены ответа, ошибок JS и внешних запросов.
+   Первый Android-тест искал общий fallback; исправлено ожидание текста известного
+   `LLM_BAD_RESPONSE`, повтор прошёл. Приложение не менялось.
+
+Успешный контроль подан API: успешный разбор именно Android-уведомления, телефон,
+Pi и качество TASK-18 остаются открытыми. Стенды остановлены, временная БД удалена.
+
+Повтор из корня: существующие APK, Qwen, production `web/dist`, Chromium и readonly AVD.
+Создать новый `mkdir -m 700 core/.pytest_cache/task19-native-work`; запустить
+`core/.venv/bin/python android/checks/native_results_core.py serve` и отдельно
+`python android/checks/run_emulator_guarded.py`. После загрузки AVD выполнить
+`core/.venv/bin/python android/checks/check_native_results.py capture`, остановить оба стенда.
+Из `core/` запустить `.venv/bin/python checks/run_native_guarded.py --seconds 120 --output <новый-json> -- .venv/bin/python ../android/checks/native_results_core.py infer`, затем с другим JSON и фазой `infer-control`.
+После завершения native снова запустить `serve`, чистый guarded AVD и
+`check_native_results.py display`. Chromium: отдельная сессия Playwright CLI с
+`npm_config_offline=true` и прежним config, `open http://127.0.0.1:8003`,
+`run-code --filename=checks/native-results.js`, `close` из `web/`.
+После прогона остановить свои процессы, сохранить протокол и удалить свою тестовую БД.

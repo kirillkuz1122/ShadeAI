@@ -1,0 +1,166 @@
+{
+  "date": "2026-11-16",
+  "hardware_acceptance": false,
+  "android_capture_to_model": "verified-terminal-failure",
+  "android_capture_to_success": false,
+  "workload": "synthetic",
+  "pipeline_serial": true,
+  "capture": {
+    "phase": "capture",
+    "apk_sha256": "8df0ac55f51cfbde21bdf7f1289aca6e041168a5d547d20214ff8fdbdcdf9f16",
+    "hardware": false,
+    "publisher_sha256": "56380fd3fe23aa537bc93c5859f5bfe63679813ff17e6ab6ac644f4088a2b877",
+    "rows": [
+      {
+        "id": 2,
+        "event_id": "7d91d34f-3424-4313-81e2-083fa4751dd9",
+        "processing_status": "pending"
+      },
+      {
+        "id": 1,
+        "event_id": "8137d478-9fd9-4926-a9da-ededebef59bf",
+        "processing_status": "pending"
+      }
+    ],
+    "result": "PASS"
+  },
+  "infer": {
+    "rows": [
+      {
+        "id": 2,
+        "processing_status": "failed",
+        "processing_error_code": "LLM_BAD_RESPONSE",
+        "category": null
+      },
+      {
+        "id": 1,
+        "processing_status": "failed",
+        "processing_error_code": "LLM_BAD_RESPONSE",
+        "category": null
+      }
+    ],
+    "model_sha256": "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e",
+    "ha_audit_count": 0
+  },
+  "infer_guard": {
+    "offline_network_namespace": true,
+    "platform": "development-computer",
+    "hardware_acceptance": false,
+    "native_exit_code": 0,
+    "stopped_for": null,
+    "elapsed_seconds": 25.018,
+    "minimum_free_bytes": 6473699328,
+    "minimum_available_ram_bytes": 9527341056,
+    "start_disk_ram_bytes": [
+      4294967296,
+      4294967296
+    ],
+    "stop_disk_ram_bytes": [
+      4294967296,
+      1073741824
+    ],
+    "time_budget_seconds": 120
+  },
+  "separate_api_positive_control": {
+    "rows": [
+      {
+        "id": 3,
+        "event_id": "de984334-6abc-405e-aa81-ebfb2d4eeb20",
+        "processing_status": "processed",
+        "processing_error_code": null,
+        "category": "delivery"
+      },
+      {
+        "id": 2,
+        "event_id": "7d91d34f-3424-4313-81e2-083fa4751dd9",
+        "processing_status": "failed",
+        "processing_error_code": "LLM_BAD_RESPONSE",
+        "category": null
+      },
+      {
+        "id": 1,
+        "event_id": "8137d478-9fd9-4926-a9da-ededebef59bf",
+        "processing_status": "failed",
+        "processing_error_code": "LLM_BAD_RESPONSE",
+        "category": null
+      }
+    ],
+    "control_via_api": true,
+    "model_sha256": "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e",
+    "ha_audit_count": 0
+  },
+  "control_guard": {
+    "offline_network_namespace": true,
+    "platform": "development-computer",
+    "hardware_acceptance": false,
+    "native_exit_code": 0,
+    "stopped_for": null,
+    "elapsed_seconds": 14.008,
+    "minimum_free_bytes": 6473408512,
+    "minimum_available_ram_bytes": 9063612416,
+    "start_disk_ram_bytes": [
+      4294967296,
+      4294967296
+    ],
+    "stop_disk_ram_bytes": [
+      4294967296,
+      1073741824
+    ],
+    "time_budget_seconds": 120
+  },
+  "control_http": {
+    "eta_minutes": 8,
+    "action_authorized": false,
+    "attempts": 1
+  },
+  "android_display": {
+    "phase": "display",
+    "apk_sha256": "8df0ac55f51cfbde21bdf7f1289aca6e041168a5d547d20214ff8fdbdcdf9f16",
+    "hardware": false,
+    "rows": [
+      {
+        "id": 3,
+        "event_id": "de984334-6abc-405e-aa81-ebfb2d4eeb20",
+        "processing_status": "processed"
+      },
+      {
+        "id": 2,
+        "event_id": "7d91d34f-3424-4313-81e2-083fa4751dd9",
+        "processing_status": "failed"
+      },
+      {
+        "id": 1,
+        "event_id": "8137d478-9fd9-4926-a9da-ededebef59bf",
+        "processing_status": "failed"
+      }
+    ],
+    "result": "PASS"
+  },
+  "chromium_display": {
+    "result": "PASS",
+    "nativeCount": 1,
+    "rows": [
+      {
+        "id": 3,
+        "event_id": "de984334-6abc-405e-aa81-ebfb2d4eeb20",
+        "processing_status": "processed"
+      },
+      {
+        "id": 2,
+        "event_id": "7d91d34f-3424-4313-81e2-083fa4751dd9",
+        "processing_status": "failed"
+      },
+      {
+        "id": 1,
+        "event_id": "8137d478-9fd9-4926-a9da-ededebef59bf",
+        "processing_status": "failed"
+      }
+    ],
+    "errors": [],
+    "externalRequests": 0
+  },
+  "gradle_invoked": false,
+  "downloads": false,
+  "own_stands_stopped": true,
+  "check_harness_first_attempt": "Android проверял общий fallback, заменено на строку известного LLM_BAD_RESPONSE, повтор PASS"
+}
