@@ -15,6 +15,11 @@ sys.path.insert(0, str(CORE))
 
 from checks.compare_notification_router import predict, restrict_schema, rules_sha256  # noqa: E402
 from checks.evaluation_dataset import load_dataset, unique_object  # noqa: E402
+from checks.literal_time import (  # noqa: E402
+    literal_time_sha256,
+    literal_times,
+    restrict_time_schema,
+)
 
 
 def select_failed(dataset, info, report):
@@ -28,6 +33,12 @@ def select_failed(dataset, info, report):
         "sha256": rules_sha256(),
     }:
         raise ValueError("Версия правил в отчёте отличается")
+    time_mode = report.get("time_literals")
+    if time_mode is not None and time_mode != {
+        "strategy": "source-span-enum",
+        "sha256": literal_time_sha256(),
+    }:
+        raise ValueError("Версия фрагментов времени в отчёте отличается")
     cases = {item["id"]: item for item in dataset["cases"]}
     rows = report["rows"]
     ids = [row["id"] for row in rows]
@@ -41,10 +52,17 @@ def select_failed(dataset, info, report):
             "route" not in row or row["route"] != predict(case["title"], case["text"])[0]
         ):
             raise ValueError("Решение маршрутизатора отличается")
+        if time_mode is not None:
+            candidates = literal_times(case["title"], case["text"])
+            count = len(candidates) if candidates is not None else None
+            if "time_candidate_count" not in row or row["time_candidate_count"] != count:
+                raise ValueError("Кандидаты времени отличаются")
     return {row["id"] for row in rows if row.get("error") == "LLM_BAD_RESPONSE"}, bool(route)
 
 
-async def diagnose(model, dataset, ids, *, router_rules=False, expected_model=None):
+async def diagnose(
+    model, dataset, ids, *, router_rules=False, time_literals=False, expected_model=None
+):
     from pydantic import ValidationError
 
     from app.schemas import NotificationIn
@@ -77,6 +95,11 @@ async def diagnose(model, dataset, ids, *, router_rules=False, expected_model=No
                 if route is not None:
                     schema = restrict_schema(schema, route)
                 item["route"] = route
+            if time_literals:
+                candidates = literal_times(notification.title, notification.text)
+                if candidates is not None:
+                    schema = restrict_time_schema(schema, candidates)
+                item["time_candidate_count"] = len(candidates) if candidates is not None else None
             try:
                 result = await engine.generate(
                     [
@@ -172,6 +195,7 @@ def main():
         if not ids:
             raise ValueError("Нет отказов LLM_BAD_RESPONSE для повтора")
         expected_model = evaluation["load"]["sha256"]
+        time_literals = evaluation.get("time_literals") is not None
     except (ValueError, TypeError, KeyError, AttributeError, RecursionError, OSError):
         parser.error("Несовместимый dev-набор или отчёт с отказами")
     model = args.model.resolve(strict=True)
@@ -186,6 +210,7 @@ def main():
                     dataset,
                     ids,
                     router_rules=router_rules,
+                    time_literals=time_literals,
                     expected_model=expected_model,
                 )
             )
@@ -197,6 +222,7 @@ def main():
         "evaluation_sha256": hashlib.sha256(raw).hexdigest(),
         "model_sha256": model_hash,
         "router_rules": router_rules,
+        "time_literals": time_literals,
         "raw_answers_saved": False,
         "rows": rows,
     }
