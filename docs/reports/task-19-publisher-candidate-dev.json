@@ -1,0 +1,207 @@
+{
+  "platform": "development-computer",
+  "python": "3.14.9",
+  "machine": "x86_64",
+  "kernel": "7.3.3-1-cachyos",
+  "llama_cpp_python": "0.3.36",
+  "prompt_sha256": "5ccc7c409952c2112cc13737b48785d67787f0bdbd1670580d721b92efa6ac78",
+  "dataset_version": 1,
+  "schema_sha256": "d3e3ec6e23075c7c269ee1a17ef87a4929ecd1259b8fcd96c22d39f354ee8f56",
+  "temperature": 0.0,
+  "seed": 42,
+  "threads": 2,
+  "context": 2048,
+  "max_tokens": 256,
+  "memory_limit_mb": 2304,
+  "annotation": "synthetic-by-agent; requires-human-review",
+  "rows": [
+    {
+      "id": "aosp-order",
+      "expected_category": "delivery",
+      "predicted_category": null,
+      "route": null,
+      "time_candidate_count": 0,
+      "result": null,
+      "error": "LLM_BAD_RESPONSE",
+      "fields": {
+        "category": false,
+        "priority": false,
+        "time.resolution": false,
+        "time.at": false,
+        "time.date": false
+      },
+      "exact_match": false,
+      "elapsed_ms": 3646.19
+    },
+    {
+      "id": "aosp-big",
+      "expected_category": "delivery",
+      "predicted_category": "delivery",
+      "route": "delivery",
+      "time_candidate_count": 1,
+      "result": {
+        "processor": "llm",
+        "llm": true,
+        "schema_version": 1,
+        "category": "delivery",
+        "priority": "low",
+        "intent": "delivery_event",
+        "entities": {
+          "subject": "Синтетическая доставка big",
+          "location": null,
+          "service": "Курьер"
+        },
+        "time": {
+          "source": "вечером",
+          "timezone": "Asia/Yekaterinburg",
+          "at": null,
+          "date": null,
+          "resolution": "unresolved"
+        },
+        "action_authorized": false
+      },
+      "error": null,
+      "fields": {
+        "category": true,
+        "priority": false,
+        "time.resolution": true,
+        "time.at": true,
+        "time.date": true
+      },
+      "exact_match": false,
+      "elapsed_ms": 3453.02
+    }
+  ],
+  "time_literals": {
+    "strategy": "source-span-enum",
+    "sha256": "d9abdcbb621eaca63ccb2d9d0f0932b99f61ab529ea9aaa42885cde1d27e1a0f"
+  },
+  "router_rules": {
+    "strategy": "constrain-category-only",
+    "sha256": "af96b1e8d11100d68d2b4fae7b8a3966283d6a93fa75ba4c1947eacbd9f2a464"
+  },
+  "load": {
+    "sha256": "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e",
+    "model_bytes": 1117320736,
+    "load_ms": 3236.3680630005547,
+    "peak_rss_bytes": 1906077696,
+    "n_ctx": 2048,
+    "n_threads": 2
+  },
+  "warmup": "ok",
+  "completions": [
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 667,
+      "completion_tokens": 49,
+      "inference_ms": 3644.03787899937,
+      "peak_rss_bytes": 2011930624
+    },
+    {
+      "finish_reason": "stop",
+      "prompt_tokens": 670,
+      "completion_tokens": 48,
+      "inference_ms": 3450.37715899889,
+      "peak_rss_bytes": 2013896704
+    }
+  ],
+  "peak_rss_bytes": 2013896704,
+  "summary": {
+    "total": 2,
+    "valid": 1,
+    "classification_correct": 1,
+    "classification_accuracy": 0.5,
+    "macro_f1": 0.1333,
+    "per_class": {
+      "delivery": {
+        "support": 2,
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.6667
+      },
+      "transport": {
+        "support": 0,
+        "precision": 0,
+        "recall": 0,
+        "f1": 0
+      },
+      "calendar": {
+        "support": 0,
+        "precision": 0,
+        "recall": 0,
+        "f1": 0
+      },
+      "reminder": {
+        "support": 0,
+        "precision": 0,
+        "recall": 0,
+        "f1": 0
+      },
+      "noise": {
+        "support": 0,
+        "precision": 0,
+        "recall": 0,
+        "f1": 0
+      }
+    },
+    "fields": {
+      "category": {
+        "correct": 1,
+        "total": 2,
+        "accuracy": 0.5
+      },
+      "priority": {
+        "correct": 0,
+        "total": 2,
+        "accuracy": 0.0
+      },
+      "time.resolution": {
+        "correct": 1,
+        "total": 2,
+        "accuracy": 0.5
+      },
+      "time.at": {
+        "correct": 1,
+        "total": 2,
+        "accuracy": 0.5
+      },
+      "time.date": {
+        "correct": 1,
+        "total": 2,
+        "accuracy": 0.5
+      }
+    },
+    "exact_match": 0,
+    "courier_reminder": {
+      "correct": 0,
+      "total": 2,
+      "accuracy": 0.0,
+      "wilson_95": [
+        0.0,
+        0.6576
+      ],
+      "inference": "reference-only; synthetic nonrandom cases do not establish population accuracy",
+      "sample_target_90_percent": false
+    },
+    "processor_ms": {
+      "p50": 3453.02,
+      "p95": 3646.19,
+      "max": 3646.19,
+      "sample_target_4_seconds": true
+    }
+  },
+  "hardware_acceptance": "not-performed; development CPU does not establish Pi goals",
+  "stage": "development",
+  "dataset_preflight": {
+    "dataset_sha256": "4b75e4ce292efaa4bee91a25287e08f86608db01d13918e22103336c102a00ef",
+    "cases": 2,
+    "categories": {
+      "delivery": 2
+    },
+    "known_development_overlap": 2,
+    "stage": "development",
+    "independence": "not established; no known overlap is necessary, not sufficient"
+  },
+  "dataset_sha256": "4b75e4ce292efaa4bee91a25287e08f86608db01d13918e22103336c102a00ef",
+  "cpu": "AMD Ryzen 5 5600H with Radeon Graphics"
+}

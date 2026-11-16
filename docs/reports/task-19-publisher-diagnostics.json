@@ -1,0 +1,24 @@
+{
+  "stage": "development-replay-of-failed-subset",
+  "dataset_sha256": "4b75e4ce292efaa4bee91a25287e08f86608db01d13918e22103336c102a00ef",
+  "evaluation_sha256": "07735f703275eca8bd5579da08be415900d9a267a4646399dec20fb39a9cdc5a",
+  "model_sha256": "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e",
+  "router_rules": true,
+  "time_literals": true,
+  "raw_answers_saved": false,
+  "rows": [
+    {
+      "id": "aosp-order",
+      "fields": {
+        "subject": "literal",
+        "location": "null",
+        "service": "case_only",
+        "time_expression": "null"
+      },
+      "route": null,
+      "time_candidate_count": 0,
+      "finish_reason": "stop",
+      "reproduced": true
+    }
+  ]
+}

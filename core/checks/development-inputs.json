@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "purpose": "Известные development-входы: eval-v1, просмотренный eval-v2 для сравнения маршрутизатора и три few-shot примера TASK-17. Только хеши title/text.",
+  "purpose": "Известные dev-входы: eval-v1/v2, три few-shot TASK-17 и два синтетических Android publisher TASK-19. Только хеши title/text.",
   "signatures": [
     "03bece1ca8cd8d31253d4c74d4e24364f125f6749689b4e6d80ac6b0c7f714b7",
     "09fc45a692f5de0d7823dcab2ef0b0689175777d3ea767929f67f39da9a9b4ef",
@@ -9,6 +9,7 @@
     "0d54b90439363381e5e6ee2a8aa78ee21f1fcdc84bc71072f89fea8085a57800",
     "0e64b1122304b09612e038318b31f0fe150afd6bc8f404c29a80af4870efa141",
     "105caf81bc252a96ea07fe61d933d533cb05fea61f836cca6984e99451e4b1c7",
+    "1169933afdc33a3f8f563364e5b945bedc767a48fbbad861bdeed641d6ddf8ca",
     "168fceb30d85e6ab4e60314553ace4d6b535b0bb86b18f7a90074f1858f7e378",
     "17a513804333387a6b7e588a8d4721d5589ae4e5aa605e907ef3e4c3103632ab",
     "18a38af8954940ac2f574b7a9947be95d0cd46cbfcf1e42c7c0871790a55f427",
@@ -60,6 +61,7 @@
     "c65f9e7525b22ac63b7ecb15bacbc616217a556775876ed9848f9494c6b62db9",
     "cacabc7f116828bce8bcb0c4d3196f186d6441fca0d480ba89d55a393b637600",
     "cbdd1f92f1f3e08c1275dd16ff1960046248240d740a22a4c3e205869e4d5b28",
+    "d2809756487ed4f45d161b053a9b921a060c984d9f89c40421e20b98244acb91",
     "d33b95483b2d792270214f72b3a39f047bda85c04e708c112df5ad5c5995389a",
     "d4c79e4552b9737251096a5f8a0116ebb6eda7f93fa1da016f9a2c44cf7cf03f",
     "d66c75bb1523e15a5a921a946e673bb04db5672b8f3df1dabc34420ea2299d99",

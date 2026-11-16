@@ -93,3 +93,26 @@ Pi и качество TASK-18 остаются открытыми. Стенды
 `npm_config_offline=true` и прежним config, `open http://127.0.0.1:8003`,
 `run-code --filename=checks/native-results.js`, `close` из `web/`.
 После прогона остановить свои процессы, сохранить протокол и удалить свою тестовую БД.
+
+
+## Повтор текстов Android-публикатора на Qwen с новой dev-схемой
+
+[Два знакомых текста publisher](../../core/checks/eval-android-publisher-dev.json)
+зарегистрированы как dev. Сравнение CLI с реальной Qwen, без нового AVD, Core или клиентов.
+[База](task-19-publisher-base-dev.json) отклонила оба, как раньше на AVD.
+[Категория + буквальное время](task-19-publisher-candidate-dev.json) дала один
+валидный результат: `aosp-big` — доставка, «вечером»/`unresolved`, `action_authorized=false`.
+Приоритет `low` расходится с разметкой `high`. Полное совпадение 0/2 в обоих вариантах.
+`aosp-order` в обоих получил `LLM_BAD_RESPONSE`; [повтор отказа](task-19-publisher-diagnostics.json)
+нашёл отличие регистра в `service`. Сырой вывод не сохраняли; это не подтверждает,
+что слово по смыслу было названием службы. Схему рабочего Core не меняли.
+
+[Guard базы](task-19-publisher-base-guard.json), [кандидата](task-19-publisher-candidate-guard.json),
+[диагностики](task-19-publisher-diagnostics-guard.json) не прерывал прогоны.
+Диск ~5.8 GiB, ниже порога AVD 6 GiB; новых файлов моделей/SDK нет. Успешный
+Android→Core→оба клиента ещё не подтверждён.
+
+Повтор из `core/`: `checks/evaluate_extraction.py --stage development --dataset checks/eval-android-publisher-dev.json`
+с указанными `--model`/`--output` через `checks/run_native_guarded.py`, затем с
+`--router-rules --time-literals` и новыми JSON. Для повтора отказа использовать
+`checks/diagnose_extraction.py` с тем же `--dataset` и `--evaluation` кандидата.

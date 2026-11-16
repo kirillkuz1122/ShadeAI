@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "purpose": "Повтор текстов синтетического publisher TASK-19 в dev-измерителе. Не новый AVD или Android-захват.",
+  "timestamp": "2026-11-16T10:00:00Z",
+  "timezone": "Asia/Yekaterinburg",
+  "cases": [
+    {
+      "id": "aosp-order",
+      "app_name": "ru.ozon.app.android",
+      "title": "Синтетическая доставка order",
+      "text": "Заказ подготовлен — синтетическая проверка",
+      "expected": {
+        "category": "delivery",
+        "priority": "default",
+        "time": {
+          "resolution": "absent",
+          "at": null,
+          "date": null
+        }
+      }
+    },
+    {
+      "id": "aosp-big",
+      "app_name": "ru.ozon.app.android",
+      "title": "Синтетическая доставка big",
+      "text": "Курьер в пути. Доставка ожидается вечером",
+      "expected": {
+        "category": "delivery",
+        "priority": "high",
+        "time": {
+          "resolution": "unresolved",
+          "at": null,
+          "date": null
+        }
+      }
+    }
+  ]
+}

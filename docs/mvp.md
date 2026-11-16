@@ -258,6 +258,7 @@ flowchart LR
 - [x] **Программный срез:** Web — schema1/поля/время/пояс/fallback без raw JSON, Chromium pending→processed/401/404/320px; Android — отдельные список20/карточка Core, DTO/foreground-поллинг/generation/revision/очистка, 11 JVM и прямая компиляция всех Kotlin/Compose-исходников. [Отчёт](reports/task-19.md).
 - **Допроверено19октября:** сохранённый APK8df0ac55…/82JVM/Gradle/lint всех исходников; AOSP35/read-only настоящийCore: polling/поля/пояс/diagnostic/unknown/failed/404/пагинация20/4/STOP/401/privacy PASS,HA0. [OS JSON](reports/task-19-android-os.json).
 - **Допроверено 16 ноября:** два системных уведомления AOSP35→тот же SQLite→native Qwen завершились `failed`; отдельная запись через API дала `processed`. Оба клиента показали состояния после рестарта, [протокол](reports/task-19-native-staged-2026-11-16.json).
+- **Нативный повтор двух текстов publisher:** [CLI-отчёт](reports/task-19.md#повтор-текстов-android-публикатора-на-qwen-с-новой-dev-схемой), один валидный из двух на dev-связке, 0/2 по всем полям. Без нового AVD/клиентов, критерий остаётся открытым.
 - [ ] **Остаётся:** успешный конвейер Android→Core+nativeGGUF→оба клиента, аппаратный телефон/Pi. Синтетические переходы статусов не подтверждают native-извлечение; TASK-18 по качеству открыта.
 - **Готово, когда:** одно уведомление проходит от телефона до сохранённого результата LLM, видимого в клиентах; processed и failed различимы, результат сохраняется после перезапуска.
 - **Зависимости:** TASK-13, TASK-17–18. **Область:** android, web, core, docs.
