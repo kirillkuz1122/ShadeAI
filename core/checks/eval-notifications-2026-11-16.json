@@ -1,0 +1,539 @@
+{
+  "version": 2,
+  "purpose": "Новый синтетический набор TASK-18. Разметка до первого запуска; отладочный eval-v1 не переиспользуется.",
+  "timestamp": "2026-11-14T18:40:00Z",
+  "timezone": "Asia/Yekaterinburg",
+  "cases": [
+    {
+      "id": "hd01",
+      "app_name": "ru.ozon.app.android",
+      "title": "Поступила посылка",
+      "text": "Получение на Садовой 11. Заказ в пункте выдачи Ozon.",
+      "expected": {
+        "category": "delivery",
+        "priority": "default",
+        "time": {
+          "resolution": "absent",
+          "at": null,
+          "date": null
+        },
+        "location": [
+          "Садовой 11"
+        ],
+        "service": [
+          "Ozon"
+        ]
+      }
+    },
+    {
+      "id": "hd02",
+      "app_name": "ru.ozon.app.android",
+      "title": "Доставка канцелярии",
+      "text": "Курьер уже едет и будет через 35 минут.",
+      "expected": {
+        "category": "delivery",
+        "priority": "high",
+        "time": {
+          "resolution": "exact",
+          "at": "2026-11-14T19:15:00Z",
+          "date": null
+        }
+      }
+    },
+    {
+      "id": "hd03",
+      "app_name": "ru.ozon.app.android",
+      "title": "Доставку перенесли",
+      "text": "Посылка будет доставлена 18.11.2026 в 14:15.",
+      "expected": {
+        "category": "delivery",
+        "priority": "default",
+        "time": {
+          "resolution": "exact",
+          "at": "2026-11-18T09:15:00Z",
+          "date": null
+        }
+      }
+    },
+    {
+      "id": "hd04",
+      "app_name": "ru.ozon.app.android",
+      "title": "Приехал курьер",
+      "text": "У двери ждёт курьер. Адрес: Полевая 14.",
+      "expected": {
+        "category": "delivery",
+        "priority": "high",
+        "time": {
+          "resolution": "absent",
+          "at": null,
+          "date": null
+        },
+        "location": [
+          "Полевая 14"
+        ]
+      }
+    },
+    {
+      "id": "hd05",
+      "app_name": "ru.ozon.app.android",
+      "title": "Срок хранения",
+      "text": "Заберите посылку в Wildberries до 26.11.2026.",
+      "expected": {
+        "category": "delivery",
+        "priority": "default",
+        "time": {
+          "resolution": "date_only",
+          "at": null,
+          "date": "2026-11-26"
+        },
+        "service": [
+          "Wildberries"
+        ]
+      }
+    },
+    {
+      "id": "hd06",
+      "app_name": "ru.ozon.app.android",
+      "title": "Заказ отправлен",
+      "text": "Посылка покинула сортировочный центр.",
+      "expected": {
+        "category": "delivery",
+        "priority": "default",
+        "time": {
+          "resolution": "absent",
+          "at": null,
+          "date": null
+        }
+      }
+    },
+    {
+      "id": "hd07",
+      "app_name": "ru.ozon.app.android",
+      "title": "Подтверждение доставки",
+      "text": "Доставка товара послезавтра в 10:10. Переносить не требуется.",
+      "expected": {
+        "category": "delivery",
+        "priority": "default",
+        "time": {
+          "resolution": "exact",
+          "at": "2026-11-16T05:10:00Z",
+          "date": null
+        }
+      }
+    },
+    {
+      "id": "hd08",
+      "app_name": "ru.ozon.app.android",
+      "title": "Посылку оставили",
+      "text": "Посылка находится в постамате на Кленовой 4.",
+      "expected": {
+        "category": "delivery",
+        "priority": "default",
+        "time": {
+          "resolution": "absent",
+          "at": null,
+          "date": null
+        },
+        "location": [
+          "Кленовой 4"
+        ]
+      }
+    },
+    {
+      "id": "hd09",
+      "app_name": "ru.ozon.app.android",
+      "title": "Курьер в пути",
+      "text": "Курьер привезёт заказ через 8 минут, будьте на месте.",
+      "expected": {
+        "category": "delivery",
+        "priority": "high",
+        "time": {
+          "resolution": "exact",
+          "at": "2026-11-14T18:48:00Z",
+          "date": null
+        }
+      }
+    },
+    {
+      "id": "hd10",
+      "app_name": "ru.ozon.app.android",
+      "title": "Согласован интервал",
+      "text": "Посылку привезут завтра между 13:00 и 16:00.",
+      "expected": {
+        "category": "delivery",
+        "priority": "default",
+        "time": {
+          "resolution": "unresolved",
+          "at": null,
+          "date": null
+        }
+      }
+    },
+    {
+      "id": "hr01",
+      "app_name": "com.google.android.keep",
+      "title": "Напоминание",
+      "text": "Разложить кабели завтра в 08:10.",
+      "expected": {
+        "category": "reminder",
+        "priority": "default",
+        "time": {
+          "resolution": "exact",
+          "at": "2026-11-15T03:10:00Z",
+          "date": null
+        },
+        "subject": [
+          "Разложить кабели"
+        ]
+      }
+    },
+    {
+      "id": "hr02",
+      "app_name": "com.google.android.keep",
+      "title": "Отдать ключ от кладовой",
+      "text": "Напоминание: Отдать ключ от кладовой 21.11.2026.",
+      "expected": {
+        "category": "reminder",
+        "priority": "default",
+        "time": {
+          "resolution": "date_only",
+          "at": null,
+          "date": "2026-11-21"
+        },
+        "subject": [
+          "Отдать ключ от кладовой"
+        ]
+      }
+    },
+    {
+      "id": "hr03",
+      "app_name": "com.google.android.keep",
+      "title": "Напоминание о деле",
+      "text": "Снять показания через 40 минут.",
+      "expected": {
+        "category": "reminder",
+        "priority": "default",
+        "time": {
+          "resolution": "exact",
+          "at": "2026-11-14T19:20:00Z",
+          "date": null
+        },
+        "subject": [
+          "Снять показания"
+        ]
+      }
+    },
+    {
+      "id": "hr04",
+      "app_name": "com.google.android.keep",
+      "title": "Разобрать коробки",
+      "text": "Не забыть: Разобрать коробки послезавтра.",
+      "expected": {
+        "category": "reminder",
+        "priority": "default",
+        "time": {
+          "resolution": "date_only",
+          "at": null,
+          "date": "2026-11-16"
+        },
+        "subject": [
+          "Разобрать коробки"
+        ]
+      }
+    },
+    {
+      "id": "hr05",
+      "app_name": "com.google.android.keep",
+      "title": "Напоминание",
+      "text": "Отнести бумагу в 19:45.",
+      "expected": {
+        "category": "reminder",
+        "priority": "default",
+        "time": {
+          "resolution": "unresolved",
+          "at": null,
+          "date": null
+        },
+        "subject": [
+          "Отнести бумагу"
+        ]
+      }
+    },
+    {
+      "id": "hr06",
+      "app_name": "com.google.android.keep",
+      "title": "Подписать папки",
+      "text": "Напоминание: Подписать папки сегодня в 23:55.",
+      "expected": {
+        "category": "reminder",
+        "priority": "default",
+        "time": {
+          "resolution": "exact",
+          "at": "2026-11-14T18:55:00Z",
+          "date": null
+        },
+        "subject": [
+          "Подписать папки"
+        ]
+      }
+    },
+    {
+      "id": "hr07",
+      "app_name": "com.google.android.keep",
+      "title": "Напоминание",
+      "text": "Собрать рюкзак 2026-11-19 в 09:00.",
+      "expected": {
+        "category": "reminder",
+        "priority": "default",
+        "time": {
+          "resolution": "exact",
+          "at": "2026-11-19T04:00:00Z",
+          "date": null
+        },
+        "subject": [
+          "Собрать рюкзак"
+        ]
+      }
+    },
+    {
+      "id": "hr08",
+      "app_name": "com.google.android.keep",
+      "title": "Проверить заряд фонаря",
+      "text": "Напоминание: Проверить заряд фонаря через 4 часа.",
+      "expected": {
+        "category": "reminder",
+        "priority": "default",
+        "time": {
+          "resolution": "exact",
+          "at": "2026-11-14T22:40:00Z",
+          "date": null
+        },
+        "subject": [
+          "Проверить заряд фонаря"
+        ]
+      }
+    },
+    {
+      "id": "hr09",
+      "app_name": "com.google.android.keep",
+      "title": "Напоминание",
+      "text": "Сложить инструменты завтра.",
+      "expected": {
+        "category": "reminder",
+        "priority": "default",
+        "time": {
+          "resolution": "date_only",
+          "at": null,
+          "date": "2026-11-15"
+        },
+        "subject": [
+          "Сложить инструменты"
+        ]
+      }
+    },
+    {
+      "id": "hr10",
+      "app_name": "com.google.android.keep",
+      "title": "Заменить салфетки",
+      "text": "Личное напоминание: Заменить салфетки.",
+      "expected": {
+        "category": "reminder",
+        "priority": "default",
+        "time": {
+          "resolution": "absent",
+          "at": null,
+          "date": null
+        },
+        "subject": [
+          "Заменить салфетки"
+        ]
+      }
+    },
+    {
+      "id": "ht01",
+      "app_name": "ru.yandex.taxi",
+      "title": "Машина назначена",
+      "text": "Водитель Яндекс Go подъедет через 7 минут.",
+      "expected": {
+        "category": "transport",
+        "priority": "high",
+        "time": {
+          "resolution": "exact",
+          "at": "2026-11-14T18:47:00Z",
+          "date": null
+        },
+        "service": [
+          "Яндекс Go"
+        ]
+      }
+    },
+    {
+      "id": "ht02",
+      "app_name": "ru.yandex.taxi",
+      "title": "Предварительный заказ машины",
+      "text": "Такси запланировано на 20.11.2026 в 06:30.",
+      "expected": {
+        "category": "transport",
+        "priority": "default",
+        "time": {
+          "resolution": "exact",
+          "at": "2026-11-20T01:30:00Z",
+          "date": null
+        }
+      }
+    },
+    {
+      "id": "ht03",
+      "app_name": "ru.yandex.taxi",
+      "title": "Такси на месте",
+      "text": "Водитель ждёт у входа на Сиреневой 12.",
+      "expected": {
+        "category": "transport",
+        "priority": "high",
+        "time": {
+          "resolution": "absent",
+          "at": null,
+          "date": null
+        },
+        "location": [
+          "Сиреневой 12"
+        ]
+      }
+    },
+    {
+      "id": "ht04",
+      "app_name": "ru.yandex.taxi",
+      "title": "Чек поездки",
+      "text": "Ваша поездка на такси завершена.",
+      "expected": {
+        "category": "transport",
+        "priority": "default",
+        "time": {
+          "resolution": "absent",
+          "at": null,
+          "date": null
+        }
+      }
+    },
+    {
+      "id": "hc01",
+      "app_name": "com.google.android.calendar",
+      "title": "Встреча по смете",
+      "text": "Встреча по смете завтра в 17:25. Место: Синий зал.",
+      "expected": {
+        "category": "calendar",
+        "priority": "default",
+        "time": {
+          "resolution": "exact",
+          "at": "2026-11-15T12:25:00Z",
+          "date": null
+        },
+        "location": [
+          "Синий зал"
+        ]
+      }
+    },
+    {
+      "id": "hc02",
+      "app_name": "com.google.android.calendar",
+      "title": "Совещание перенесено",
+      "text": "Совещание перенесли на послезавтра в 09:35.",
+      "expected": {
+        "category": "calendar",
+        "priority": "high",
+        "time": {
+          "resolution": "exact",
+          "at": "2026-11-16T04:35:00Z",
+          "date": null
+        }
+      }
+    },
+    {
+      "id": "hc03",
+      "app_name": "com.google.android.calendar",
+      "title": "Встреча отменена",
+      "text": "Организатор отменил встречу 19.11.2026.",
+      "expected": {
+        "category": "calendar",
+        "priority": "high",
+        "time": {
+          "resolution": "date_only",
+          "at": null,
+          "date": "2026-11-19"
+        }
+      }
+    },
+    {
+      "id": "hn01",
+      "app_name": "ru.ozon.app.android",
+      "title": "Предложение недели",
+      "text": "Скидки на доставку новых покупок в выходные.",
+      "expected": {
+        "category": "noise",
+        "priority": "low",
+        "time": {
+          "resolution": "absent",
+          "at": null,
+          "date": null
+        },
+        "subject": [
+          null
+        ],
+        "location": [
+          null
+        ],
+        "service": [
+          null
+        ]
+      }
+    },
+    {
+      "id": "hn02",
+      "app_name": "ru.ozon.app.android",
+      "title": "Обзор версии",
+      "text": "В новой версии магазина изменили экран заказов.",
+      "expected": {
+        "category": "noise",
+        "priority": "low",
+        "time": {
+          "resolution": "absent",
+          "at": null,
+          "date": null
+        },
+        "subject": [
+          null
+        ],
+        "location": [
+          null
+        ],
+        "service": [
+          null
+        ]
+      }
+    },
+    {
+      "id": "hn03",
+      "app_name": "ru.ozon.app.android",
+      "title": "Опрос о приложении",
+      "text": "Ответьте на короткий опрос о качестве приложения.",
+      "expected": {
+        "category": "noise",
+        "priority": "low",
+        "time": {
+          "resolution": "absent",
+          "at": null,
+          "date": null
+        },
+        "subject": [
+          null
+        ],
+        "location": [
+          null
+        ],
+        "service": [
+          null
+        ]
+      }
+    }
+  ]
+}
