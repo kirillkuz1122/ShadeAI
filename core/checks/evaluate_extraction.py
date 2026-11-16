@@ -17,10 +17,11 @@ CORE = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(CORE), str(CORE / "checks")]
 from extraction_metrics import score, summarize  # noqa: E402
 
+from checks.compare_notification_router import predict, restrict_schema, rules_sha256  # noqa: E402
 from checks.evaluation_dataset import DatasetError, load_dataset  # noqa: E402
 
 
-async def evaluate(model, dataset, threads):
+async def evaluate(model, dataset, threads, *, router_rules=False):
     from app.schemas import NotificationIn
     from app.services.llm.engine import EngineConfig, LLMError, LocalLLMEngine
     from app.services.notification.extraction import (
@@ -63,8 +64,13 @@ async def evaluate(model, dataset, threads):
     }
     completions = []
     original = engine.generate
+    route = None
+    if router_rules:
+        report["router_rules"] = {"strategy": "constrain-category-only", "sha256": rules_sha256()}
 
     async def record(*args, **kwargs):
+        if route is not None:
+            kwargs["schema"] = restrict_schema(kwargs["schema"], route)
         result = await original(*args, **kwargs)
         completions.append(result.model_dump(exclude={"content"}))
         return result
@@ -92,6 +98,8 @@ async def evaluate(model, dataset, threads):
                 timestamp=dataset["timestamp"],
             )
             started = time.monotonic()
+            if router_rules:
+                route, _ = predict(notification.title, notification.text)
             result, error = None, None
             try:
                 result = (await processor(notification)).model_dump()
@@ -103,6 +111,7 @@ async def evaluate(model, dataset, threads):
                     "id": case["id"],
                     "expected_category": case["expected"]["category"],
                     "predicted_category": result["category"] if result else None,
+                    **({"route": route} if router_rules else {}),
                     "result": result,
                     "error": error,
                     "fields": fields,
@@ -131,14 +140,19 @@ def main():
     parser.add_argument("--model", type=Path)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--validate-only", action="store_true")
+    parser.add_argument("--router-rules", action="store_true", help="QA: сузить категорию на dev")
     parser.add_argument("--threads", type=int, choices=(2, 4), default=2)
     parser.add_argument("--dataset", type=Path, default=CORE / "checks/eval-notifications.json")
     parser.add_argument("--stage", choices=("development", "holdout"), default="development")
     args = parser.parse_args()
+    if args.router_rules and (args.validate_only or args.stage != "development"):
+        parser.error("--router-rules доступен только для native development")
     try:
         dataset, dataset_info = load_dataset(args.dataset, args.stage)
     except DatasetError as error:
         parser.error(str(error))
+    if args.router_rules and dataset_info["known_development_overlap"] != dataset_info["cases"]:
+        parser.error("--router-rules требует заранее зарегистрированные dev-входы")
     if args.validate_only:
         if args.model is not None or args.output is not None:
             parser.error("--validate-only не принимает --model/--output")
@@ -155,7 +169,9 @@ def main():
         os.chdir(scratch)
         os.environ["SHADE_API_KEY"] = secrets.token_urlsafe(32)
         try:
-            report = asyncio.run(evaluate(model, dataset, args.threads))
+            report = asyncio.run(
+                evaluate(model, dataset, args.threads, router_rules=args.router_rules)
+            )
         finally:
             os.chdir(previous)
     report["stage"] = args.stage

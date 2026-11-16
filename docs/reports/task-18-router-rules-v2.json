@@ -1,0 +1,358 @@
+{
+  "stage": "development",
+  "dataset_sha256": "0c735fcffbd700a2eda790ab4c37fafe6127ebabe2e26c7a3d38f2b9eb2492d8",
+  "registered_development_inputs": 30,
+  "rules_sha256": "af96b1e8d11100d68d2b4fae7b8a3966283d6a93fa75ba4c1947eacbd9f2a464",
+  "total": 30,
+  "rules_answered": 28,
+  "rules_correct": 28,
+  "abstained": 2,
+  "abstention_reasons": {
+    "no_signal": 2
+  },
+  "qwen_category_correct": 16,
+  "simulation_category_correct": 28,
+  "simulation_improved_ids": [
+    "hd01",
+    "hd03",
+    "hd04",
+    "hd08",
+    "hr02",
+    "hr04",
+    "ht01",
+    "ht02",
+    "ht03",
+    "ht04",
+    "hc03",
+    "hn03"
+  ],
+  "simulation_regressed_ids": [],
+  "noise_false_drop_ids_if_skipped": [],
+  "per_class": {
+    "delivery": {
+      "total": 10,
+      "rules_correct": 9,
+      "qwen_correct": 5
+    },
+    "transport": {
+      "total": 4,
+      "rules_correct": 4,
+      "qwen_correct": 0
+    },
+    "calendar": {
+      "total": 3,
+      "rules_correct": 3,
+      "qwen_correct": 2
+    },
+    "reminder": {
+      "total": 10,
+      "rules_correct": 10,
+      "qwen_correct": 8
+    },
+    "noise": {
+      "total": 3,
+      "rules_correct": 2,
+      "qwen_correct": 1
+    }
+  },
+  "limitations": "category only; simulation, no inference, no routing, no extraction, no skip",
+  "rows": [
+    {
+      "id": "hd01",
+      "expected": "delivery",
+      "rule": "delivery",
+      "signals": [
+        "delivery"
+      ],
+      "qwen": null,
+      "rule_or_saved_qwen": "delivery"
+    },
+    {
+      "id": "hd02",
+      "expected": "delivery",
+      "rule": "delivery",
+      "signals": [
+        "delivery"
+      ],
+      "qwen": "delivery",
+      "rule_or_saved_qwen": "delivery"
+    },
+    {
+      "id": "hd03",
+      "expected": "delivery",
+      "rule": "delivery",
+      "signals": [
+        "delivery"
+      ],
+      "qwen": null,
+      "rule_or_saved_qwen": "delivery"
+    },
+    {
+      "id": "hd04",
+      "expected": "delivery",
+      "rule": "delivery",
+      "signals": [
+        "delivery"
+      ],
+      "qwen": null,
+      "rule_or_saved_qwen": "delivery"
+    },
+    {
+      "id": "hd05",
+      "expected": "delivery",
+      "rule": "delivery",
+      "signals": [
+        "delivery"
+      ],
+      "qwen": "delivery",
+      "rule_or_saved_qwen": "delivery"
+    },
+    {
+      "id": "hd06",
+      "expected": "delivery",
+      "rule": "delivery",
+      "signals": [
+        "delivery"
+      ],
+      "qwen": "delivery",
+      "rule_or_saved_qwen": "delivery"
+    },
+    {
+      "id": "hd07",
+      "expected": "delivery",
+      "rule": null,
+      "signals": [],
+      "qwen": null,
+      "rule_or_saved_qwen": null
+    },
+    {
+      "id": "hd08",
+      "expected": "delivery",
+      "rule": "delivery",
+      "signals": [
+        "delivery"
+      ],
+      "qwen": null,
+      "rule_or_saved_qwen": "delivery"
+    },
+    {
+      "id": "hd09",
+      "expected": "delivery",
+      "rule": "delivery",
+      "signals": [
+        "delivery"
+      ],
+      "qwen": "delivery",
+      "rule_or_saved_qwen": "delivery"
+    },
+    {
+      "id": "hd10",
+      "expected": "delivery",
+      "rule": "delivery",
+      "signals": [
+        "delivery"
+      ],
+      "qwen": "delivery",
+      "rule_or_saved_qwen": "delivery"
+    },
+    {
+      "id": "hr01",
+      "expected": "reminder",
+      "rule": "reminder",
+      "signals": [
+        "reminder"
+      ],
+      "qwen": "reminder",
+      "rule_or_saved_qwen": "reminder"
+    },
+    {
+      "id": "hr02",
+      "expected": "reminder",
+      "rule": "reminder",
+      "signals": [
+        "reminder"
+      ],
+      "qwen": "delivery",
+      "rule_or_saved_qwen": "reminder"
+    },
+    {
+      "id": "hr03",
+      "expected": "reminder",
+      "rule": "reminder",
+      "signals": [
+        "reminder"
+      ],
+      "qwen": "reminder",
+      "rule_or_saved_qwen": "reminder"
+    },
+    {
+      "id": "hr04",
+      "expected": "reminder",
+      "rule": "reminder",
+      "signals": [
+        "reminder"
+      ],
+      "qwen": "delivery",
+      "rule_or_saved_qwen": "reminder"
+    },
+    {
+      "id": "hr05",
+      "expected": "reminder",
+      "rule": "reminder",
+      "signals": [
+        "reminder"
+      ],
+      "qwen": "reminder",
+      "rule_or_saved_qwen": "reminder"
+    },
+    {
+      "id": "hr06",
+      "expected": "reminder",
+      "rule": "reminder",
+      "signals": [
+        "reminder"
+      ],
+      "qwen": "reminder",
+      "rule_or_saved_qwen": "reminder"
+    },
+    {
+      "id": "hr07",
+      "expected": "reminder",
+      "rule": "reminder",
+      "signals": [
+        "reminder"
+      ],
+      "qwen": "reminder",
+      "rule_or_saved_qwen": "reminder"
+    },
+    {
+      "id": "hr08",
+      "expected": "reminder",
+      "rule": "reminder",
+      "signals": [
+        "reminder"
+      ],
+      "qwen": "reminder",
+      "rule_or_saved_qwen": "reminder"
+    },
+    {
+      "id": "hr09",
+      "expected": "reminder",
+      "rule": "reminder",
+      "signals": [
+        "reminder"
+      ],
+      "qwen": "reminder",
+      "rule_or_saved_qwen": "reminder"
+    },
+    {
+      "id": "hr10",
+      "expected": "reminder",
+      "rule": "reminder",
+      "signals": [
+        "reminder"
+      ],
+      "qwen": "reminder",
+      "rule_or_saved_qwen": "reminder"
+    },
+    {
+      "id": "ht01",
+      "expected": "transport",
+      "rule": "transport",
+      "signals": [
+        "transport"
+      ],
+      "qwen": "delivery",
+      "rule_or_saved_qwen": "transport"
+    },
+    {
+      "id": "ht02",
+      "expected": "transport",
+      "rule": "transport",
+      "signals": [
+        "transport"
+      ],
+      "qwen": "delivery",
+      "rule_or_saved_qwen": "transport"
+    },
+    {
+      "id": "ht03",
+      "expected": "transport",
+      "rule": "transport",
+      "signals": [
+        "transport"
+      ],
+      "qwen": null,
+      "rule_or_saved_qwen": "transport"
+    },
+    {
+      "id": "ht04",
+      "expected": "transport",
+      "rule": "transport",
+      "signals": [
+        "transport"
+      ],
+      "qwen": "delivery",
+      "rule_or_saved_qwen": "transport"
+    },
+    {
+      "id": "hc01",
+      "expected": "calendar",
+      "rule": "calendar",
+      "signals": [
+        "calendar"
+      ],
+      "qwen": "calendar",
+      "rule_or_saved_qwen": "calendar"
+    },
+    {
+      "id": "hc02",
+      "expected": "calendar",
+      "rule": "calendar",
+      "signals": [
+        "calendar"
+      ],
+      "qwen": "calendar",
+      "rule_or_saved_qwen": "calendar"
+    },
+    {
+      "id": "hc03",
+      "expected": "calendar",
+      "rule": "calendar",
+      "signals": [
+        "calendar"
+      ],
+      "qwen": null,
+      "rule_or_saved_qwen": "calendar"
+    },
+    {
+      "id": "hn01",
+      "expected": "noise",
+      "rule": "noise",
+      "signals": [
+        "noise"
+      ],
+      "qwen": "noise",
+      "rule_or_saved_qwen": "noise"
+    },
+    {
+      "id": "hn02",
+      "expected": "noise",
+      "rule": null,
+      "signals": [],
+      "qwen": null,
+      "rule_or_saved_qwen": null
+    },
+    {
+      "id": "hn03",
+      "expected": "noise",
+      "rule": "noise",
+      "signals": [
+        "noise"
+      ],
+      "qwen": "reminder",
+      "rule_or_saved_qwen": "noise"
+    }
+  ],
+  "reference_sha256": "f005efee3f2dc06d99b391acadca795c4e23e057d730fc8618b7c051c98a6b14"
+}
