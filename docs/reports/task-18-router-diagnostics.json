@@ -1,0 +1,118 @@
+{
+  "stage": "development-replay-of-failed-subset",
+  "dataset_sha256": "0c735fcffbd700a2eda790ab4c37fafe6127ebabe2e26c7a3d38f2b9eb2492d8",
+  "evaluation_sha256": "84c674f792680c971273a34238f242e4596c46a3e3d1aba3d55f108958b7c12c",
+  "model_sha256": "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e",
+  "router_rules": true,
+  "raw_answers_saved": false,
+  "rows": [
+    {
+      "id": "hd01",
+      "fields": {
+        "subject": "literal",
+        "location": "not_literal",
+        "service": "literal",
+        "time_expression": "null"
+      },
+      "route": "delivery",
+      "finish_reason": "stop",
+      "reproduced": true
+    },
+    {
+      "id": "hd03",
+      "fields": {
+        "subject": "not_literal",
+        "location": "literal",
+        "service": "literal",
+        "time_expression": "not_literal"
+      },
+      "route": "delivery",
+      "finish_reason": "stop",
+      "reproduced": true
+    },
+    {
+      "id": "hd04",
+      "fields": {
+        "subject": "literal",
+        "location": "literal",
+        "service": "literal",
+        "time_expression": "not_literal"
+      },
+      "route": "delivery",
+      "finish_reason": "stop",
+      "reproduced": true
+    },
+    {
+      "id": "hd07",
+      "fields": {
+        "subject": "literal",
+        "location": "null",
+        "service": "null",
+        "time_expression": "not_literal"
+      },
+      "route": null,
+      "finish_reason": "stop",
+      "reproduced": true
+    },
+    {
+      "id": "hd08",
+      "fields": {
+        "subject": "not_literal",
+        "location": "literal",
+        "service": "null",
+        "time_expression": "null"
+      },
+      "route": "delivery",
+      "finish_reason": "stop",
+      "reproduced": true
+    },
+    {
+      "id": "ht02",
+      "fields": {
+        "subject": "literal",
+        "location": "literal",
+        "service": "literal",
+        "time_expression": "not_literal"
+      },
+      "route": "transport",
+      "finish_reason": "stop",
+      "reproduced": true
+    },
+    {
+      "id": "ht03",
+      "fields": {
+        "subject": "literal",
+        "location": "literal",
+        "service": "case_only",
+        "time_expression": "literal"
+      },
+      "route": "transport",
+      "finish_reason": "stop",
+      "reproduced": true
+    },
+    {
+      "id": "hc03",
+      "fields": {
+        "subject": "literal",
+        "location": "literal",
+        "service": "null",
+        "time_expression": "not_literal"
+      },
+      "route": "calendar",
+      "finish_reason": "stop",
+      "reproduced": true
+    },
+    {
+      "id": "hn02",
+      "fields": {
+        "subject": "literal",
+        "location": "null",
+        "service": "not_literal",
+        "time_expression": "null"
+      },
+      "route": null,
+      "finish_reason": "stop",
+      "reproduced": true
+    }
+  ]
+}

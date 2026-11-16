@@ -1,7 +1,8 @@
-"""Разбор ошибок уже просмотренного синтетического eval-v1 (теперь dev), без raw-ответов."""
+"""Повтор отказов на зарегистрированных dev-примерах, без сохранения сырых ответов."""
 
 import argparse
 import asyncio
+import hashlib
 import json
 import os
 import secrets
@@ -12,8 +13,38 @@ from pathlib import Path
 CORE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(CORE))
 
+from checks.compare_notification_router import predict, restrict_schema, rules_sha256  # noqa: E402
+from checks.evaluation_dataset import load_dataset, unique_object  # noqa: E402
 
-async def diagnose(model, dataset, ids):
+
+def select_failed(dataset, info, report):
+    if info["known_development_overlap"] != info["cases"]:
+        raise ValueError("Диагностика требует зарегистрированные dev-входы")
+    if report.get("dataset_sha256") != info["dataset_sha256"]:
+        raise ValueError("Отчёт относится к другому набору")
+    route = report.get("router_rules")
+    if route is not None and route != {
+        "strategy": "constrain-category-only",
+        "sha256": rules_sha256(),
+    }:
+        raise ValueError("Версия правил в отчёте отличается")
+    cases = {item["id"]: item for item in dataset["cases"]}
+    rows = report["rows"]
+    ids = [row["id"] for row in rows]
+    if len(ids) != len(cases) or set(ids) != set(cases):
+        raise ValueError("Отчёт не покрывает набор целиком")
+    for row in rows:
+        case = cases[row["id"]]
+        if row.get("expected_category") != case["expected"]["category"]:
+            raise ValueError("Отчёт не совпадает с разметкой")
+        if route is not None and (
+            "route" not in row or row["route"] != predict(case["title"], case["text"])[0]
+        ):
+            raise ValueError("Решение маршрутизатора отличается")
+    return {row["id"] for row in rows if row.get("error") == "LLM_BAD_RESPONSE"}, bool(route)
+
+
+async def diagnose(model, dataset, ids, *, router_rules=False, expected_model=None):
     from pydantic import ValidationError
 
     from app.schemas import NotificationIn
@@ -23,13 +54,15 @@ async def diagnose(model, dataset, ids):
         GENERATION_DRAFT,
         PROMPT,
         ExtractionDraft,
-        unique_object,
+        parse_extraction,
     )
 
     engine = LocalLLMEngine(EngineConfig(True, str(model), 2048, 2, 256, 2304, 180, 90))
     output = []
     try:
-        await engine.load()
+        loaded = await engine.load()
+        if expected_model is not None and expected_model != loaded.sha256:
+            raise ValueError("Другая версия модели")
         for case in dataset["cases"]:
             if case["id"] not in ids:
                 continue
@@ -38,6 +71,12 @@ async def diagnose(model, dataset, ids):
                 timestamp=dataset["timestamp"],
             )
             item = {"id": case["id"], "fields": {}}
+            schema = GENERATION_DRAFT.json_schema()
+            if router_rules:
+                route, _ = predict(notification.title, notification.text)
+                if route is not None:
+                    schema = restrict_schema(schema, route)
+                item["route"] = route
             try:
                 result = await engine.generate(
                     [
@@ -54,9 +93,17 @@ async def diagnose(model, dataset, ids):
                             ),
                         },
                     ],
-                    schema=GENERATION_DRAFT.json_schema(),
+                    schema=schema,
                 )
                 item["finish_reason"] = result.finish_reason
+                try:
+                    if result.finish_reason != "stop":
+                        raise ValueError("Обрезанный вывод")
+                    parse_extraction(result.content, notification, dataset["timezone"])
+                except (ValueError, RecursionError, OverflowError):
+                    item["reproduced"] = True
+                else:
+                    item["reproduced"] = False
                 draft = ExtractionDraft.model_validate(
                     json.loads(
                         result.content,
@@ -67,6 +114,8 @@ async def diagnose(model, dataset, ids):
                     value = getattr(draft, field)
                     if value is None:
                         kind = "null"
+                    elif not value.strip() or any(ord(char) < 32 for char in value):
+                        kind = "blank_or_control"
                     elif value in notification.title or value in notification.text:
                         kind = "literal"
                     elif any(
@@ -99,7 +148,7 @@ async def diagnose(model, dataset, ids):
             output.append(item)
     finally:
         await engine.close()
-    return output
+    return output, loaded.sha256
 
 
 def main():
@@ -107,21 +156,52 @@ def main():
     parser.add_argument("--model", required=True, type=Path)
     parser.add_argument("--evaluation", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--dataset", type=Path, default=CORE / "checks/eval-notifications.json")
     args = parser.parse_args()
-    model, output = args.model.resolve(strict=True), args.output.resolve()
-    evaluation = json.loads(args.evaluation.read_text())
-    ids = {row["id"] for row in evaluation["rows"] if row["error"] == "LLM_BAD_RESPONSE"}
-    dataset = json.loads((CORE / "checks/eval-notifications.json").read_text())
+    output = args.output.resolve()
+    if output.exists():
+        parser.error("Выходной отчёт уже существует")
+    try:
+        dataset, info = load_dataset(args.dataset, "development")
+        with args.evaluation.open("rb") as stream:
+            raw = stream.read(2**20 + 1)
+        if len(raw) > 2**20:
+            raise ValueError("Слишком большой отчёт")
+        evaluation = json.loads(raw, object_pairs_hook=unique_object)
+        ids, router_rules = select_failed(dataset, info, evaluation)
+        if not ids:
+            raise ValueError("Нет отказов LLM_BAD_RESPONSE для повтора")
+        expected_model = evaluation["load"]["sha256"]
+    except (ValueError, TypeError, KeyError, AttributeError, RecursionError, OSError):
+        parser.error("Несовместимый dev-набор или отчёт с отказами")
+    model = args.model.resolve(strict=True)
     previous = Path.cwd()
     with tempfile.TemporaryDirectory(prefix="task18-dev-", dir=CORE / ".pytest_cache") as scratch:
         os.chdir(scratch)
         os.environ["SHADE_API_KEY"] = secrets.token_urlsafe(32)
         try:
-            rows = asyncio.run(diagnose(model, dataset, ids))
+            rows, model_hash = asyncio.run(
+                diagnose(
+                    model,
+                    dataset,
+                    ids,
+                    router_rules=router_rules,
+                    expected_model=expected_model,
+                )
+            )
         finally:
             os.chdir(previous)
-    report = {"stage": "seen-eval-v1-is-now-dev", "raw_answers_saved": False, "rows": rows}
-    output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+    report = {
+        "stage": "development-replay-of-failed-subset",
+        "dataset_sha256": info["dataset_sha256"],
+        "evaluation_sha256": hashlib.sha256(raw).hexdigest(),
+        "model_sha256": model_hash,
+        "router_rules": router_rules,
+        "raw_answers_saved": False,
+        "rows": rows,
+    }
+    with output.open("x") as destination:
+        destination.write(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
     print(json.dumps(report, ensure_ascii=False))
 
 
