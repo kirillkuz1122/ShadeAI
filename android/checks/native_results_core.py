@@ -20,7 +20,7 @@ MODEL = CORE / "models/qwen2.5-1.5b-instruct-q4_k_m.gguf"
 CONTROL_TITLE = "Курьер в пути"
 
 
-async def infer(app, lifespan, *, control=False):
+async def infer(app, lifespan, *, control=False, candidate=False):
     import httpx
 
     async with (
@@ -77,6 +77,11 @@ async def infer(app, lifespan, *, control=False):
             for row in rows:
                 assert row["processing_attempts"] == 1
                 result = row["processed_data"]
+                if candidate:
+                    assert (
+                        row["processing_status"] == "processed" and result is not None
+                    )
+                    assert result["category"] == "delivery"
                 if result is not None:
                     assert (
                         result["llm"] is True and result["action_authorized"] is False
@@ -101,6 +106,7 @@ async def infer(app, lifespan, *, control=False):
                             for row in rows
                         ],
                         "control_via_api": control,
+                        "experimental_schema": candidate,
                         "model_sha256": app.state.llm.info.sha256,
                         "ha_audit_count": 0,
                     },
@@ -110,9 +116,36 @@ async def infer(app, lifespan, *, control=False):
             )
 
 
+def enable_candidate_engine(main_module):
+    from app.services.llm.engine import LocalLLMEngine
+    from checks.compare_notification_router import predict, restrict_schema
+    from checks.literal_service import literal_services, restrict_service_schema
+    from checks.literal_time import literal_times, restrict_time_schema
+
+    class CandidateEngine(LocalLLMEngine):
+        async def generate(self, messages, *, schema=None):
+            assert schema is not None
+            value = json.loads(messages[-1]["content"])
+            title, text = value["title"], value["text"]
+            route, _ = predict(title, text)
+            if route is not None:
+                schema = restrict_schema(schema, route)
+            times = literal_times(title, text)
+            if times is not None:
+                schema = restrict_time_schema(schema, times)
+            services = literal_services(title, text)
+            if services is not None:
+                schema = restrict_service_schema(schema, services)
+            return await super().generate(messages, schema=schema)
+
+    main_module.LocalLLMEngine = CandidateEngine
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("phase", choices=("serve", "infer", "infer-control"))
+    parser.add_argument(
+        "phase", choices=("serve", "infer", "infer-control", "infer-candidate")
+    )
     args = parser.parse_args()
     assert SCRATCH.is_dir() and SCRATCH.resolve() == SCRATCH
     assert not (SCRATCH / "capture.db").is_symlink()
@@ -140,11 +173,21 @@ def main():
         LLM_MEMORY_LIMIT_MB="2304",
     )
     sys.path.insert(0, str(CORE))
-    from app.main import create_app, lifespan
+    from app import main as core_main
 
-    app = create_app()
+    candidate = args.phase == "infer-candidate"
+    if candidate:
+        enable_candidate_engine(core_main)
+    app = core_main.create_app()
     if native:
-        asyncio.run(infer(app, lifespan, control=args.phase == "infer-control"))
+        asyncio.run(
+            infer(
+                app,
+                core_main.lifespan,
+                control=args.phase == "infer-control",
+                candidate=candidate,
+            )
+        )
     else:
         import uvicorn
 

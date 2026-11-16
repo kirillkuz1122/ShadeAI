@@ -1,0 +1,123 @@
+{
+  "date": "2026-11-16",
+  "scenario": "synthetic AOSP35 -> SQLite Core -> offline Qwen with QA schema -> restart -> AOSP and Chromium",
+  "experimental_schema_commit": "445da10",
+  "experiment_in_production": false,
+  "hardware_acceptance": false,
+  "capture": {
+    "phase": "capture",
+    "apk_sha256": "8df0ac55f51cfbde21bdf7f1289aca6e041168a5d547d20214ff8fdbdcdf9f16",
+    "hardware": false,
+    "publisher_sha256": "56380fd3fe23aa537bc93c5859f5bfe63679813ff17e6ab6ac644f4088a2b877",
+    "rows": [
+      {
+        "id": 2,
+        "event_id": "89bcbad5-ede4-46ce-862e-fe6ee8d1c7b0",
+        "processing_status": "pending"
+      },
+      {
+        "id": 1,
+        "event_id": "52ac7a69-898b-4644-a930-8104edc723bb",
+        "processing_status": "pending"
+      }
+    ],
+    "result": "PASS"
+  },
+  "inference": {
+    "rows": [
+      {
+        "id": 2,
+        "event_id": "89bcbad5-ede4-46ce-862e-fe6ee8d1c7b0",
+        "processing_status": "processed",
+        "processing_error_code": null,
+        "category": "delivery"
+      },
+      {
+        "id": 1,
+        "event_id": "52ac7a69-898b-4644-a930-8104edc723bb",
+        "processing_status": "processed",
+        "processing_error_code": null,
+        "category": "delivery"
+      }
+    ],
+    "control_via_api": false,
+    "experimental_schema": true,
+    "model_sha256": "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e",
+    "ha_audit_count": 0
+  },
+  "inference_guard": {
+    "offline_network_namespace": true,
+    "platform": "development-computer",
+    "hardware_acceptance": false,
+    "native_exit_code": 0,
+    "stopped_for": null,
+    "elapsed_seconds": 16.51,
+    "minimum_free_bytes": 8174239744,
+    "minimum_available_ram_bytes": 7601758208,
+    "start_disk_ram_bytes": [
+      4294967296,
+      4294967296
+    ],
+    "stop_disk_ram_bytes": [
+      4294967296,
+      1073741824
+    ],
+    "time_budget_seconds": 120
+  },
+  "after_restart_http": [
+    {
+      "id": 2,
+      "attempts": 1,
+      "category": "delivery",
+      "priority": "low",
+      "time_resolution": "unresolved",
+      "action_authorized": false
+    },
+    {
+      "id": 1,
+      "attempts": 1,
+      "category": "delivery",
+      "priority": "default",
+      "time_resolution": "absent",
+      "action_authorized": false
+    }
+  ],
+  "android_display": {
+    "phase": "display",
+    "apk_sha256": "8df0ac55f51cfbde21bdf7f1289aca6e041168a5d547d20214ff8fdbdcdf9f16",
+    "hardware": false,
+    "rows": [
+      {
+        "id": 2,
+        "event_id": "89bcbad5-ede4-46ce-862e-fe6ee8d1c7b0",
+        "processing_status": "processed"
+      },
+      {
+        "id": 1,
+        "event_id": "52ac7a69-898b-4644-a930-8104edc723bb",
+        "processing_status": "processed"
+      }
+    ],
+    "result": "PASS"
+  },
+  "chromium_display": {
+    "result": "PASS",
+    "nativeCount": 2,
+    "rows": [
+      {
+        "id": 2,
+        "event_id": "89bcbad5-ede4-46ce-862e-fe6ee8d1c7b0",
+        "processing_status": "processed"
+      },
+      {
+        "id": 1,
+        "event_id": "52ac7a69-898b-4644-a930-8104edc723bb",
+        "processing_status": "processed"
+      }
+    ],
+    "errors": [],
+    "externalRequests": 0
+  },
+  "own_processes_stopped": true,
+  "downloads": false
+}
